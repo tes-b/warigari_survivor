@@ -637,9 +637,9 @@
 
         // 100-160초: 기본 적 위주, 약간의 중간 적 (2배 길게)
         if (t < 160) {
-          const w1 = 4;  // Weak
+          const w1 = 2;  // Weak
           const w2 = 5;  // Basic
-          const w3 = 2;  // Medium
+          const w3 = 1;  // Medium
           const sum = w1 + w2 + w3;
           const r = Math.random() * sum;
           if (r < w1) return enemyTiers[0];
@@ -651,8 +651,8 @@
         if (t < 240) {
           const w1 = 2;  // Weak
           const w2 = 5;  // Basic
-          const w3 = 4;  // Medium
-          const w4 = 2;  // Strong 조금
+          const w3 = 3;  // Medium
+          const w4 = 1;  // Strong 조금
           const sum = w1 + w2 + w3 + w4;
           const r = Math.random() * sum;
           if (r < w1) return enemyTiers[0];
