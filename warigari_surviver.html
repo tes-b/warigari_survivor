@@ -354,13 +354,20 @@
             if (orbitingOrbs.length >= 6) return; // 최대 6개 제한
 
             // 새 구슬 추가
-            orbitingOrbs.push({ angle: 0, size: 12, damage: orbitalDamage });
+            orbitingOrbs.push({
+              angle: 0,
+              size: 12,
+              damage: orbitalDamage,
+              hitSet: new Set(),
+              lastAngle: 0,
+            });
 
             // 등간격으로 재배치
             const count = orbitingOrbs.length;
             const step = (Math.PI * 2) / count;
             orbitingOrbs.forEach((orb, idx) => {
               orb.angle = idx * step;
+              orb.lastAngle = (orb.angle + orbitalAngle) % (Math.PI * 2);
             });
           }
         },
@@ -753,6 +760,19 @@
         // 궤도 구슬 회전
         orbitalAngle += orbitalSpeed * dt;
 
+        // 궤도 구슬 상태 업데이트 (한 바퀴마다 피격 목록 초기화)
+        for (const orb of orbitingOrbs) {
+          const global = orb.angle + orbitalAngle;
+          const normalized = ((global % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2);
+          const resetAngle = Math.PI * 1.5; // 12시 방향
+
+          if (orb.lastAngle < resetAngle && normalized >= resetAngle) {
+            orb.hitSet.clear();
+          }
+
+          orb.lastAngle = normalized;
+        }
+
         // 플레이어 이동(항상 바라보는 방향으로)
         player.x += player.dir * player.speed * dt;
         player.x = clamp(player.x, 0, WORLD.w - player.w);
@@ -871,12 +891,14 @@
           }
           if (e._killed) continue;
 
-          // 궤도 구슬과 충돌
+          // 궤도 구슬과 충돌 (한 바퀴에 한 번씩만 피해)
           for (const orb of orbitingOrbs) {
             const orbX = player.x + player.w / 2 + Math.cos(orb.angle + orbitalAngle) * orbitalRadius - orb.size / 2;
             const orbY = player.y + player.h / 2 + Math.sin(orb.angle + orbitalAngle) * orbitalRadius - orb.size / 2;
 
             if (aabb(e, { x: orbX, y: orbY, w: orb.size, h: orb.size })) {
+              if (orb.hitSet.has(e.id)) continue;
+              orb.hitSet.add(e.id);
               e.hp -= orb.damage;
               if (e.hp <= 0) {
                 spawnExpOrb(e.x + e.w / 2, e.y + e.h / 2);
