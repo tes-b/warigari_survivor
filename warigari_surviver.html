@@ -101,7 +101,7 @@
         </div>
       </div>
 
-      <div class="bottom-tip">TIP: 시간 경과로 스폰 주기가 짧아지고 속도/체력도 체감 난이도가 올라갑니다.</div>
+      <div class="bottom-tip">TIP: 시간 경과로 스폰 주기가 짧아지고 속도/체력/공격력이 올라가 난이도가 계속 상승합니다.</div>
     </div>
     
     <!-- 레벨업 오버레이 -->
@@ -141,6 +141,7 @@
   let enemyContactDamage = 10;     // 적 접촉 시 플레이어가 받는 피해
   let enemyReward = 1;             // 적 처치 시 점수
   let enemySize = 28;              // 적 크기
+  let enemyGrowthRate = 0.01;      // 적 체력/공격력 초당 1% 증가
   
   // 적 티어별 설정 (5단계로 확장, 체력 증가/속도 감소)
   let enemyTiers = [
@@ -409,6 +410,7 @@
   function spawnEnemy() {
     const left = Math.random() < 0.5;
     const tier = weightedTier();
+    const scale = 1 + elapsed * enemyGrowthRate;
     enemies.push({
       x: left ? -enemySize : WORLD.w,
       y: WORLD.groundY - enemySize,
@@ -417,10 +419,10 @@
       tier,
       vx: 0,
       color: tier.color,
-      damage: enemyContactDamage,
+      damage: enemyContactDamage * scale,
       reward: enemyReward,
-      hp: tier.hp,
-      hpMax: tier.hp,
+      hp: tier.hp * scale,
+      hpMax: tier.hp * scale,
     });
   }
   
