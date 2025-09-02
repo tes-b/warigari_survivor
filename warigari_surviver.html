@@ -198,10 +198,16 @@
       title: '🌟 궤도 구슬',
       desc: '주변을 도는 공격 구슬 추가',
       apply: () => {
-        orbitingOrbs.push({
-          angle: orbitingOrbs.length * (Math.PI * 2 / 3),
-          size: 12,
-          damage: orbitalDamage
+        if (orbitingOrbs.length >= 6) return; // 최대 6개 제한
+
+        // 새 구슬 추가
+        orbitingOrbs.push({ angle: 0, size: 12, damage: orbitalDamage });
+
+        // 등간격으로 재배치
+        const count = orbitingOrbs.length;
+        const step = (Math.PI * 2) / count;
+        orbitingOrbs.forEach((orb, idx) => {
+          orb.angle = idx * step;
         });
       }
     },
@@ -546,9 +552,14 @@
     paused = true;
     const levelupOverlay = document.getElementById('levelupOverlay');
     const upgradeGrid = document.getElementById('upgradeGrid');
-    
+
+    // 궤도 구슬이 최대치에 도달하면 해당 업그레이드 제외
+    const availableUpgrades = orbitingOrbs.length >= 6
+      ? UPGRADES.filter(u => u.id !== 'orbital')
+      : [...UPGRADES];
+
     // 3개의 랜덤 업그레이드 선택
-    const shuffled = [...UPGRADES].sort(() => Math.random() - 0.5);
+    const shuffled = [...availableUpgrades].sort(() => Math.random() - 0.5);
     const selected = shuffled.slice(0, 3);
     
     upgradeGrid.innerHTML = '';
