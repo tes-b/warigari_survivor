@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
-<title>사이드 생존 게임 (싱글 파일)</title>
+<title>와리가리 서바이버</title>
 <style>
   html, body { height: 100%; margin: 0; background:#0f1221; color:#eee; font-family: system-ui, -apple-system, Segoe UI, Roboto, 'Noto Sans KR', sans-serif;}
   #wrap { display:flex; flex-direction:column; height:100%; }
@@ -70,13 +70,6 @@
 </head>
 <body>
   <div id="wrap">
-    <header>
-      <div class="pill">사이드 뷰 · 평지 · 단일 HTML</div>
-      <div class="pill">클릭/스페이스: 방향 전환</div>
-      <div class="pill">자동 전방 공격</div>
-      <div class="pill">접촉 시 피해 + 겹침 방지</div>
-      <div class="pill">HP바 표시</div>
-    </header>
 
     <div id="canvasWrap">
       <canvas id="game" width="960" height="540"></canvas>
@@ -94,14 +87,13 @@
         <div class="panel">
           <h1>최대한 오래 살아남아라!</h1>
           <p>클릭 또는 <span class="kbd">스페이스바</span>로 <b>방향 전환</b>. 전방으로 <b>자동 공격</b>합니다.</p>
-          <p>적은 양쪽 끝에서 나타나 <b>플레이어 쪽으로 전진</b>. 접촉 시 피해를 주지만 <b>겹치지 않습니다.</b></p>
           <div class="row">
             <button id="btnStart">게임 시작</button>
           </div>
         </div>
       </div>
 
-      <div class="bottom-tip">TIP: 시간 경과로 스폰 주기가 짧아지고 속도/체력/공격력이 올라가 난이도가 계속 상승합니다.</div>
+      <div class="bottom-tip" id="tip">TIP: 시간이 경과하면 적의 스폰 주기가 짧아지고 속도/체력/공격력이 상승합니다.</div>
     </div>
     
     <!-- 레벨업 오버레이 -->
@@ -331,6 +323,17 @@
   const overlay = document.getElementById('overlay');
   const btnStart = document.getElementById('btnStart');
   btnStart.addEventListener('click', startGame);
+
+  const tipElem = document.getElementById('tip');
+  const tips = [
+    'TIP: 시간이 경과하면 적의 스폰 주기가 짧아지고 속도/체력/공격력이 상승합니다.',
+    'TIP: 적은 양쪽 끝에서 나타나 플레이어 쪽으로 전진합니다.'
+  ];
+  let tipIndex = 0;
+  setInterval(() => {
+    tipIndex = (tipIndex + 1) % tips.length;
+    tipElem.textContent = tips[tipIndex];
+  }, 5000);
 
   function reset() {
     running = false;
