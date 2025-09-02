@@ -241,6 +241,9 @@
   const canvas = document.getElementById('game');
   const ctx = canvas.getContext('2d');
 
+  const playerImg = new Image();
+  playerImg.src = 'image/wari.gif';
+
   // --- 게임 상태 ---
   let running = false;
   let paused = false;              // 레벨업 시 일시정지
@@ -806,21 +809,13 @@
       ctx.shadowBlur = 20;
       ctx.shadowColor = '#ff6b6b';
     }
-    ctx.fillStyle = '#8ab4ff';
-    ctx.fillRect(player.x, player.y, player.w, player.h);
-    ctx.fillStyle = '#d8e4ff';
-    ctx.beginPath();
     if (player.dir > 0) {
-      ctx.moveTo(player.x + player.w, player.y + player.h*0.5);
-      ctx.lineTo(player.x + player.w + 14, player.y + player.h*0.32);
-      ctx.lineTo(player.x + player.w + 14, player.y + player.h*0.68);
+      ctx.translate(player.x + player.w, player.y);
+      ctx.scale(-1, 1);
+      ctx.drawImage(playerImg, 0, 0, player.w, player.h);
     } else {
-      ctx.moveTo(player.x, player.y + player.h*0.5);
-      ctx.lineTo(player.x - 14, player.y + player.h*0.32);
-      ctx.lineTo(player.x - 14, player.y + player.h*0.68);
+      ctx.drawImage(playerImg, player.x, player.y, player.w, player.h);
     }
-    ctx.closePath();
-    ctx.fill();
     ctx.restore();
 
     // 플레이어 HP 바(머리 위)
