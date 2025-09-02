@@ -133,7 +133,7 @@
   let bulletSize = 8;              // 총알 크기
   let bulletCooldown = 420;        // 총알 발사 쿨다운 (ms)
   let bulletDamage = 18;           // 총알 피해량
-  let bulletPenetration = false;   // 총알 관통 여부
+  let bulletPenetration = 0;       // 총알 관통 수
   let bulletKnockback = 0;         // 총알 넉백 거리 (px)
   let bulletRange = 500;          // 총알 사정거리 (px)
   
@@ -221,8 +221,8 @@
     {
       id: 'penetration',
       title: '🎯 관통 공격',
-      desc: '총알이 적을 관통함',
-      apply: () => { bulletPenetration = true; }
+      desc: '한명의 적을 추가로 관통합니다.',
+      apply: () => { bulletPenetration += 1; }
     },
     {
       id: 'range',
@@ -359,7 +359,7 @@
     // 업그레이드 초기화
     bulletDamage = 18;
     bulletCooldown = 420;
-    bulletPenetration = false;
+    bulletPenetration = 0;
     bulletKnockback = 0;
     bulletRange = 500;
     playerHP = 100;
@@ -582,7 +582,7 @@
         h: bulletSize * 0.5,
         vx: player.dir * bulletSpeed,
         dmg: bulletDamage,
-        penetrating: bulletPenetration,
+        penetration: bulletPenetration,
         knockback: bulletKnockback,
         range: bulletRange,
       });
@@ -665,8 +665,10 @@
             e.x = clamp(e.x, -enemySize, WORLD.w);
           }
           
-          // 관통이 아니면 총알 제거
-          if (!b.penetrating) {
+          // 관통 수 소진 시 총알 제거
+          if (b.penetration > 0) {
+            b.penetration--;
+          } else {
             bullets.splice(j, 1);
           }
           
