@@ -169,6 +169,16 @@
   let orbitalRadius = 60;          // 궤도 반지름
   let orbitalSpeed = 5;            // 궤도 회전 속도 (rad/s)
   let orbitalDamage = 40;          // 궤도 구슬 피해량
+
+  // 배트 관련
+  let hasBat = false;              // 배트 업그레이드 보유 여부
+  let batCooldown = 1000;          // 배트 휘두르는 간격 (ms)
+  let batDuration = 180;           // 배트 공격 지속 시간 (ms)
+  let batTimer = 0;                // 배트 타이머
+  let batActive = false;           // 현재 배트 공격 중인지 여부
+  let batKnockback = 80;           // 배트 넉백 거리 (px)
+  let batHeal = 5;                 // 적 한 명당 회복량
+  let batHitSet = new Set();       // 현재 스윙에서 이미 맞춘 적
   
   // 업그레이드 옵션들
   const UPGRADES = [
@@ -210,6 +220,12 @@
           orb.angle = idx * step;
         });
       }
+    },
+    {
+      id: 'bat',
+      title: '🦇 배트',
+      desc: '전방에 배트를 휘둘러 적을 넉백하며 적중 수만큼 회복',
+      apply: () => { hasBat = true; }
     },
     {
       id: 'knockback',
@@ -369,6 +385,10 @@
     spawnTimer = 0;
     currentSpawnInterval = initialSpawnInterval;
     orbitalAngle = 0;
+    hasBat = false;
+    batTimer = 0;
+    batActive = false;
+    batHitSet.clear();
     
     // 업그레이드 초기화
     bulletDamage = 18;
@@ -556,10 +576,12 @@
     const levelupOverlay = document.getElementById('levelupOverlay');
     const upgradeGrid = document.getElementById('upgradeGrid');
 
-    // 궤도 구슬이 최대치에 도달하면 해당 업그레이드 제외
-    const availableUpgrades = orbitingOrbs.length >= 6
-      ? UPGRADES.filter(u => u.id !== 'orbital')
-      : [...UPGRADES];
+    // 조건에 따라 특정 업그레이드 제외
+    const availableUpgrades = UPGRADES.filter(u => {
+      if (u.id === 'orbital' && orbitingOrbs.length >= 6) return false;
+      if (u.id === 'bat' && hasBat) return false;
+      return true;
+    });
 
     // 3개의 랜덤 업그레이드 선택
     const shuffled = [...availableUpgrades].sort(() => Math.random() - 0.5);
@@ -596,6 +618,20 @@
     spawnTimer += dt * 1000;
     if (player.iframes > 0) player.iframes -= dt * 1000;
     if (player.hitFlash > 0) player.hitFlash -= dt * 1000;
+
+    if (hasBat) {
+      batTimer += dt * 1000;
+      if (batActive) {
+        if (batTimer >= batDuration) {
+          batActive = false;
+          batTimer = 0;
+        }
+      } else if (batTimer >= batCooldown) {
+        batActive = true;
+        batTimer = 0;
+        batHitSet.clear();
+      }
+    }
 
     // 궤도 구슬 회전
     orbitalAngle += orbitalSpeed * dt;
@@ -669,6 +705,16 @@
       spawnEnemy();
     }
 
+    // 배트 범위 계산
+    let batRect = null;
+    if (batActive) {
+      const bw = 50;
+      const bh = player.h * 0.6;
+      const bx = player.dir > 0 ? player.x + player.w : player.x - bw;
+      const by = player.y + player.h * 0.2;
+      batRect = { x: bx, y: by, w: bw, h: bh };
+    }
+
     // 적 이동 및 충돌 처리
     for (let i = enemies.length - 1; i >= 0; i--) {
       const e = enemies[i];
@@ -722,7 +768,7 @@
       for (const orb of orbitingOrbs) {
         const orbX = player.x + player.w/2 + Math.cos(orb.angle + orbitalAngle) * orbitalRadius - orb.size/2;
         const orbY = player.y + player.h/2 + Math.sin(orb.angle + orbitalAngle) * orbitalRadius - orb.size/2;
-        
+
         if (aabb(e, {x: orbX, y: orbY, w: orb.size, h: orb.size})) {
           e.hp -= orb.damage;
           if (e.hp <= 0) {
@@ -735,6 +781,15 @@
         }
       }
       if (e._killed) continue;
+
+      // 배트와 충돌
+      if (batRect && !batHitSet.has(e.id) && aabb(e, batRect)) {
+        const knockDir = player.dir;
+        e.x += knockDir * batKnockback;
+        e.x = clamp(e.x, -enemySize, WORLD.w);
+        batHitSet.add(e.id);
+        hp = Math.min(playerHP, hp + batHeal);
+      }
 
       // 플레이어와 충돌 → 피해 + 즉시 분리(separation)
       if (aabb(e, player)) {
@@ -833,6 +888,16 @@
     const muzzleX = player.dir > 0 ? (player.x + player.w + 4) : (player.x - 10);
     ctx.fillRect(muzzleX, player.y + player.h*0.45 - 2, 8, 4);
     ctx.restore();
+
+    // 배트 스윙
+    if (batActive) {
+      const bw = 50;
+      const bh = player.h * 0.6;
+      const bx = player.dir > 0 ? player.x + player.w : player.x - bw;
+      const by = player.y + player.h * 0.2;
+      ctx.fillStyle = '#d9a066';
+      ctx.fillRect(bx, by, bw, bh);
+    }
 
     // 탄
     ctx.fillStyle = '#fff';
