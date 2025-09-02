@@ -277,6 +277,7 @@
 
   // --- 적 ---
   const enemies = [];
+  let nextEnemyId = 0;
   let spawnTimer = 0;
   let currentSpawnInterval = initialSpawnInterval;
   
@@ -415,6 +416,7 @@
     const tier = weightedTier();
     const scale = 1 + elapsed * enemyGrowthRate;
     enemies.push({
+      id: nextEnemyId++,
       x: left ? -enemySize : WORLD.w,
       y: WORLD.groundY - enemySize,
       w: enemySize,
@@ -588,6 +590,7 @@
         vx: player.dir * bulletSpeed,
         dmg: bulletDamage,
         penetration: bulletPenetration,
+        hitSet: new Set(),
         knockback: bulletKnockback,
         range: bulletRange,
       });
@@ -660,23 +663,24 @@
       // 총알과 충돌(피해 처리)
       for (let j = bullets.length - 1; j >= 0; j--) {
         const b = bullets[j];
+        if (b.hitSet.has(e.id)) continue;
         if (aabb(e, b)) {
           e.hp -= b.dmg;
-          
+
           // 넉백 적용
           if (b.knockback > 0) {
             const knockDir = Math.sign(b.vx);
             e.x += knockDir * b.knockback;
             e.x = clamp(e.x, -enemySize, WORLD.w);
           }
-          
-          // 관통 수 소진 시 총알 제거
-          if (b.penetration > 0) {
-            b.penetration--;
-          } else {
+
+          b.hitSet.add(e.id);
+          if (b.penetration === 0) {
             bullets.splice(j, 1);
+          } else {
+            b.penetration--;
           }
-          
+
           if (e.hp <= 0) {
             // 경험치 구슬 드롭
             spawnExpOrb(e.x + e.w/2, e.y + e.h/2);
