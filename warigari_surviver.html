@@ -1,73 +1,226 @@
 <!DOCTYPE html>
 <html lang="ko">
+
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
-<title>와리가리 서바이버</title>
-<style>
-  html, body { height: 100%; margin: 0; background:#0f1221; color:#eee; font-family: system-ui, -apple-system, Segoe UI, Roboto, 'Noto Sans KR', sans-serif;}
-  #wrap { display:flex; flex-direction:column; height:100%; }
-  header { padding:8px 12px; font-size:14px; background:#11152a; border-bottom:1px solid #1b2040; display:flex; align-items:center; gap:10px; }
-  header .pill { background:#1c2246; border:1px solid #2e3a7a; padding:4px 8px; border-radius:999px; }
-  #canvasWrap { flex:1; position:relative; }
-  canvas { width:100%; height:100%; display:block; }
-  .overlay {
-    position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
-    background:linear-gradient(180deg, rgba(6,8,20,0.88), rgba(6,8,20,0.88));
-    z-index:10; text-align:center; padding:24px;
-  }
-  .panel {
-    background:#101531; border:1px solid #33407d; border-radius:16px; padding:24px 22px; max-width:560px; width:100%;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.4), inset 0 0 60px rgba(49,86,212,0.08);
-  }
-  .panel h1 { margin:0 0 8px; font-weight:800; font-size:26px; letter-spacing:0.2px; }
-  .panel p { margin:6px 0; line-height:1.5; color:#cfd6ff; }
-  .panel .kbd { background:#0e1330; border:1px solid #2b356e; padding:2px 8px; border-radius:6px; }
-  .row { display:flex; gap:8px; flex-wrap:wrap; justify-content:center; margin-top:14px; }
-  button {
-    background:#2a58ff; color:white; border:none; padding:12px 18px; border-radius:12px; font-weight:700; cursor:pointer;
-    transition: transform .06s ease, filter .1s ease; border:1px solid #7ea0ff55;
-  }
-  button:hover { transform: translateY(-1px); filter:brightness(1.05); }
-  .hud { position:absolute; left:12px; top:10px; z-index:2; display:flex; gap:12px; font-weight:700; text-shadow: 0 2px 6px #0009; }
-  .hud .stat { background:#0e1330aa; border:1px solid #2b356e; padding:6px 10px; border-radius:10px; }
-  .bottom-tip { position:absolute; left:50%; transform:translateX(-50%); bottom:10px; opacity:0.85; font-size:13px; }
-  .levelup-overlay {
-    position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
-    background:linear-gradient(180deg, rgba(15,18,40,0.95), rgba(15,18,40,0.95));
-    z-index:15; text-align:center; padding:24px;
-  }
-  .levelup-panel {
-    background:#152044; border:2px solid #4a63d4; border-radius:20px; padding:32px 28px; max-width:640px; width:100%;
-    box-shadow: 0 15px 40px rgba(0,0,0,0.5), inset 0 0 80px rgba(74,99,212,0.15);
-    animation: levelupPulse 0.6s ease-out;
-  }
-  @keyframes levelupPulse {
-    0% { transform: scale(0.8); opacity: 0; }
-    100% { transform: scale(1); opacity: 1; }
-  }
-  .upgrade-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; margin-top: 20px; }
-  .upgrade-btn {
-    background: linear-gradient(135deg, #2a4ccc, #1e3a9a);
-    border: 2px solid #4a6bff;
-    color: white;
-    padding: 16px 12px;
-    border-radius: 12px;
-    cursor: pointer;
-    transition: all 0.15s ease;
-    text-align: left;
-  }
-  .upgrade-btn:hover {
-    background: linear-gradient(135deg, #3558e0, #2441b8);
-    border-color: #6b88ff;
-    transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(74,107,255,0.3);
-  }
-  .upgrade-title { font-weight: bold; font-size: 14px; margin-bottom: 4px; }
-  .upgrade-desc { font-size: 12px; opacity: 0.85; line-height: 1.3; }
-  .exp-orb { border-radius: 50%; }
-</style>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+  <title>와리가리 서바이버</title>
+  <style>
+    html,
+    body {
+      height: 100%;
+      margin: 0;
+      background: #0f1221;
+      color: #eee;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, 'Noto Sans KR', sans-serif;
+    }
+
+    #wrap {
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+    }
+
+    header {
+      padding: 8px 12px;
+      font-size: 14px;
+      background: #11152a;
+      border-bottom: 1px solid #1b2040;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    header .pill {
+      background: #1c2246;
+      border: 1px solid #2e3a7a;
+      padding: 4px 8px;
+      border-radius: 999px;
+    }
+
+    #canvasWrap {
+      flex: 1;
+      position: relative;
+    }
+
+    canvas {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+
+    .overlay {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: linear-gradient(180deg, rgba(6, 8, 20, 0.88), rgba(6, 8, 20, 0.88));
+      z-index: 10;
+      text-align: center;
+      padding: 24px;
+    }
+
+    .panel {
+      background: #101531;
+      border: 1px solid #33407d;
+      border-radius: 16px;
+      padding: 24px 22px;
+      max-width: 560px;
+      width: 100%;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4), inset 0 0 60px rgba(49, 86, 212, 0.08);
+    }
+
+    .panel h1 {
+      margin: 0 0 8px;
+      font-weight: 800;
+      font-size: 26px;
+      letter-spacing: 0.2px;
+    }
+
+    .panel p {
+      margin: 6px 0;
+      line-height: 1.5;
+      color: #cfd6ff;
+    }
+
+    .panel .kbd {
+      background: #0e1330;
+      border: 1px solid #2b356e;
+      padding: 2px 8px;
+      border-radius: 6px;
+    }
+
+    .row {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      justify-content: center;
+      margin-top: 14px;
+    }
+
+    button {
+      background: #2a58ff;
+      color: white;
+      border: none;
+      padding: 12px 18px;
+      border-radius: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: transform .06s ease, filter .1s ease;
+      border: 1px solid #7ea0ff55;
+    }
+
+    button:hover {
+      transform: translateY(-1px);
+      filter: brightness(1.05);
+    }
+
+    .hud {
+      position: absolute;
+      left: 12px;
+      top: 10px;
+      z-index: 2;
+      display: flex;
+      gap: 12px;
+      font-weight: 700;
+      text-shadow: 0 2px 6px #0009;
+    }
+
+    .hud .stat {
+      background: #0e1330aa;
+      border: 1px solid #2b356e;
+      padding: 6px 10px;
+      border-radius: 10px;
+    }
+
+    .bottom-tip {
+      position: absolute;
+      left: 50%;
+      transform: translateX(-50%);
+      bottom: 10px;
+      opacity: 0.85;
+      font-size: 13px;
+    }
+
+    .levelup-overlay {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: linear-gradient(180deg, rgba(15, 18, 40, 0.95), rgba(15, 18, 40, 0.95));
+      z-index: 15;
+      text-align: center;
+      padding: 24px;
+    }
+
+    .levelup-panel {
+      background: #152044;
+      border: 2px solid #4a63d4;
+      border-radius: 20px;
+      padding: 32px 28px;
+      max-width: 640px;
+      width: 100%;
+      box-shadow: 0 15px 40px rgba(0, 0, 0, 0.5), inset 0 0 80px rgba(74, 99, 212, 0.15);
+      animation: levelupPulse 0.6s ease-out;
+    }
+
+    @keyframes levelupPulse {
+      0% {
+        transform: scale(0.8);
+        opacity: 0;
+      }
+
+      100% {
+        transform: scale(1);
+        opacity: 1;
+      }
+    }
+
+    .upgrade-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 12px;
+      margin-top: 20px;
+    }
+
+    .upgrade-btn {
+      background: linear-gradient(135deg, #2a4ccc, #1e3a9a);
+      border: 2px solid #4a6bff;
+      color: white;
+      padding: 16px 12px;
+      border-radius: 12px;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      text-align: left;
+    }
+
+    .upgrade-btn:hover {
+      background: linear-gradient(135deg, #3558e0, #2441b8);
+      border-color: #6b88ff;
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(74, 107, 255, 0.3);
+    }
+
+    .upgrade-title {
+      font-weight: bold;
+      font-size: 14px;
+      margin-bottom: 4px;
+    }
+
+    .upgrade-desc {
+      font-size: 12px;
+      opacity: 0.85;
+      line-height: 1.3;
+    }
+
+    .exp-orb {
+      border-radius: 50%;
+    }
+  </style>
 </head>
+
 <body>
   <div id="wrap">
 
@@ -95,7 +248,7 @@
 
       <div class="bottom-tip" id="tip">TIP: 시간이 경과하면 적의 스폰 주기가 짧아지고 속도/체력/공격력이 상승합니다.</div>
     </div>
-    
+
     <!-- 레벨업 오버레이 -->
     <div class="levelup-overlay" id="levelupOverlay" style="display: none;">
       <div class="levelup-panel">
@@ -108,291 +261,291 @@
     </div>
   </div>
 
-<script>
-(() => {
-  // ========================================
-  // 게임 밸런스 변수 (수정 편의성을 위해 상단 집중 배치)
-  // ========================================
-  
-  // 플레이어 관련
-  let playerHP = 100;              // 플레이어 최대 HP
-  let playerSpeed = 160;           // 플레이어 이동 속도 (px/s)
-  let playerIframeDuration = 800;  // 피격 후 무적 시간 (ms)
-  let playerHitFlashDuration = 200; // 피격 시 시각 효과 지속 시간 (ms)
-  
-  // 총알 관련
-  let bulletSpeed = 460;           // 총알 속도 (px/s)
-  let bulletSize = 8;              // 총알 크기
-  let bulletCooldown = 420;        // 총알 발사 쿨다운 (ms)
-  let bulletDamage = 18;           // 총알 피해량
-  let bulletPenetration = 0;       // 총알 관통 수
-  let bulletKnockback = 0;         // 총알 넉백 거리 (px)
-  let bulletRange = 500;          // 총알 사정거리 (px)
-  
-  // 적 관련
-  let enemyContactDamage = 10;     // 적 접촉 시 플레이어가 받는 피해
-  let enemyReward = 1;             // 적 처치 시 점수
-  let enemySize = 28;              // 적 크기
-  let enemyGrowthRate = 0.01;      // 적 체력/공격력 초당 1% 증가
-  
-  // 적 티어별 설정 (5단계로 확장, 체력 증가/속도 감소)
-  let enemyTiers = [
-    { name: 'Weak',   speed: 35,  color: '#4ade80', hp: 25 },  // 1단계: 매우 약함
-    { name: 'Basic',  speed: 45,  color: '#60a5fa', hp: 40 },  // 2단계: 기본
-    { name: 'Medium', speed: 55,  color: '#a78bfa', hp: 60 },  // 3단계: 중간
-    { name: 'Strong', speed: 65,  color: '#f59e0b', hp: 85 },  // 4단계: 강함
-    { name: 'Elite',  speed: 75,  color: '#ef4444', hp: 120 }, // 5단계: 정예
-  ];
-  
-  // 스폰 관련 (발생 주기 1.5배 빈번하게)
-  let initialSpawnInterval = 1300; // 초기 적 스폰 간격 (ms) - 2000에서 1300으로
-  let minSpawnInterval = 200;      // 최소 스폰 간격 (ms) - 300에서 200으로
-  let difficultyIncrease = 8;      // 초당 스폰 간격 감소량 (ms)
-  
-  // 속도 증가 관련
-  let maxSpeedBoost = 0.7;         // 최대 속도 증가율 (70%)
-  let speedBoostTime = 120;        // 최대 속도 증가에 도달하는 시간 (초)
-  
-  // 충돌 분리 관련
-  let separationDistance = 2;      // 겹침 해소 시 최소 거리 (px)
-  
-  // 경험치 및 레벨 관련
-  let playerExp = 0;               // 현재 경험치
-  let playerLevel = 1;             // 현재 레벨
-  let expToNextLevel = 10;         // 다음 레벨까지 필요한 경험치
-  let expOrbValue = 1;             // 경험치 구슬 하나당 경험치
-  let expOrbSpeed = 200;           // 경험치 구슬 이동 속도 (px/s)
-  let expOrbSize = 8;              // 경험치 구슬 크기
-  
-  // 궤도 구슬 관련
-  let orbitingOrbs = [];           // 궤도 구슬 배열
-  let orbitalRadius = 60;          // 궤도 반지름
-  let orbitalSpeed = 5;            // 궤도 회전 속도 (rad/s)
-  let orbitalDamage = 40;          // 궤도 구슬 피해량
-  
-  // 업그레이드 옵션들
-  const UPGRADES = [
-    {
-      id: 'damage',
-      title: '🔥 공격력 증가',
-      desc: '총알 피해량 +7',
-      apply: () => { bulletDamage += 7; }
-    },
-    {
-      id: 'attackSpeed',
-      title: '⚡ 공격 속도 증가',
-      desc: '발사 속도 +25% 향상',
-      apply: () => { bulletCooldown = Math.max(80, bulletCooldown * 0.75); }
-    },
-    {
-      id: 'health',
-      title: '❤️ 체력 증가',
-      desc: '최대 체력 +30, 현재 체력 회복',
-      apply: () => { 
-        playerHP += 30; 
-        hp = Math.min(hp + 30, playerHP); 
+  <script>
+    (() => {
+      // ========================================
+      // 게임 밸런스 변수 (수정 편의성을 위해 상단 집중 배치)
+      // ========================================
+
+      // 플레이어 관련
+      let playerHP = 100;              // 플레이어 최대 HP
+      let playerSpeed = 160;           // 플레이어 이동 속도 (px/s)
+      let playerIframeDuration = 800;  // 피격 후 무적 시간 (ms)
+      let playerHitFlashDuration = 200; // 피격 시 시각 효과 지속 시간 (ms)
+
+      // 총알 관련
+      let bulletSpeed = 460;           // 총알 속도 (px/s)
+      let bulletSize = 8;              // 총알 크기
+      let bulletCooldown = 420;        // 총알 발사 쿨다운 (ms)
+      let bulletDamage = 18;           // 총알 피해량
+      let bulletPenetration = 0;       // 총알 관통 수
+      let bulletKnockback = 0;         // 총알 넉백 거리 (px)
+      let bulletRange = 500;          // 총알 사정거리 (px)
+
+      // 적 관련
+      let enemyContactDamage = 10;     // 적 접촉 시 플레이어가 받는 피해
+      let enemyReward = 1;             // 적 처치 시 점수
+      let enemySize = 28;              // 적 크기
+      let enemyGrowthRate = 0.01;      // 적 체력/공격력 초당 1% 증가
+
+      // 적 티어별 설정 (5단계로 확장, 체력 증가/속도 감소)
+      let enemyTiers = [
+        { name: 'Weak', speed: 35, color: '#4ade80', hp: 25 },  // 1단계: 매우 약함
+        { name: 'Basic', speed: 45, color: '#60a5fa', hp: 40 },  // 2단계: 기본
+        { name: 'Medium', speed: 55, color: '#a78bfa', hp: 60 },  // 3단계: 중간
+        { name: 'Strong', speed: 65, color: '#f59e0b', hp: 85 },  // 4단계: 강함
+        { name: 'Elite', speed: 75, color: '#ef4444', hp: 120 }, // 5단계: 정예
+      ];
+
+      // 스폰 관련 (발생 주기 1.5배 빈번하게)
+      let initialSpawnInterval = 1300; // 초기 적 스폰 간격 (ms) - 2000에서 1300으로
+      let minSpawnInterval = 200;      // 최소 스폰 간격 (ms) - 300에서 200으로
+      let difficultyIncrease = 8;      // 초당 스폰 간격 감소량 (ms)
+
+      // 속도 증가 관련
+      let maxSpeedBoost = 0.7;         // 최대 속도 증가율 (70%)
+      let speedBoostTime = 120;        // 최대 속도 증가에 도달하는 시간 (초)
+
+      // 충돌 분리 관련
+      let separationDistance = 2;      // 겹침 해소 시 최소 거리 (px)
+
+      // 경험치 및 레벨 관련
+      let playerExp = 0;               // 현재 경험치
+      let playerLevel = 1;             // 현재 레벨
+      let expToNextLevel = 10;         // 다음 레벨까지 필요한 경험치
+      let expOrbValue = 1;             // 경험치 구슬 하나당 경험치
+      let expOrbSpeed = 200;           // 경험치 구슬 이동 속도 (px/s)
+      let expOrbSize = 8;              // 경험치 구슬 크기
+
+      // 궤도 구슬 관련
+      let orbitingOrbs = [];           // 궤도 구슬 배열
+      let orbitalRadius = 60;          // 궤도 반지름
+      let orbitalSpeed = 5;            // 궤도 회전 속도 (rad/s)
+      let orbitalDamage = 40;          // 궤도 구슬 피해량
+
+      // 업그레이드 옵션들
+      const UPGRADES = [
+        {
+          id: 'damage',
+          title: '🔥 공격력 증가',
+          desc: '총알 피해량 +7',
+          apply: () => { bulletDamage += 7; }
+        },
+        {
+          id: 'attackSpeed',
+          title: '⚡ 공격 속도 증가',
+          desc: '발사 속도 +25% 향상',
+          apply: () => { bulletCooldown = Math.max(80, bulletCooldown * 0.75); }
+        },
+        {
+          id: 'health',
+          title: '❤️ 체력 증가',
+          desc: '최대 체력 +30, 현재 체력 회복',
+          apply: () => {
+            playerHP += 30;
+            hp = Math.min(hp + 30, playerHP);
+          }
+        },
+        {
+          id: 'orbital',
+          title: '🌟 궤도 구슬',
+          desc: '주변을 도는 공격 구슬 추가',
+          apply: () => {
+            if (orbitingOrbs.length >= 6) return; // 최대 6개 제한
+
+            // 새 구슬 추가
+            orbitingOrbs.push({ angle: 0, size: 12, damage: orbitalDamage });
+
+            // 등간격으로 재배치
+            const count = orbitingOrbs.length;
+            const step = (Math.PI * 2) / count;
+            orbitingOrbs.forEach((orb, idx) => {
+              orb.angle = idx * step;
+            });
+          }
+        },
+        {
+          id: 'knockback',
+          title: '💥 넉백 공격',
+          desc: '총알이 적을 뒤로 밀어냄 (넉백 +40)',
+          apply: () => {
+            // 넉백 아이템을 여러 번 획득하면 효과가 누적되도록
+            bulletKnockback += 40;
+          }
+        },
+        {
+          id: 'penetration',
+          title: '🎯 관통 공격',
+          desc: '한명의 적을 추가로 관통합니다.',
+          apply: () => { bulletPenetration += 1; }
+        },
+        {
+          id: 'range',
+          title: '📏 사거리 증가',
+          desc: '총알 사정거리 +20%',
+          apply: () => { bulletRange *= 1.2; }
+        }
+      ];
+
+      // ========================================
+      // 게임 코어 로직
+      // ========================================
+
+      const canvas = document.getElementById('game');
+      const ctx = canvas.getContext('2d');
+
+      // --- 게임 상태 ---
+      let running = false;
+      let paused = false;              // 레벨업 시 일시정지
+      let lastTime = 0;
+      let elapsed = 0;            // 생존 시간(초)
+      let score = 0;
+      let hp = playerHP;
+      let exp = 0;                     // 현재 경험치
+      let level = 1;                   // 현재 레벨
+
+      // 화면/맵
+      function fitCanvas() {
+        const wrap = document.getElementById('canvasWrap');
+        const w = wrap.clientWidth;
+        const h = wrap.clientHeight;
+        const targetH = Math.min(h, w * 9 / 16);
+        canvas.style.height = targetH + 'px';
       }
-    },
-    {
-      id: 'orbital',
-      title: '🌟 궤도 구슬',
-      desc: '주변을 도는 공격 구슬 추가',
-      apply: () => {
-        if (orbitingOrbs.length >= 6) return; // 최대 6개 제한
+      window.addEventListener('resize', fitCanvas);
+      fitCanvas();
 
-        // 새 구슬 추가
-        orbitingOrbs.push({ angle: 0, size: 12, damage: orbitalDamage });
+      const WORLD = {
+        w: canvas.width,
+        h: canvas.height,
+        groundY: canvas.height - 60,
+      };
 
-        // 등간격으로 재배치
-        const count = orbitingOrbs.length;
-        const step = (Math.PI * 2) / count;
-        orbitingOrbs.forEach((orb, idx) => {
-          orb.angle = idx * step;
-        });
+      // --- 플레이어 ---
+      const player = {
+        x: WORLD.w / 2,
+        y: WORLD.groundY - 40,
+        w: 28,
+        h: 40,
+        dir: 1,                 // 1 → 오른쪽, -1 → 왼쪽
+        speed: playerSpeed,
+        iframes: 0,             // 무적 시간(ms)
+        hitFlash: 0,            // 피격 시 시각 효과
+      };
+
+      // --- 투사체(자동 공격) ---
+      const bullets = [];
+      let shootTimer = 0;
+
+      // --- 적 ---
+      const enemies = [];
+      let nextEnemyId = 0;
+      let spawnTimer = 0;
+      let currentSpawnInterval = initialSpawnInterval;
+
+      // --- 경험치 구슬 ---
+      const expOrbs = [];
+
+      // --- 궤도 구슬 ---
+      let orbitalAngle = 0;
+
+      // 난이도 스케일링(시간이 지날수록 가속)
+      function updateDifficulty(seconds) {
+        currentSpawnInterval = Math.max(minSpawnInterval, initialSpawnInterval - seconds * difficultyIncrease);
       }
-    },
-    {
-      id: 'knockback',
-      title: '💥 넉백 공격',
-      desc: '총알이 적을 뒤로 밀어냄',
-      apply: () => { bulletKnockback += 40; }
-    },
-    {
-      id: 'penetration',
-      title: '🎯 관통 공격',
-      desc: '한명의 적을 추가로 관통합니다.',
-      apply: () => { bulletPenetration += 1; }
-    },
-    {
-      id: 'range',
-      title: '📏 사거리 증가',
-      desc: '총알 사정거리 +20%',
-      apply: () => { bulletRange *= 1.2; }
-    }
-  ];
 
-  // ========================================
-  // 게임 코어 로직
-  // ========================================
+      // 입력: 클릭/스페이스 → 방향 전환
+      function toggleDirection() { player.dir *= -1; }
+      canvas.addEventListener('click', () => { if (running) toggleDirection(); });
+      window.addEventListener('keydown', (e) => {
+        if (e.code === 'Space') { e.preventDefault(); if (running) toggleDirection(); }
+      });
 
-  const canvas = document.getElementById('game');
-  const ctx = canvas.getContext('2d');
+      // --- 유틸 ---
+      const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+      function aabb(a, b) {
+        return !(a.x + a.w < b.x || b.x + b.w < a.x || a.y + a.h < b.y || b.y + b.h < a.y);
+      }
 
-  const playerImg = new Image();
-  playerImg.src = 'image/wari.gif';
+      // 체력바 그리기
+      function drawHPBar(x, y, w, h, hp, hpMax) {
+        const ratio = Math.max(0, Math.min(1, hp / hpMax));
+        // 배경
+        ctx.fillStyle = '#0009';
+        ctx.fillRect(x, y, w, h);
+        // 채움
+        ctx.fillStyle = ratio > 0.5 ? '#6cff96' : (ratio > 0.25 ? '#ffd66c' : '#ff7676');
+        ctx.fillRect(x, y, w * ratio, h);
+        // 테두리
+        ctx.strokeStyle = '#111b';
+        ctx.lineWidth = 1;
+        ctx.strokeRect(x + 0.5, y + 0.5, w - 1, h - 1);
+      }
 
-  // --- 게임 상태 ---
-  let running = false;
-  let paused = false;              // 레벨업 시 일시정지
-  let lastTime = 0;
-  let elapsed = 0;            // 생존 시간(초)
-  let score = 0;
-  let hp = playerHP;
-  let exp = 0;                     // 현재 경험치
-  let level = 1;                   // 현재 레벨
+      // --- 게임 제어 ---
+      const overlay = document.getElementById('overlay');
+      const btnStart = document.getElementById('btnStart');
+      btnStart.addEventListener('click', startGame);
 
-  // 화면/맵
-  function fitCanvas() {
-    const wrap = document.getElementById('canvasWrap');
-    const w = wrap.clientWidth;
-    const h = wrap.clientHeight;
-    const targetH = Math.min(h, w * 9/16);
-    canvas.style.height = targetH + 'px';
-  }
-  window.addEventListener('resize', fitCanvas);
-  fitCanvas();
+      const tipElem = document.getElementById('tip');
+      const tips = [
+        'TIP: 시간이 경과하면 적의 스폰 주기가 짧아지고 속도/체력/공격력이 상승합니다.',
+        'TIP: 적은 양쪽 끝에서 나타나 플레이어 쪽으로 전진합니다.'
+      ];
+      let tipIndex = 0;
+      setInterval(() => {
+        tipIndex = (tipIndex + 1) % tips.length;
+        tipElem.textContent = tips[tipIndex];
+      }, 5000);
 
-  const WORLD = {
-    w: canvas.width,
-    h: canvas.height,
-    groundY: canvas.height - 60,
-  };
+      function reset() {
+        running = false;
+        paused = false;
+        lastTime = performance.now();
+        elapsed = 0;
+        score = 0;
+        hp = playerHP;
+        exp = 0;
+        level = 1;
+        expToNextLevel = 10;
+        player.x = WORLD.w / 2;
+        player.y = WORLD.groundY - player.h;
+        player.dir = 1;
+        player.speed = playerSpeed;
+        player.iframes = 0;
+        player.hitFlash = 0;
+        bullets.length = 0;
+        enemies.length = 0;
+        expOrbs.length = 0;
+        orbitingOrbs.length = 0;
+        shootTimer = 0;
+        spawnTimer = 0;
+        currentSpawnInterval = initialSpawnInterval;
+        orbitalAngle = 0;
 
-  // --- 플레이어 ---
-  const player = {
-    x: WORLD.w / 2,
-    y: WORLD.groundY - 40,
-    w: 28,
-    h: 40,
-    dir: 1,                 // 1 → 오른쪽, -1 → 왼쪽
-    speed: playerSpeed,
-    iframes: 0,             // 무적 시간(ms)
-    hitFlash: 0,            // 피격 시 시각 효과
-  };
+        // 업그레이드 초기화
+        bulletDamage = 18;
+        bulletCooldown = 420;
+        bulletPenetration = 0;
+        bulletKnockback = 0;
+        bulletRange = 500;
+        playerHP = 100;
+        hp = playerHP;
 
-  // --- 투사체(자동 공격) ---
-  const bullets = [];
-  let shootTimer = 0;
+        updateHUD();
+      }
 
-  // --- 적 ---
-  const enemies = [];
-  let nextEnemyId = 0;
-  let spawnTimer = 0;
-  let currentSpawnInterval = initialSpawnInterval;
-  
-  // --- 경험치 구슬 ---
-  const expOrbs = [];
-  
-  // --- 궤도 구슬 ---
-  let orbitalAngle = 0;
+      function startGame() {
+        reset();
+        overlay.style.display = 'none';
+        running = true;
+        lastTime = performance.now();
+        requestAnimationFrame(loop);
+      }
 
-  // 난이도 스케일링(시간이 지날수록 가속)
-  function updateDifficulty(seconds) {
-    currentSpawnInterval = Math.max(minSpawnInterval, initialSpawnInterval - seconds * difficultyIncrease);
-  }
-
-  // 입력: 클릭/스페이스 → 방향 전환
-  function toggleDirection() { player.dir *= -1; }
-  canvas.addEventListener('click', () => { if (running) toggleDirection(); });
-  window.addEventListener('keydown', (e) => {
-    if (e.code === 'Space') { e.preventDefault(); if (running) toggleDirection(); }
-  });
-
-  // --- 유틸 ---
-  const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
-  function aabb(a, b) {
-    return !(a.x + a.w < b.x || b.x + b.w < a.x || a.y + a.h < b.y || b.y + b.h < a.y);
-  }
-
-  // 체력바 그리기
-  function drawHPBar(x, y, w, h, hp, hpMax) {
-    const ratio = Math.max(0, Math.min(1, hp / hpMax));
-    // 배경
-    ctx.fillStyle = '#0009';
-    ctx.fillRect(x, y, w, h);
-    // 채움
-    ctx.fillStyle = ratio > 0.5 ? '#6cff96' : (ratio > 0.25 ? '#ffd66c' : '#ff7676');
-    ctx.fillRect(x, y, w * ratio, h);
-    // 테두리
-    ctx.strokeStyle = '#111b';
-    ctx.lineWidth = 1;
-    ctx.strokeRect(x + 0.5, y + 0.5, w - 1, h - 1);
-  }
-
-  // --- 게임 제어 ---
-  const overlay = document.getElementById('overlay');
-  const btnStart = document.getElementById('btnStart');
-  btnStart.addEventListener('click', startGame);
-
-  const tipElem = document.getElementById('tip');
-  const tips = [
-    'TIP: 시간이 경과하면 적의 스폰 주기가 짧아지고 속도/체력/공격력이 상승합니다.',
-    'TIP: 적은 양쪽 끝에서 나타나 플레이어 쪽으로 전진합니다.'
-  ];
-  let tipIndex = 0;
-  setInterval(() => {
-    tipIndex = (tipIndex + 1) % tips.length;
-    tipElem.textContent = tips[tipIndex];
-  }, 5000);
-
-  function reset() {
-    running = false;
-    paused = false;
-    lastTime = performance.now();
-    elapsed = 0;
-    score = 0;
-    hp = playerHP;
-    exp = 0;
-    level = 1;
-    expToNextLevel = 10;
-    player.x = WORLD.w / 2;
-    player.y = WORLD.groundY - player.h;
-    player.dir = 1;
-    player.speed = playerSpeed;
-    player.iframes = 0;
-    player.hitFlash = 0;
-    bullets.length = 0;
-    enemies.length = 0;
-    expOrbs.length = 0;
-    orbitingOrbs.length = 0;
-    shootTimer = 0;
-    spawnTimer = 0;
-    currentSpawnInterval = initialSpawnInterval;
-    orbitalAngle = 0;
-    
-    // 업그레이드 초기화
-    bulletDamage = 18;
-    bulletCooldown = 420;
-    bulletPenetration = 0;
-    bulletKnockback = 0;
-    bulletRange = 500;
-    playerHP = 100;
-    hp = playerHP;
-    
-    updateHUD();
-  }
-
-  function startGame() {
-    reset();
-    overlay.style.display = 'none';
-    running = true;
-    lastTime = performance.now();
-    requestAnimationFrame(loop);
-  }
-
-  function gameOver() {
-    running = false;
-    const panelHTML = `
+      function gameOver() {
+        running = false;
+        const panelHTML = `
       <div class="panel">
         <h1>게임 오버</h1>
         <p>생존 시간: <b>${elapsed.toFixed(1)}초</b> · 처치 수: <b>${score}</b></p>
@@ -400,490 +553,498 @@
           <button id="btnRestart">다시 시작</button>
         </div>
       </div>`;
-    overlay.innerHTML = panelHTML;
-    overlay.style.display = 'flex';
-    document.getElementById('btnRestart').onclick = startGame;
-  }
+        overlay.innerHTML = panelHTML;
+        overlay.style.display = 'flex';
+        document.getElementById('btnRestart').onclick = startGame;
+      }
 
-  // --- HUD ---
-  const hpEl = document.getElementById('hp');
-  const scoreEl = document.getElementById('score');
-  const timeEl = document.getElementById('time');
-  const levelEl = document.getElementById('level');
-  const expEl = document.getElementById('exp');
-  function updateHUD() {
-    hpEl.textContent = `HP: ${Math.max(0, Math.round(hp))}`;
-    scoreEl.textContent = `KOs: ${score}`;
-    timeEl.textContent = `Time: ${elapsed.toFixed(1)}s`;
-    levelEl.textContent = `Lv: ${level}`;
-    expEl.textContent = `EXP: ${exp}/${expToNextLevel}`;
-  }
+      // --- HUD ---
+      const hpEl = document.getElementById('hp');
+      const scoreEl = document.getElementById('score');
+      const timeEl = document.getElementById('time');
+      const levelEl = document.getElementById('level');
+      const expEl = document.getElementById('exp');
+      function updateHUD() {
+        hpEl.textContent = `HP: ${Math.max(0, Math.round(hp))}`;
+        scoreEl.textContent = `KOs: ${score}`;
+        timeEl.textContent = `Time: ${elapsed.toFixed(1)}s`;
+        levelEl.textContent = `Lv: ${level}`;
+        expEl.textContent = `EXP: ${exp}/${expToNextLevel}`;
+      }
 
-  // --- 스폰 ---
-  function spawnEnemy() {
-    const left = Math.random() < 0.5;
-    const tier = weightedTier();
-    const scale = 1 + elapsed * enemyGrowthRate;
-    enemies.push({
-      id: nextEnemyId++,
-      x: left ? -enemySize : WORLD.w,
-      y: WORLD.groundY - enemySize,
-      w: enemySize,
-      h: enemySize,
-      tier,
-      vx: 0,
-      color: tier.color,
-      damage: enemyContactDamage * scale,
-      reward: enemyReward,
-      hp: tier.hp * scale,
-      hpMax: tier.hp * scale,
-    });
-  }
-  
-  function spawnExpOrb(x, y) {
-    expOrbs.push({
-      x: x,
-      y: y,
-      w: expOrbSize,
-      h: expOrbSize,
-      vx: (Math.random() - 0.5) * 100,
-      vy: -150 - Math.random() * 50,
-      gravity: 400,
-      value: expOrbValue,
-      life: 5000, // 5초 후 사라짐
-    });
-  }
-  
-  function weightedTier() {
-    const t = elapsed;
-    
-    // 처음 30초: 가장 약한 적만 등장 (2배 길게)
-    if (t < 30) {
-      return enemyTiers[0]; // Weak만
-    }
-    
-    // 30-60초: 약한 적 위주 + 기본 적 조금 (2배 길게)
-    if (t < 60) {
-      const w1 = 8;  // Weak 높은 비율
-      const w2 = 2;  // Basic 낮은 비율
-      const sum = w1 + w2;
-      const r = Math.random() * sum;
-      if (r < w1) return enemyTiers[0];
-      return enemyTiers[1];
-    }
-    
-    // 60-100초: 약한/기본 적 균형 (2배 길게)
-    if (t < 100) {
-      const w1 = 5;  // Weak
-      const w2 = 5;  // Basic
-      const sum = w1 + w2;
-      const r = Math.random() * sum;
-      if (r < w1) return enemyTiers[0];
-      return enemyTiers[1];
-    }
-    
-    // 100-160초: 기본 적 위주, 약간의 중간 적 (2배 길게)
-    if (t < 160) {
-      const w1 = 2;  // Weak
-      const w2 = 5;  // Basic
-      const w3 = 2;  // Medium
-      const sum = w1 + w2 + w3;
-      const r = Math.random() * sum;
-      if (r < w1) return enemyTiers[0];
-      if (r < w1 + w2) return enemyTiers[1];
-      return enemyTiers[2];
-    }
+      // --- 스폰 ---
+      function spawnEnemy() {
+        const left = Math.random() < 0.5;
+        const tier = weightedTier();
+        const scale = 1 + elapsed * enemyGrowthRate;
+        enemies.push({
+          id: nextEnemyId++,
+          x: left ? -enemySize : WORLD.w,
+          y: WORLD.groundY - enemySize,
+          w: enemySize,
+          h: enemySize,
+          tier,
+          vx: 0,
+          color: tier.color,
+          damage: enemyContactDamage * scale,
+          reward: enemyReward,
+          hp: tier.hp * scale,
+          hpMax: tier.hp * scale,
+        });
+      }
 
-    // 160-240초: 기본/중간 적 위주, 약간의 강한 적 (2배 길게)
-    if (t < 240) {
-      const w1 = 2;  // Weak
-      const w2 = 5;  // Basic
-      const w3 = 4;  // Medium
-      const w4 = 2;  // Strong 조금
-      const sum = w1 + w2 + w3 + w4;
-      const r = Math.random() * sum;
-      if (r < w1) return enemyTiers[0];
-      if (r < w1 + w2) return enemyTiers[1];
-      if (r < w1 + w2 + w3) return enemyTiers[2];
-      return enemyTiers[3];
-    }
+      function spawnExpOrb(x, y) {
+        expOrbs.push({
+          x: x,
+          y: y,
+          w: expOrbSize,
+          h: expOrbSize,
+          vx: (Math.random() - 0.5) * 100,
+          vy: -150 - Math.random() * 50,
+          gravity: 400,
+          value: expOrbValue,
+          life: 5000, // 5초 후 사라짐
+        });
+      }
 
-    // 240-320초: 중간/강한 적 위주, 정예 적 등장 (2배 길게)
-    if (t < 320) {
-      const w1 = 1;  // Weak
-      const w2 = 3;  // Basic
-      const w3 = 4;  // Medium
-      const w4 = 4;  // Strong
-      const w5 = 2;  // Elite 조금
-      const sum = w1 + w2 + w3 + w4 + w5;
-      const r = Math.random() * sum;
-      if (r < w1) return enemyTiers[0];
-      if (r < w1 + w2) return enemyTiers[1];
-      if (r < w1 + w2 + w3) return enemyTiers[2];
-      if (r < w1 + w2 + w3 + w4) return enemyTiers[3];
-      return enemyTiers[4];
-    }
-    
-    // 320초 이후: 모든 적 등장, 시간이 지날수록 강한 적 비율 증가 (2배 긴 주기)
-    const timeBonus = Math.min(10, (t - 320) / 40); // 40초마다 강한 적 비율 증가
-    const w1 = Math.max(0.5, 2 - timeBonus * 0.15); // Weak 비율 서서히 감소
-    const w2 = Math.max(1, 3 - timeBonus * 0.25);   // Basic 비율 감소
-    const w3 = Math.max(2, 4 - timeBonus * 0.2);    // Medium 비율 약간 감소
-    const w4 = 3 + timeBonus * 0.4;                 // Strong 비율 증가
-    const w5 = 2 + timeBonus * 0.8;                 // Elite 비율 큰 폭 증가
-    
-    const sum = w1 + w2 + w3 + w4 + w5;
-    const r = Math.random() * sum;
-    if (r < w1) return enemyTiers[0];
-    if (r < w1 + w2) return enemyTiers[1];
-    if (r < w1 + w2 + w3) return enemyTiers[2];
-    if (r < w1 + w2 + w3 + w4) return enemyTiers[3];
-    return enemyTiers[4];
-  }
-  
-  // 레벨업 처리
-  function checkLevelUp() {
-    if (exp >= expToNextLevel) {
-      exp -= expToNextLevel;
-      level++;
-      expToNextLevel = Math.floor(expToNextLevel * 1.3); // 다음 레벨 필요 경험치 증가
-      showLevelUpScreen();
-    }
-  }
-  
-  function showLevelUpScreen() {
-    paused = true;
-    const levelupOverlay = document.getElementById('levelupOverlay');
-    const upgradeGrid = document.getElementById('upgradeGrid');
+      function weightedTier() {
+        const t = elapsed;
 
-    // 궤도 구슬이 최대치에 도달하면 해당 업그레이드 제외
-    const availableUpgrades = orbitingOrbs.length >= 6
-      ? UPGRADES.filter(u => u.id !== 'orbital')
-      : [...UPGRADES];
+        // 처음 30초: 가장 약한 적만 등장 (2배 길게)
+        if (t < 30) {
+          return enemyTiers[0]; // Weak만
+        }
 
-    // 3개의 랜덤 업그레이드 선택
-    const shuffled = [...availableUpgrades].sort(() => Math.random() - 0.5);
-    const selected = shuffled.slice(0, 3);
-    
-    upgradeGrid.innerHTML = '';
-    selected.forEach(upgrade => {
-      const btn = document.createElement('div');
-      btn.className = 'upgrade-btn';
-      btn.innerHTML = `
+        // 30-60초: 약한 적 위주 + 기본 적 조금 (2배 길게)
+        if (t < 60) {
+          const w1 = 8;  // Weak 높은 비율
+          const w2 = 2;  // Basic 낮은 비율
+          const sum = w1 + w2;
+          const r = Math.random() * sum;
+          if (r < w1) return enemyTiers[0];
+          return enemyTiers[1];
+        }
+
+        // 60-100초: 약한/기본 적 균형 (2배 길게)
+        if (t < 100) {
+          const w1 = 5;  // Weak
+          const w2 = 5;  // Basic
+          const sum = w1 + w2;
+          const r = Math.random() * sum;
+          if (r < w1) return enemyTiers[0];
+          return enemyTiers[1];
+        }
+
+        // 100-160초: 기본 적 위주, 약간의 중간 적 (2배 길게)
+        if (t < 160) {
+          const w1 = 2;  // Weak
+          const w2 = 5;  // Basic
+          const w3 = 2;  // Medium
+          const sum = w1 + w2 + w3;
+          const r = Math.random() * sum;
+          if (r < w1) return enemyTiers[0];
+          if (r < w1 + w2) return enemyTiers[1];
+          return enemyTiers[2];
+        }
+
+        // 160-240초: 기본/중간 적 위주, 약간의 강한 적 (2배 길게)
+        if (t < 240) {
+          const w1 = 2;  // Weak
+          const w2 = 5;  // Basic
+          const w3 = 4;  // Medium
+          const w4 = 2;  // Strong 조금
+          const sum = w1 + w2 + w3 + w4;
+          const r = Math.random() * sum;
+          if (r < w1) return enemyTiers[0];
+          if (r < w1 + w2) return enemyTiers[1];
+          if (r < w1 + w2 + w3) return enemyTiers[2];
+          return enemyTiers[3];
+        }
+
+        // 240-320초: 중간/강한 적 위주, 정예 적 등장 (2배 길게)
+        if (t < 320) {
+          const w1 = 1;  // Weak
+          const w2 = 3;  // Basic
+          const w3 = 4;  // Medium
+          const w4 = 4;  // Strong
+          const w5 = 2;  // Elite 조금
+          const sum = w1 + w2 + w3 + w4 + w5;
+          const r = Math.random() * sum;
+          if (r < w1) return enemyTiers[0];
+          if (r < w1 + w2) return enemyTiers[1];
+          if (r < w1 + w2 + w3) return enemyTiers[2];
+          if (r < w1 + w2 + w3 + w4) return enemyTiers[3];
+          return enemyTiers[4];
+        }
+
+        // 320초 이후: 모든 적 등장, 시간이 지날수록 강한 적 비율 증가 (2배 긴 주기)
+        const timeBonus = Math.min(10, (t - 320) / 40); // 40초마다 강한 적 비율 증가
+        const w1 = Math.max(0.5, 2 - timeBonus * 0.15); // Weak 비율 서서히 감소
+        const w2 = Math.max(1, 3 - timeBonus * 0.25);   // Basic 비율 감소
+        const w3 = Math.max(2, 4 - timeBonus * 0.2);    // Medium 비율 약간 감소
+        const w4 = 3 + timeBonus * 0.4;                 // Strong 비율 증가
+        const w5 = 2 + timeBonus * 0.8;                 // Elite 비율 큰 폭 증가
+
+        const sum = w1 + w2 + w3 + w4 + w5;
+        const r = Math.random() * sum;
+        if (r < w1) return enemyTiers[0];
+        if (r < w1 + w2) return enemyTiers[1];
+        if (r < w1 + w2 + w3) return enemyTiers[2];
+        if (r < w1 + w2 + w3 + w4) return enemyTiers[3];
+        return enemyTiers[4];
+      }
+
+      // 레벨업 처리
+      function checkLevelUp() {
+        if (exp >= expToNextLevel) {
+          exp -= expToNextLevel;
+          level++;
+          expToNextLevel = Math.floor(expToNextLevel * 1.3); // 다음 레벨 필요 경험치 증가
+          showLevelUpScreen();
+        }
+      }
+
+      function showLevelUpScreen() {
+        paused = true;
+        const levelupOverlay = document.getElementById('levelupOverlay');
+        const upgradeGrid = document.getElementById('upgradeGrid');
+
+        // 궤도 구슬이 최대치에 도달하면 해당 업그레이드 제외
+        const availableUpgrades = orbitingOrbs.length >= 6
+          ? UPGRADES.filter(u => u.id !== 'orbital')
+          : [...UPGRADES];
+
+        // 3개의 랜덤 업그레이드 선택
+        const shuffled = [...availableUpgrades].sort(() => Math.random() - 0.5);
+        const selected = shuffled.slice(0, 3);
+
+        upgradeGrid.innerHTML = '';
+        selected.forEach(upgrade => {
+          const btn = document.createElement('div');
+          btn.className = 'upgrade-btn';
+          btn.innerHTML = `
         <div class="upgrade-title">${upgrade.title}</div>
         <div class="upgrade-desc">${upgrade.desc}</div>
       `;
-      btn.onclick = () => {
-        upgrade.apply();
-        levelupOverlay.style.display = 'none';
-        paused = false;
+          btn.onclick = () => {
+            upgrade.apply();
+            levelupOverlay.style.display = 'none';
+            paused = false;
+            updateHUD();
+            requestAnimationFrame(loop);
+          };
+          upgradeGrid.appendChild(btn);
+        });
+
+        levelupOverlay.style.display = 'flex';
+      }
+
+      // --- 업데이트 ---
+      function update(dt) {
+        if (paused) return; // 레벨업 중에는 업데이트 중지
+
+        elapsed += dt;
+        updateDifficulty(elapsed);
+        shootTimer += dt * 1000;
+        spawnTimer += dt * 1000;
+        if (player.iframes > 0) player.iframes -= dt * 1000;
+        if (player.hitFlash > 0) player.hitFlash -= dt * 1000;
+
+        // 궤도 구슬 회전
+        orbitalAngle += orbitalSpeed * dt;
+
+        // 플레이어 이동(항상 바라보는 방향으로)
+        player.x += player.dir * player.speed * dt;
+        player.x = clamp(player.x, 0, WORLD.w - player.w);
+
+        // 자동 공격(전방으로 탄 발사)
+        if (shootTimer >= bulletCooldown) {
+          shootTimer = 0;
+          const bx = player.dir > 0 ? (player.x + player.w) : (player.x - bulletSize);
+          bullets.push({
+            x: bx,
+            y: player.y + player.h * 0.45,
+            w: bulletSize,
+            h: bulletSize * 0.5,
+            vx: player.dir * bulletSpeed,
+            dmg: bulletDamage,
+            penetration: bulletPenetration,
+            hitSet: new Set(),
+            range: bulletRange,
+          });
+        }
+
+        // 탄 업데이트
+        for (let i = bullets.length - 1; i >= 0; i--) {
+          const b = bullets[i];
+          b.x += b.vx * dt;
+          b.range -= Math.abs(b.vx * dt);
+          // 사정거리 또는 화면 밖 제거
+          if (b.range <= 0 || b.x < -40 || b.x > WORLD.w + 40) {
+            bullets.splice(i, 1);
+          }
+        }
+
+        // 경험치 구슬 업데이트
+        for (let i = expOrbs.length - 1; i >= 0; i--) {
+          const orb = expOrbs[i];
+          orb.life -= dt * 1000;
+
+          // 중력 적용
+          orb.vy += orb.gravity * dt;
+          orb.x += orb.vx * dt;
+          orb.y += orb.vy * dt;
+
+          // 바닥에 튕기기
+          if (orb.y + orb.h > WORLD.groundY) {
+            orb.y = WORLD.groundY - orb.h;
+            orb.vy *= -0.6; // 반발
+            orb.vx *= 0.8;  // 마찰
+          }
+
+          // 플레이어와 접촉 시 획득
+          if (aabb(orb, player)) {
+            exp += orb.value;
+            expOrbs.splice(i, 1);
+            checkLevelUp();
+            continue;
+          }
+
+          // 수명 종료 시 제거
+          if (orb.life <= 0) {
+            expOrbs.splice(i, 1);
+          }
+        }
+
+        // 적 스폰
+        if (spawnTimer >= currentSpawnInterval) {
+          spawnTimer = 0;
+          spawnEnemy();
+        }
+
+        // 적 이동 및 충돌 처리
+        for (let i = enemies.length - 1; i >= 0; i--) {
+          const e = enemies[i];
+          const eCenter = e.x + e.w * 0.5;
+          const pCenter = player.x + player.w * 0.5;
+          const dir = Math.sign(pCenter - eCenter) || (Math.random() < 0.5 ? -1 : 1);
+          const baseSpeed = e.tier.speed;
+          const globalBoost = 1 + Math.min(maxSpeedBoost, elapsed / speedBoostTime);
+          e.vx = dir * baseSpeed * globalBoost;
+
+          // 플레이어와 겹침 방지: 이동 전에 미래 위치 계산
+          let nextX = e.x + e.vx * dt;
+
+          // 우선 이동
+          e.x = nextX;
+
+          // 총알과 충돌(피해 처리)
+          for (let j = bullets.length - 1; j >= 0; j--) {
+            const b = bullets[j];
+            if (b.hitSet.has(e.id)) continue;
+            if (aabb(e, b)) {
+              e.hp -= b.dmg;
+
+              // 넉백 적용 (업그레이드가 누적된 값을 사용)
+              if (bulletKnockback > 0) {
+                const knockDir = Math.sign(b.vx);
+                e.x += knockDir * bulletKnockback;
+                e.x = clamp(e.x, -enemySize, WORLD.w);
+              }
+
+              b.hitSet.add(e.id);
+              if (b.penetration === 0) {
+                bullets.splice(j, 1);
+              } else {
+                b.penetration--;
+              }
+
+              if (e.hp <= 0) {
+                // 경험치 구슬 드롭
+                spawnExpOrb(e.x + e.w / 2, e.y + e.h / 2);
+                enemies.splice(i, 1);
+                score += e.reward;
+                e._killed = true;
+                break;
+              }
+            }
+          }
+          if (e._killed) continue;
+
+          // 궤도 구슬과 충돌
+          for (const orb of orbitingOrbs) {
+            const orbX = player.x + player.w / 2 + Math.cos(orb.angle + orbitalAngle) * orbitalRadius - orb.size / 2;
+            const orbY = player.y + player.h / 2 + Math.sin(orb.angle + orbitalAngle) * orbitalRadius - orb.size / 2;
+
+            if (aabb(e, { x: orbX, y: orbY, w: orb.size, h: orb.size })) {
+              e.hp -= orb.damage;
+              if (e.hp <= 0) {
+                spawnExpOrb(e.x + e.w / 2, e.y + e.h / 2);
+                enemies.splice(i, 1);
+                score += e.reward;
+                e._killed = true;
+                break;
+              }
+            }
+          }
+          if (e._killed) continue;
+
+          // 플레이어와 충돌 → 피해 + 즉시 분리(separation)
+          if (aabb(e, player)) {
+            // 피해(무적 시간 적용)
+            if (player.iframes <= 0) {
+              hp -= e.damage;
+              player.iframes = playerIframeDuration;
+              player.hitFlash = playerHitFlashDuration;
+              if (hp <= 0) { hp = 0; gameOver(); return; }
+            }
+            // 겹침 해소: 적을 플레이어 바깥으로 밀어냄
+            const playerLeft = player.x;
+            const playerRight = player.x + player.w;
+            const eLeft = e.x;
+            const eRight = e.x + e.w;
+
+            const overlapLeft = Math.max(0, playerRight - eLeft);
+            const overlapRight = Math.max(0, eRight - playerLeft);
+            // 어느 쪽이 겹침이 작은지에 따라 밖으로 위치 조정
+            if (overlapLeft < overlapRight) {
+              // 적을 왼쪽(플레이어 오른쪽 바깥)으로
+              e.x = playerRight + separationDistance;
+            } else {
+              // 적을 오른쪽(플레이어 왼쪽 바깥)으로
+              e.x = playerLeft - e.w - separationDistance;
+            }
+            // 겹침 직후 프레임에서 다시 파고들지 않도록 순간 속도 감소
+            e.vx = 0;
+          }
+        }
+
         updateHUD();
-        requestAnimationFrame(loop);
-      };
-      upgradeGrid.appendChild(btn);
-    });
-    
-    levelupOverlay.style.display = 'flex';
-  }
-
-  // --- 업데이트 ---
-  function update(dt) {
-    if (paused) return; // 레벨업 중에는 업데이트 중지
-    
-    elapsed += dt;
-    updateDifficulty(elapsed);
-    shootTimer += dt * 1000;
-    spawnTimer += dt * 1000;
-    if (player.iframes > 0) player.iframes -= dt * 1000;
-    if (player.hitFlash > 0) player.hitFlash -= dt * 1000;
-
-    // 궤도 구슬 회전
-    orbitalAngle += orbitalSpeed * dt;
-
-    // 플레이어 이동(항상 바라보는 방향으로)
-    player.x += player.dir * player.speed * dt;
-    player.x = clamp(player.x, 0, WORLD.w - player.w);
-
-    // 자동 공격(전방으로 탄 발사)
-    if (shootTimer >= bulletCooldown) {
-      shootTimer = 0;
-      const bx = player.dir > 0 ? (player.x + player.w) : (player.x - bulletSize);
-      bullets.push({
-        x: bx,
-        y: player.y + player.h * 0.45,
-        w: bulletSize,
-        h: bulletSize * 0.5,
-        vx: player.dir * bulletSpeed,
-        dmg: bulletDamage,
-        penetration: bulletPenetration,
-        hitSet: new Set(),
-        knockback: bulletKnockback,
-        range: bulletRange,
-      });
-    }
-
-    // 탄 업데이트
-    for (let i = bullets.length - 1; i >= 0; i--) {
-      const b = bullets[i];
-      b.x += b.vx * dt;
-      b.range -= Math.abs(b.vx * dt);
-      // 사정거리 또는 화면 밖 제거
-      if (b.range <= 0 || b.x < -40 || b.x > WORLD.w + 40) {
-        bullets.splice(i, 1);
       }
-    }
-    
-    // 경험치 구슬 업데이트
-    for (let i = expOrbs.length - 1; i >= 0; i--) {
-      const orb = expOrbs[i];
-      orb.life -= dt * 1000;
-      
-      // 중력 적용
-      orb.vy += orb.gravity * dt;
-      orb.x += orb.vx * dt;
-      orb.y += orb.vy * dt;
-      
-      // 바닥에 튕기기
-      if (orb.y + orb.h > WORLD.groundY) {
-        orb.y = WORLD.groundY - orb.h;
-        orb.vy *= -0.6; // 반발
-        orb.vx *= 0.8;  // 마찰
-      }
-      
-      // 플레이어와 접촉 시 획득
-      if (aabb(orb, player)) {
-        exp += orb.value;
-        expOrbs.splice(i, 1);
-        checkLevelUp();
-        continue;
-      }
-      
-      // 수명 종료 시 제거
-      if (orb.life <= 0) {
-        expOrbs.splice(i, 1);
-      }
-    }
 
-    // 적 스폰
-    if (spawnTimer >= currentSpawnInterval) {
-      spawnTimer = 0;
-      spawnEnemy();
-    }
+      // --- 렌더 ---
+      function draw() {
+        // 배경
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        const grd = ctx.createLinearGradient(0, 0, 0, canvas.height);
+        grd.addColorStop(0, '#0b1040');
+        grd.addColorStop(1, '#06081a');
+        ctx.fillStyle = grd;
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    // 적 이동 및 충돌 처리
-    for (let i = enemies.length - 1; i >= 0; i--) {
-      const e = enemies[i];
-      const eCenter = e.x + e.w * 0.5;
-      const pCenter = player.x + player.w * 0.5;
-      const dir = Math.sign(pCenter - eCenter) || (Math.random() < 0.5 ? -1 : 1);
-      const baseSpeed = e.tier.speed;
-      const globalBoost = 1 + Math.min(maxSpeedBoost, elapsed / speedBoostTime);
-      e.vx = dir * baseSpeed * globalBoost;
-
-      // 플레이어와 겹침 방지: 이동 전에 미래 위치 계산
-      let nextX = e.x + e.vx * dt;
-
-      // 우선 이동
-      e.x = nextX;
-
-      // 총알과 충돌(피해 처리)
-      for (let j = bullets.length - 1; j >= 0; j--) {
-        const b = bullets[j];
-        if (b.hitSet.has(e.id)) continue;
-        if (aabb(e, b)) {
-          e.hp -= b.dmg;
-
-          // 넉백 적용
-          if (b.knockback > 0) {
-            const knockDir = Math.sign(b.vx);
-            e.x += knockDir * b.knockback;
-            e.x = clamp(e.x, -enemySize, WORLD.w);
-          }
-
-          b.hitSet.add(e.id);
-          if (b.penetration === 0) {
-            bullets.splice(j, 1);
-          } else {
-            b.penetration--;
-          }
-
-          if (e.hp <= 0) {
-            // 경험치 구슬 드롭
-            spawnExpOrb(e.x + e.w/2, e.y + e.h/2);
-            enemies.splice(i, 1);
-            score += e.reward;
-            e._killed = true;
-            break;
-          }
+        // 별
+        ctx.save();
+        ctx.globalAlpha = 0.25;
+        for (let i = 0; i < 60; i++) {
+          const x = (i * 127) % canvas.width;
+          const y = (i * 73) % (canvas.height - 120);
+          ctx.fillStyle = '#bcd2ff';
+          ctx.fillRect(x, y, 1.5, 1.5);
         }
-      }
-      if (e._killed) continue;
-      
-      // 궤도 구슬과 충돌
-      for (const orb of orbitingOrbs) {
-        const orbX = player.x + player.w/2 + Math.cos(orb.angle + orbitalAngle) * orbitalRadius - orb.size/2;
-        const orbY = player.y + player.h/2 + Math.sin(orb.angle + orbitalAngle) * orbitalRadius - orb.size/2;
-        
-        if (aabb(e, {x: orbX, y: orbY, w: orb.size, h: orb.size})) {
-          e.hp -= orb.damage;
-          if (e.hp <= 0) {
-            spawnExpOrb(e.x + e.w/2, e.y + e.h/2);
-            enemies.splice(i, 1);
-            score += e.reward;
-            e._killed = true;
-            break;
-          }
-        }
-      }
-      if (e._killed) continue;
+        ctx.restore();
 
-      // 플레이어와 충돌 → 피해 + 즉시 분리(separation)
-      if (aabb(e, player)) {
-        // 피해(무적 시간 적용)
-        if (player.iframes <= 0) {
-          hp -= e.damage;
-          player.iframes = playerIframeDuration;
-          player.hitFlash = playerHitFlashDuration;
-          if (hp <= 0) { hp = 0; gameOver(); return; }
-        }
-        // 겹침 해소: 적을 플레이어 바깥으로 밀어냄
-        const playerLeft = player.x;
-        const playerRight = player.x + player.w;
-        const eLeft = e.x;
-        const eRight = e.x + e.w;
+        // 평지
+        ctx.fillStyle = '#1c234d';
+        ctx.fillRect(0, WORLD.groundY, canvas.width, canvas.height - WORLD.groundY);
+        ctx.strokeStyle = '#2a3a7f';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(0, WORLD.groundY + 0.5);
+        ctx.lineTo(canvas.width, WORLD.groundY + 0.5);
+        ctx.stroke();
 
-        const overlapLeft = Math.max(0, playerRight - eLeft);
-        const overlapRight = Math.max(0, eRight - playerLeft);
-        // 어느 쪽이 겹침이 작은지에 따라 밖으로 위치 조정
-        if (overlapLeft < overlapRight) {
-          // 적을 왼쪽(플레이어 오른쪽 바깥)으로
-          e.x = playerRight + separationDistance;
+        // 플레이어
+        ctx.save();
+        if (player.hitFlash > 0) {
+          ctx.shadowBlur = 20;
+          ctx.shadowColor = '#ff6b6b';
+        }
+        ctx.fillStyle = '#8ab4ff';
+        ctx.fillRect(player.x, player.y, player.w, player.h);
+        ctx.fillStyle = '#d8e4ff';
+        ctx.beginPath();
+        if (player.dir > 0) {
+          ctx.moveTo(player.x + player.w, player.y + player.h * 0.5);
+          ctx.lineTo(player.x + player.w + 14, player.y + player.h * 0.32);
+          ctx.lineTo(player.x + player.w + 14, player.y + player.h * 0.68);
         } else {
-          // 적을 오른쪽(플레이어 왼쪽 바깥)으로
-          e.x = playerLeft - e.w - separationDistance;
+          ctx.moveTo(player.x, player.y + player.h * 0.5);
+          ctx.lineTo(player.x - 14, player.y + player.h * 0.32);
+          ctx.lineTo(player.x - 14, player.y + player.h * 0.68);
         }
-        // 겹침 직후 프레임에서 다시 파고들지 않도록 순간 속도 감소
-        e.vx = 0;
+        ctx.closePath();
+        ctx.fill();
+        ctx.restore();
+
+        // 플레이어 HP 바(머리 위)
+        drawHPBar(player.x + player.w / 2 - 22, player.y - 10, 44, 5, hp, playerHP);
+
+        // 총구 플래시
+        ctx.save();
+        ctx.globalAlpha = 0.15 + Math.random() * 0.1;
+        ctx.fillStyle = '#9ec4ff';
+        const muzzleX = player.dir > 0 ? (player.x + player.w + 4) : (player.x - 10);
+        ctx.fillRect(muzzleX, player.y + player.h * 0.45 - 2, 8, 4);
+        ctx.restore();
+
+        // 탄
+        ctx.fillStyle = '#fff';
+        for (const b of bullets) ctx.fillRect(b.x, b.y, b.w, b.h);
+
+        // 경험치 구슬
+        for (const orb of expOrbs) {
+          ctx.save();
+          ctx.fillStyle = '#4ade80';
+          ctx.shadowBlur = 8;
+          ctx.shadowColor = '#4ade80';
+          ctx.beginPath();
+          ctx.arc(orb.x + orb.w / 2, orb.y + orb.h / 2, orb.w / 2, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.restore();
+        }
+
+        // 궤도 구슬
+        for (const orb of orbitingOrbs) {
+          const orbX = player.x + player.w / 2 + Math.cos(orb.angle + orbitalAngle) * orbitalRadius;
+          const orbY = player.y + player.h / 2 + Math.sin(orb.angle + orbitalAngle) * orbitalRadius;
+
+          ctx.save();
+          ctx.fillStyle = '#ff6b9d';
+          ctx.shadowBlur = 10;
+          ctx.shadowColor = '#ff6b9d';
+          ctx.beginPath();
+          ctx.arc(orbX, orbY, orb.size / 2, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.restore();
+        }
+
+        // 적 + HP바
+        for (const e of enemies) {
+          ctx.fillStyle = e.color;
+          ctx.fillRect(e.x, e.y, e.w, e.h);
+          ctx.fillStyle = '#0008';
+          const ex = e.x + (e.vx > 0 ? e.w - 8 : 2);
+          ctx.fillRect(ex, e.y + 8, 6, 6);
+
+          // 적 HP바 (머리 위)
+          drawHPBar(e.x + e.w / 2 - 18, e.y - 8, 36, 4, e.hp, e.hpMax);
+        }
       }
-    }
 
-    updateHUD();
-  }
+      // --- 루프 ---
+      function loop(now) {
+        if (!running || paused) return;
+        const dt = Math.min(0.033, (now - lastTime) / 1000);
+        lastTime = now;
+        update(dt);
+        draw();
+        if (running && !paused) requestAnimationFrame(loop);
+      }
 
-  // --- 렌더 ---
-  function draw() {
-    // 배경
-    ctx.clearRect(0,0,canvas.width,canvas.height);
-    const grd = ctx.createLinearGradient(0,0,0,canvas.height);
-    grd.addColorStop(0, '#0b1040');
-    grd.addColorStop(1, '#06081a');
-    ctx.fillStyle = grd;
-    ctx.fillRect(0,0,canvas.width,canvas.height);
-
-    // 별
-    ctx.save();
-    ctx.globalAlpha = 0.25;
-    for (let i=0;i<60;i++){
-      const x = (i*127)%canvas.width;
-      const y = (i*73)% (canvas.height-120);
-      ctx.fillStyle = '#bcd2ff';
-      ctx.fillRect(x, y, 1.5, 1.5);
-    }
-    ctx.restore();
-
-    // 평지
-    ctx.fillStyle = '#1c234d';
-    ctx.fillRect(0, WORLD.groundY, canvas.width, canvas.height - WORLD.groundY);
-    ctx.strokeStyle = '#2a3a7f';
-    ctx.lineWidth = 2;
-    ctx.beginPath();
-    ctx.moveTo(0, WORLD.groundY + 0.5);
-    ctx.lineTo(canvas.width, WORLD.groundY + 0.5);
-    ctx.stroke();
-
-    // 플레이어
-    ctx.save();
-    if (player.hitFlash > 0) {
-      ctx.shadowBlur = 20;
-      ctx.shadowColor = '#ff6b6b';
-    }
-    if (player.dir > 0) {
-      ctx.translate(player.x + player.w, player.y);
-      ctx.scale(-1, 1);
-      ctx.drawImage(playerImg, 0, 0, player.w, player.h);
-    } else {
-      ctx.drawImage(playerImg, player.x, player.y, player.w, player.h);
-    }
-    ctx.restore();
-
-    // 플레이어 HP 바(머리 위)
-    drawHPBar(player.x + player.w/2 - 22, player.y - 10, 44, 5, hp, playerHP);
-
-    // 총구 플래시
-    ctx.save();
-    ctx.globalAlpha = 0.15 + Math.random()*0.1;
-    ctx.fillStyle = '#9ec4ff';
-    const muzzleX = player.dir > 0 ? (player.x + player.w + 4) : (player.x - 10);
-    ctx.fillRect(muzzleX, player.y + player.h*0.45 - 2, 8, 4);
-    ctx.restore();
-
-    // 탄
-    ctx.fillStyle = '#fff';
-    for (const b of bullets) ctx.fillRect(b.x, b.y, b.w, b.h);
-    
-    // 경험치 구슬
-    for (const orb of expOrbs) {
-      ctx.save();
-      ctx.fillStyle = '#4ade80';
-      ctx.shadowBlur = 8;
-      ctx.shadowColor = '#4ade80';
-      ctx.beginPath();
-      ctx.arc(orb.x + orb.w/2, orb.y + orb.h/2, orb.w/2, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.restore();
-    }
-    
-    // 궤도 구슬
-    for (const orb of orbitingOrbs) {
-      const orbX = player.x + player.w/2 + Math.cos(orb.angle + orbitalAngle) * orbitalRadius;
-      const orbY = player.y + player.h/2 + Math.sin(orb.angle + orbitalAngle) * orbitalRadius;
-      
-      ctx.save();
-      ctx.fillStyle = '#ff6b9d';
-      ctx.shadowBlur = 10;
-      ctx.shadowColor = '#ff6b9d';
-      ctx.beginPath();
-      ctx.arc(orbX, orbY, orb.size/2, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.restore();
-    }
-
-    // 적 + HP바
-    for (const e of enemies) {
-      ctx.fillStyle = e.color;
-      ctx.fillRect(e.x, e.y, e.w, e.h);
-      ctx.fillStyle = '#0008';
-      const ex = e.x + (e.vx > 0 ? e.w - 8 : 2);
-      ctx.fillRect(ex, e.y + 8, 6, 6);
-
-      // 적 HP바 (머리 위)
-      drawHPBar(e.x + e.w/2 - 18, e.y - 8, 36, 4, e.hp, e.hpMax);
-    }
-  }
-
-  // --- 루프 ---
-  function loop(now) {
-    if (!running || paused) return;
-    const dt = Math.min(0.033, (now - lastTime) / 1000);
-    lastTime = now;
-    update(dt);
-    draw();
-    if (running && !paused) requestAnimationFrame(loop);
-  }
-
-  // 초기화
-  reset();
-})();
-</script>
+      // 초기화
+      reset();
+    })();
+  </script>
 </body>
+
 </html>
