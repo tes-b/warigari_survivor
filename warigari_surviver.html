@@ -198,18 +198,27 @@
       title: '🌟 궤도 구슬',
       desc: '주변을 도는 공격 구슬 추가',
       apply: () => {
-        orbitingOrbs.push({
-          angle: orbitingOrbs.length * (Math.PI * 2 / 3),
-          size: 12,
-          damage: orbitalDamage
+        if (orbitingOrbs.length >= 6) return; // 최대 6개 제한
+
+        // 새 구슬 추가
+        orbitingOrbs.push({ angle: 0, size: 12, damage: orbitalDamage });
+
+        // 등간격으로 재배치
+        const count = orbitingOrbs.length;
+        const step = (Math.PI * 2) / count;
+        orbitingOrbs.forEach((orb, idx) => {
+          orb.angle = idx * step;
         });
       }
     },
     {
       id: 'knockback',
-      title: '💥 넉백 공격',
-      desc: '총알이 적을 뒤로 밀어냄',
-      apply: () => { bulletKnockback += 40; }
+        title: '💥 넉백 공격',
+        desc: '총알이 적을 뒤로 밀어냄 (넉백 +40)',
+        apply: () => {
+          // 넉백 아이템을 여러 번 획득하면 효과가 누적되도록
+          bulletKnockback += 40;
+        }
     },
     {
       id: 'penetration',
@@ -546,9 +555,14 @@
     paused = true;
     const levelupOverlay = document.getElementById('levelupOverlay');
     const upgradeGrid = document.getElementById('upgradeGrid');
-    
+
+    // 궤도 구슬이 최대치에 도달하면 해당 업그레이드 제외
+    const availableUpgrades = orbitingOrbs.length >= 6
+      ? UPGRADES.filter(u => u.id !== 'orbital')
+      : [...UPGRADES];
+
     // 3개의 랜덤 업그레이드 선택
-    const shuffled = [...UPGRADES].sort(() => Math.random() - 0.5);
+    const shuffled = [...availableUpgrades].sort(() => Math.random() - 0.5);
     const selected = shuffled.slice(0, 3);
     
     upgradeGrid.innerHTML = '';
@@ -594,18 +608,17 @@
     if (shootTimer >= bulletCooldown) {
       shootTimer = 0;
       const bx = player.dir > 0 ? (player.x + player.w) : (player.x - bulletSize);
-      bullets.push({
-        x: bx,
-        y: player.y + player.h * 0.45,
-        w: bulletSize,
-        h: bulletSize * 0.5,
-        vx: player.dir * bulletSpeed,
-        dmg: bulletDamage,
-        penetration: bulletPenetration,
-        hitSet: new Set(),
-        knockback: bulletKnockback,
-        range: bulletRange,
-      });
+        bullets.push({
+          x: bx,
+          y: player.y + player.h * 0.45,
+          w: bulletSize,
+          h: bulletSize * 0.5,
+          vx: player.dir * bulletSpeed,
+          dmg: bulletDamage,
+          penetration: bulletPenetration,
+          hitSet: new Set(),
+          range: bulletRange,
+        });
     }
 
     // 탄 업데이트
@@ -679,12 +692,12 @@
         if (aabb(e, b)) {
           e.hp -= b.dmg;
 
-          // 넉백 적용
-          if (b.knockback > 0) {
-            const knockDir = Math.sign(b.vx);
-            e.x += knockDir * b.knockback;
-            e.x = clamp(e.x, -enemySize, WORLD.w);
-          }
+            // 넉백 적용 (업그레이드가 누적된 값을 사용)
+            if (bulletKnockback > 0) {
+              const knockDir = Math.sign(b.vx);
+              e.x += knockDir * bulletKnockback;
+              e.x = clamp(e.x, -enemySize, WORLD.w);
+            }
 
           b.hitSet.add(e.id);
           if (b.penetration === 0) {
