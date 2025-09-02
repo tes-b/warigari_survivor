@@ -213,9 +213,12 @@
     },
     {
       id: 'knockback',
-      title: '💥 넉백 공격',
-      desc: '총알이 적을 뒤로 밀어냄',
-      apply: () => { bulletKnockback += 40; }
+        title: '💥 넉백 공격',
+        desc: '총알이 적을 뒤로 밀어냄 (넉백 +40)',
+        apply: () => {
+          // 넉백 아이템을 여러 번 획득하면 효과가 누적되도록
+          bulletKnockback += 40;
+        }
     },
     {
       id: 'penetration',
@@ -605,18 +608,17 @@
     if (shootTimer >= bulletCooldown) {
       shootTimer = 0;
       const bx = player.dir > 0 ? (player.x + player.w) : (player.x - bulletSize);
-      bullets.push({
-        x: bx,
-        y: player.y + player.h * 0.45,
-        w: bulletSize,
-        h: bulletSize * 0.5,
-        vx: player.dir * bulletSpeed,
-        dmg: bulletDamage,
-        penetration: bulletPenetration,
-        hitSet: new Set(),
-        knockback: bulletKnockback,
-        range: bulletRange,
-      });
+        bullets.push({
+          x: bx,
+          y: player.y + player.h * 0.45,
+          w: bulletSize,
+          h: bulletSize * 0.5,
+          vx: player.dir * bulletSpeed,
+          dmg: bulletDamage,
+          penetration: bulletPenetration,
+          hitSet: new Set(),
+          range: bulletRange,
+        });
     }
 
     // 탄 업데이트
@@ -690,12 +692,12 @@
         if (aabb(e, b)) {
           e.hp -= b.dmg;
 
-          // 넉백 적용
-          if (b.knockback > 0) {
-            const knockDir = Math.sign(b.vx);
-            e.x += knockDir * b.knockback;
-            e.x = clamp(e.x, -enemySize, WORLD.w);
-          }
+            // 넉백 적용 (업그레이드가 누적된 값을 사용)
+            if (bulletKnockback > 0) {
+              const knockDir = Math.sign(b.vx);
+              e.x += knockDir * bulletKnockback;
+              e.x = clamp(e.x, -enemySize, WORLD.w);
+            }
 
           b.hitSet.add(e.id);
           if (b.penetration === 0) {
