@@ -128,13 +128,14 @@
   let playerIframeDuration = 800;  // 피격 후 무적 시간 (ms)
   let playerHitFlashDuration = 200; // 피격 시 시각 효과 지속 시간 (ms)
   
-  // 이알 관련
-  let bulletSpeed = 460;           // 이알 속도 (px/s)
-  let bulletSize = 8;              // 이알 크기
-  let bulletCooldown = 420;        // 이알 발사 쿨다운 (ms)
-  let bulletDamage = 18;           // 이알 피해량
-  let bulletPenetration = false;   // 이알 관통 여부
-  let bulletKnockback = 0;         // 이알 넉백 거리 (px)
+  // 총알 관련
+  let bulletSpeed = 460;           // 총알 속도 (px/s)
+  let bulletSize = 8;              // 총알 크기
+  let bulletCooldown = 420;        // 총알 발사 쿨다운 (ms)
+  let bulletDamage = 18;           // 총알 피해량
+  let bulletPenetration = 0;       // 총알 관통 수
+  let bulletKnockback = 0;         // 총알 넉백 거리 (px)
+  let bulletRange = 500;          // 총알 사정거리 (px)
   
   // 적 관련
   let enemyContactDamage = 10;     // 적 접촉 시 플레이어가 받는 피해
@@ -181,7 +182,7 @@
     {
       id: 'damage',
       title: '🔥 공격력 증가',
-      desc: '이알 피해량 +7',
+      desc: '총알 피해량 +7',
       apply: () => { bulletDamage += 7; }
     },
     {
@@ -214,14 +215,20 @@
     {
       id: 'knockback',
       title: '💥 넉백 공격',
-      desc: '이알이 적을 뒤로 밀어냄',
+      desc: '총알이 적을 뒤로 밀어냄',
       apply: () => { bulletKnockback += 40; }
     },
     {
       id: 'penetration',
       title: '🎯 관통 공격',
-      desc: '이알이 적을 관통함',
-      apply: () => { bulletPenetration = true; }
+      desc: '한명의 적을 추가로 관통합니다.',
+      apply: () => { bulletPenetration += 1; }
+    },
+    {
+      id: 'range',
+      title: '📏 사거리 증가',
+      desc: '총알 사정거리 +20%',
+      apply: () => { bulletRange *= 1.2; }
     }
   ];
 
@@ -352,8 +359,9 @@
     // 업그레이드 초기화
     bulletDamage = 18;
     bulletCooldown = 420;
-    bulletPenetration = false;
+    bulletPenetration = 0;
     bulletKnockback = 0;
+    bulletRange = 500;
     playerHP = 100;
     hp = playerHP;
     
@@ -574,8 +582,9 @@
         h: bulletSize * 0.5,
         vx: player.dir * bulletSpeed,
         dmg: bulletDamage,
-        penetrating: bulletPenetration,
+        penetration: bulletPenetration,
         knockback: bulletKnockback,
+        range: bulletRange,
       });
     }
 
@@ -583,8 +592,11 @@
     for (let i = bullets.length - 1; i >= 0; i--) {
       const b = bullets[i];
       b.x += b.vx * dt;
-      // 화면 밖 제거
-      if (b.x < -40 || b.x > WORLD.w + 40) bullets.splice(i, 1);
+      b.range -= Math.abs(b.vx * dt);
+      // 사정거리 또는 화면 밖 제거
+      if (b.range <= 0 || b.x < -40 || b.x > WORLD.w + 40) {
+        bullets.splice(i, 1);
+      }
     }
     
     // 경험치 구슬 업데이트
@@ -640,7 +652,7 @@
       // 우선 이동
       e.x = nextX;
 
-      // 이알과 충돌(피해 처리)
+      // 총알과 충돌(피해 처리)
       for (let j = bullets.length - 1; j >= 0; j--) {
         const b = bullets[j];
         if (aabb(e, b)) {
@@ -653,8 +665,10 @@
             e.x = clamp(e.x, -enemySize, WORLD.w);
           }
           
-          // 관통이 아니면 이알 제거
-          if (!b.penetrating) {
+          // 관통 수 소진 시 총알 제거
+          if (b.penetration > 0) {
+            b.penetration--;
+          } else {
             bullets.splice(j, 1);
           }
           
