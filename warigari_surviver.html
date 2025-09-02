@@ -135,6 +135,7 @@
   let bulletDamage = 18;           // 총알 피해량
   let bulletPenetration = false;   // 총알 관통 여부
   let bulletKnockback = 0;         // 총알 넉백 거리 (px)
+  let bulletRange = 500;          // 총알 사정거리 (px)
   
   // 적 관련
   let enemyContactDamage = 10;     // 적 접촉 시 플레이어가 받는 피해
@@ -222,6 +223,12 @@
       title: '🎯 관통 공격',
       desc: '총알이 적을 관통함',
       apply: () => { bulletPenetration = true; }
+    },
+    {
+      id: 'range',
+      title: '📏 사거리 증가',
+      desc: '총알 사정거리 +20%',
+      apply: () => { bulletRange *= 1.2; }
     }
   ];
 
@@ -354,6 +361,7 @@
     bulletCooldown = 420;
     bulletPenetration = false;
     bulletKnockback = 0;
+    bulletRange = 500;
     playerHP = 100;
     hp = playerHP;
     
@@ -576,6 +584,7 @@
         dmg: bulletDamage,
         penetrating: bulletPenetration,
         knockback: bulletKnockback,
+        range: bulletRange,
       });
     }
 
@@ -583,8 +592,11 @@
     for (let i = bullets.length - 1; i >= 0; i--) {
       const b = bullets[i];
       b.x += b.vx * dt;
-      // 화면 밖 제거
-      if (b.x < -40 || b.x > WORLD.w + 40) bullets.splice(i, 1);
+      b.range -= Math.abs(b.vx * dt);
+      // 사정거리 또는 화면 밖 제거
+      if (b.range <= 0 || b.x < -40 || b.x > WORLD.w + 40) {
+        bullets.splice(i, 1);
+      }
     }
     
     // 경험치 구슬 업데이트
