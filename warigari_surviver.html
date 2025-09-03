@@ -253,6 +253,51 @@
     .exp-orb {
       border-radius: 50%;
     }
+
+    .exp-gauge-wrap {
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: 42px;
+      /* 위치를 위로 올림 */
+      padding: 16px;
+      pointer-events: none;
+      z-index: 5;
+    }
+
+    .exp-gauge {
+      background: #0e1330aa;
+      border: 1px solid #2b356e;
+      height: 20px;
+      border-radius: 4px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .exp-gauge-fill {
+      position: absolute;
+      left: 0;
+      top: 0;
+      height: 100%;
+      background: #4ade80;
+      width: 0%;
+      transition: width 0.3s ease;
+    }
+
+    .exp-gauge-text {
+      position: absolute;
+      left: 50%;
+      bottom: 0px;
+      transform: translateX(-50%);
+      color: #ffffff;
+      font-weight: bold;
+      font-size: 13px;
+      background: #0e1330aa;
+      padding: 2px 8px;
+      white-space: nowrap;
+      z-index: 20;
+      /* z-index를 높여서 다른 UI 위에 표시 */
+    }
   </style>
 </head>
 
@@ -267,7 +312,13 @@
         <div class="stat" id="score">KOs: 0</div>
         <div class="stat" id="time">Time: 0.0s</div>
         <div class="stat" id="level">Lv: 1</div>
-        <div class="stat" id="exp">EXP: 0/80</div>
+      </div>
+
+      <div class="exp-gauge-wrap">
+        <div class="exp-gauge">
+          <div class="exp-gauge-fill" id="expGauge"></div>
+          <div class="exp-gauge-text" id="expText">Lv 1</div>
+        </div>
       </div>
 
       <div class="wave-display" id="waveDisplay"></div>
@@ -596,13 +647,16 @@
       // --- 플레이어 ---
       const player = {
         x: WORLD.w / 2,
-        y: WORLD.groundY - 40,
+        y: WORLD.groundY - 6,
         w: 28,
-        h: 40,
+        h: 30,
         dir: 1,                 // 1 → 오른쪽, -1 → 왼쪽
         speed: playerSpeed,
         iframes: 0,             // 무적 시간(ms)
         hitFlash: 0,            // 피격 시 시각 효과
+        walkTime: 0,            // 걷기 애니메이션 시간
+        footSize: 0.3,         // 발 크기 변화량
+        leglength: 6,         // 다리 길이
       };
 
       // --- 투사체(자동 공격) ---
@@ -699,7 +753,7 @@
         level = 1;
         expToNextLevel = 80;
         player.x = WORLD.w / 2;
-        player.y = WORLD.groundY - player.h;
+        player.y = WORLD.groundY - player.h - player.leglength;
         player.dir = 1;
         player.speed = playerSpeed;
         player.iframes = 0;
@@ -797,7 +851,13 @@
         scoreEl.textContent = `KOs: ${score}`;
         timeEl.textContent = `Time: ${elapsed.toFixed(1)}s`;
         levelEl.textContent = `Lv: ${level}`;
-        expEl.textContent = `EXP: ${exp}/${expToNextLevel}`;
+
+        // Update exp gauge
+        const expGauge = document.getElementById('expGauge');
+        const expText = document.getElementById('expText');
+        const expPercentage = (exp / expToNextLevel) * 100;
+        expGauge.style.width = expPercentage + '%';
+        expText.textContent = `Lv ${level} (${Math.floor(expPercentage)}%)`;
       }
 
       // --- 스폰 ---
@@ -1081,6 +1141,10 @@
         player.x += player.dir * player.speed * dt;
         player.x = clamp(player.x, 0, WORLD.w - player.w);
 
+        // 걷기 애니메이션 업데이트
+        player.walkTime += dt * 6; // 애니메이션 속도
+        player.footSize = Math.abs(Math.sin(player.walkTime));
+
         // 자동 공격(전방으로 탄 발사)
         if (shootTimer >= bulletCooldown) {
           shootTimer = 0;
@@ -1330,18 +1394,64 @@
           ctx.shadowBlur = 20;
           ctx.shadowColor = '#ff6b6b';
         }
+
+        // 발 그리기
+        const footWidth = 8;
+        const footHeight = 3;
         ctx.fillStyle = '#8ab4ff';
-        ctx.fillRect(player.x, player.y, player.w, player.h);
+        // 왼쪽 발
+        ctx.fillRect(
+          player.x + player.w * 0.25 - footWidth / 2,
+          player.y + player.h,
+          footWidth,
+          footHeight * (1 + player.footSize)
+        );
+        // 오른쪽 발
+        ctx.fillRect(
+          player.x + player.w * 0.75 - footWidth / 2,
+          player.y + player.h,
+          footWidth,
+          footHeight * (2 - player.footSize)
+        );
+
+        // 몸체 (둥근 모서리)
+        const radius = 8;
+        ctx.fillStyle = '#8ab4ff';
+        ctx.beginPath();
+        ctx.moveTo(player.x + radius, player.y);
+        ctx.lineTo(player.x + player.w - radius, player.y);
+        ctx.quadraticCurveTo(player.x + player.w, player.y, player.x + player.w, player.y + radius);
+        ctx.lineTo(player.x + player.w, player.y + player.h - radius);
+        ctx.quadraticCurveTo(player.x + player.w, player.y + player.h, player.x + player.w - radius, player.y + player.h);
+        ctx.lineTo(player.x + radius, player.y + player.h);
+        ctx.quadraticCurveTo(player.x, player.y + player.h, player.x, player.y + player.h - radius);
+        ctx.lineTo(player.x, player.y + radius);
+        ctx.quadraticCurveTo(player.x, player.y, player.x + radius, player.y);
+        ctx.fill();
+
+        // 눈 (방향에 따라 위치 변경)
+        ctx.fillStyle = '#2a4177';
+        const eyeY = player.y + player.h * 0.3;
+        const eyeSize = 4;
+        if (player.dir > 0) {
+          ctx.fillRect(player.x + player.w * 0.6, eyeY, eyeSize, eyeSize);
+          ctx.fillRect(player.x + player.w * 0.8, eyeY, eyeSize, eyeSize);
+        } else {
+          ctx.fillRect(player.x + player.w * 0.2 - eyeSize, eyeY, eyeSize, eyeSize);
+          ctx.fillRect(player.x + player.w * 0.4 - eyeSize, eyeY, eyeSize, eyeSize);
+        }
+
+        // 화살표 (방향 표시)
         ctx.fillStyle = '#d8e4ff';
         ctx.beginPath();
         if (player.dir > 0) {
-          ctx.moveTo(player.x + player.w, player.y + player.h * 0.5);
-          ctx.lineTo(player.x + player.w + 14, player.y + player.h * 0.32);
-          ctx.lineTo(player.x + player.w + 14, player.y + player.h * 0.68);
+          ctx.moveTo(player.x + player.w + 2, player.y + player.h * 0.5);
+          ctx.lineTo(player.x + player.w + 12, player.y + player.h * 0.35);
+          ctx.lineTo(player.x + player.w + 12, player.y + player.h * 0.65);
         } else {
-          ctx.moveTo(player.x, player.y + player.h * 0.5);
-          ctx.lineTo(player.x - 14, player.y + player.h * 0.32);
-          ctx.lineTo(player.x - 14, player.y + player.h * 0.68);
+          ctx.moveTo(player.x - 2, player.y + player.h * 0.5);
+          ctx.lineTo(player.x - 12, player.y + player.h * 0.35);
+          ctx.lineTo(player.x - 12, player.y + player.h * 0.65);
         }
         ctx.closePath();
         ctx.fill();
