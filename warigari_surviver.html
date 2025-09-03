@@ -19,6 +19,7 @@
       display: flex;
       flex-direction: column;
       height: 100%;
+      align-items: center;
     }
 
     header {
@@ -29,6 +30,7 @@
       display: flex;
       align-items: center;
       gap: 10px;
+      width: 100%;
     }
 
     header .pill {
@@ -39,7 +41,7 @@
     }
 
     #canvasWrap {
-      flex: 1;
+      flex: none;
       position: relative;
     }
 
@@ -523,10 +525,17 @@
       // 화면/맵
       function fitCanvas() {
         const wrap = document.getElementById('canvasWrap');
-        const w = wrap.clientWidth;
-        const h = wrap.clientHeight;
-        const targetH = Math.min(h, w * 9 / 16);
-        canvas.style.height = targetH + 'px';
+        const header = document.querySelector('header');
+        const w = window.innerWidth;
+        const h = window.innerHeight - header.offsetHeight;
+        let targetW = w;
+        let targetH = w * 9 / 16;
+        if (targetH > h) {
+          targetH = h;
+          targetW = h * 16 / 9;
+        }
+        wrap.style.width = targetW + 'px';
+        wrap.style.height = targetH + 'px';
       }
       window.addEventListener('resize', fitCanvas);
       fitCanvas();
