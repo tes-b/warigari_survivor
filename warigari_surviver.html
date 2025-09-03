@@ -343,7 +343,9 @@
           desc: '최대 체력 +30, 현재 체력 회복',
           apply: () => {
             playerHP += 30;
-            hp = Math.min(hp + 30, playerHP);
+            const healed = Math.min(30, playerHP - hp);
+            hp += healed;
+            if (healed > 0) spawnFloatText(player.x + player.w / 2, player.y - 14, healed, '#6cff96');
           }
         },
         {
@@ -456,6 +458,9 @@
       // --- 궤도 구슬 ---
       let orbitalAngle = 0;
 
+      // --- 떠다니는 텍스트(피해/회복 수치) ---
+      const floatTexts = [];
+
       // 난이도 스케일링(시간이 지날수록 가속)
       function updateDifficulty(seconds) {
         currentSpawnInterval = Math.max(minSpawnInterval, initialSpawnInterval - seconds * difficultyIncrease);
@@ -472,6 +477,10 @@
       const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
       function aabb(a, b) {
         return !(a.x + a.w < b.x || b.x + b.w < a.x || a.y + a.h < b.y || b.y + b.h < a.y);
+      }
+
+      function spawnFloatText(x, y, value, color) {
+        floatTexts.push({ x, y, value, color, life: 0 });
       }
 
       // 체력바 그리기
@@ -757,6 +766,14 @@
         if (player.iframes > 0) player.iframes -= dt * 1000;
         if (player.hitFlash > 0) player.hitFlash -= dt * 1000;
 
+        // 떠다니는 텍스트 업데이트
+        for (let i = floatTexts.length - 1; i >= 0; i--) {
+          const ft = floatTexts[i];
+          ft.y -= 20 * dt;
+          ft.life += dt * 1000;
+          if (ft.life > 800) floatTexts.splice(i, 1);
+        }
+
         // 궤도 구슬 회전
         orbitalAngle += orbitalSpeed * dt;
 
@@ -863,7 +880,10 @@
             const b = bullets[j];
             if (b.hitSet.has(e.id)) continue;
             if (aabb(e, b)) {
-              e.hp -= b.dmg;
+              const dmg = Math.min(b.dmg, e.hp);
+              e.hp -= dmg;
+
+              spawnFloatText(e.x + e.w / 2, e.y - 12, -dmg, '#ff6b6b');
 
               // 넉백 적용 (업그레이드가 누적된 값을 사용)
               if (bulletKnockback > 0) {
@@ -899,7 +919,10 @@
             if (aabb(e, { x: orbX, y: orbY, w: orb.size, h: orb.size })) {
               if (orb.hitSet.has(e.id)) continue;
               orb.hitSet.add(e.id);
-              e.hp -= orb.damage;
+              const dmg = Math.min(orb.damage, e.hp);
+              e.hp -= dmg;
+
+              spawnFloatText(e.x + e.w / 2, e.y - 12, -dmg, '#ff6b6b');
               if (e.hp <= 0) {
                 spawnExpOrb(e.x + e.w / 2, e.y + e.h / 2);
                 enemies.splice(i, 1);
@@ -915,7 +938,9 @@
           if (aabb(e, player)) {
             // 피해(무적 시간 적용)
             if (player.iframes <= 0) {
-              hp -= e.damage;
+              const dmg = Math.min(e.damage, hp);
+              hp -= dmg;
+              spawnFloatText(player.x + player.w / 2, player.y - 14, -dmg, '#ff6b6b');
               player.iframes = playerIframeDuration;
               player.hitFlash = playerHitFlashDuration;
               if (hp <= 0) { hp = 0; gameOver(); return; }
@@ -1050,6 +1075,19 @@
 
           // 적 HP바 (머리 위)
           drawHPBar(e.x + e.w / 2 - 18, e.y - 8, 36, 4, e.hp, e.hpMax);
+        }
+
+        // 떠다니는 텍스트
+        ctx.font = 'bold 12px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'bottom';
+        for (const ft of floatTexts) {
+          ctx.save();
+          ctx.globalAlpha = 1 - ft.life / 800;
+          ctx.fillStyle = ft.color;
+          const text = ft.value > 0 ? `+${Math.round(ft.value)}` : `${Math.round(ft.value)}`;
+          ctx.fillText(text, ft.x, ft.y);
+          ctx.restore();
         }
       }
 
