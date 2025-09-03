@@ -134,6 +134,26 @@
       border-radius: 10px;
     }
 
+    .upgrade-hud {
+      position: absolute;
+      right: 12px;
+      top: 10px;
+      z-index: 2;
+      display: flex;
+      gap: 8px;
+      font-weight: 700;
+      text-shadow: 0 2px 6px #0009;
+    }
+
+    .upgrade-hud .upgrade-icon {
+      background: #0e1330aa;
+      border: 1px solid #2b356e;
+      padding: 6px 8px;
+      border-radius: 10px;
+      font-size: 18px;
+      line-height: 1;
+    }
+
     .bottom-tip {
       position: absolute;
       left: 50%;
@@ -231,9 +251,11 @@
         <div class="stat" id="hp">HP: 100</div>
         <div class="stat" id="score">KOs: 0</div>
         <div class="stat" id="time">Time: 0.0s</div>
-        <div class="stat" id="level">Lv: 1</div>
-        <div class="stat" id="exp">EXP: 0/10</div>
-      </div>
+      <div class="stat" id="level">Lv: 1</div>
+      <div class="stat" id="exp">EXP: 0/10</div>
+    </div>
+
+      <div class="upgrade-hud" id="upgradeHud"></div>
 
       <!-- 시작/재시작 오버레이 -->
       <div class="overlay" id="overlay">
@@ -330,19 +352,22 @@
       const UPGRADES = [
         {
           id: 'damage',
-          title: '🔥 공격력 증가',
+          title: '공격력 증가',
+          icon: '🔥',
           desc: '총알 피해량 +7',
           apply: () => { bulletDamage += 7; }
         },
         {
           id: 'attackSpeed',
-          title: '⚡ 공격 속도 증가',
+          title: '공격 속도 증가',
+          icon: '⚡',
           desc: '발사 속도 +25% 향상',
           apply: () => { bulletCooldown = Math.max(80, bulletCooldown * 0.75); }
         },
         {
           id: 'health',
-          title: '❤️ 체력 증가',
+          title: '체력 증가',
+          icon: '❤️',
           desc: '최대 체력 +30, 현재 체력 회복',
           apply: () => {
             playerHP += 30;
@@ -353,7 +378,8 @@
         },
         {
           id: 'orbital',
-          title: '🌟 궤도 구슬',
+          title: '궤도 구슬',
+          icon: '🌟',
           desc: '주변을 도는 공격 구슬 추가',
           apply: () => {
             if (orbitingOrbs.length >= 6) return; // 최대 6개 제한
@@ -378,7 +404,8 @@
         },
         {
           id: 'knockback',
-          title: '💥 넉백 공격',
+          title: '넉백 공격',
+          icon: '💥',
           desc: '총알이 적을 뒤로 밀어냄 (넉백 +40)',
           apply: () => {
             // 넉백 아이템을 여러 번 획득하면 효과가 누적되도록
@@ -387,29 +414,54 @@
         },
         {
           id: 'penetration',
-          title: '🎯 관통 공격',
+          title: '관통 공격',
+          icon: '🎯',
           desc: '한명의 적을 추가로 관통합니다.',
           apply: () => { bulletPenetration += 1; }
         },
         {
           id: 'range',
-          title: '📏 사거리 증가',
+          title: '사거리 증가',
+          icon: '📏',
           desc: '총알 사정거리 +20%',
           apply: () => { bulletRange *= 1.2; }
         },
         {
           id: 'lifesteal',
-          title: '🩸 흡혈',
+          title: '흡혈',
+          icon: '🩸',
           desc: '총알로 준 피해의 5%를 체력으로 회복',
           apply: () => { bulletLifeSteal += 0.05; }
         },
         {
           id: 'magnet',
-          title: '🧲 자석',
+          title: '자석',
+          icon: '🧲',
           desc: '주변의 경험치 구슬을 끌어당깁니다 (범위 +80)',
           apply: () => { magnetRadius += 80; }
         }
       ];
+
+      const acquiredUpgrades = {};
+
+      function updateUpgradeHUD() {
+        const hud = document.getElementById('upgradeHud');
+        hud.innerHTML = '';
+        for (const id in acquiredUpgrades) {
+          const up = UPGRADES.find(u => u.id === id);
+          if (!up) continue;
+          const div = document.createElement('div');
+          div.className = 'upgrade-icon';
+          div.textContent = `${up.icon}×${acquiredUpgrades[id]}`;
+          hud.appendChild(div);
+        }
+      }
+
+      function acquireUpgrade(upgrade) {
+        upgrade.apply();
+        acquiredUpgrades[upgrade.id] = (acquiredUpgrades[upgrade.id] || 0) + 1;
+        updateUpgradeHUD();
+      }
 
       // ========================================
       // 게임 코어 로직
@@ -564,6 +616,9 @@
         magnetRadius = 0;
         playerHP = 100;
         hp = playerHP;
+
+        for (const id in acquiredUpgrades) delete acquiredUpgrades[id];
+        updateUpgradeHUD();
 
         updateHUD();
       }
@@ -756,11 +811,11 @@
           const btn = document.createElement('div');
           btn.className = 'upgrade-btn';
           btn.innerHTML = `
-        <div class="upgrade-title">${upgrade.title}</div>
+        <div class="upgrade-title">${upgrade.icon} ${upgrade.title}</div>
         <div class="upgrade-desc">${upgrade.desc}</div>
       `;
           btn.onclick = () => {
-            upgrade.apply();
+            acquireUpgrade(upgrade);
             levelupOverlay.style.display = 'none';
             paused = false;
             updateHUD();
