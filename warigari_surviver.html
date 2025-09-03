@@ -281,6 +281,7 @@
       let bulletPenetration = 0;       // 총알 관통 수
       let bulletKnockback = 0;         // 총알 넉백 거리 (px)
       let bulletRange = 500;          // 총알 사정거리 (px)
+      let bulletLifeSteal = 0;        // 총알 피해로 체력 회복 비율
 
       // 적 관련
       let enemyContactDamage = 10;     // 적 접촉 시 플레이어가 받는 피해
@@ -393,6 +394,12 @@
           title: '📏 사거리 증가',
           desc: '총알 사정거리 +20%',
           apply: () => { bulletRange *= 1.2; }
+        },
+        {
+          id: 'lifesteal',
+          title: '🩸 흡혈',
+          desc: '총알로 준 피해의 5%를 체력으로 회복',
+          apply: () => { bulletLifeSteal += 0.05; }
         }
       ];
 
@@ -545,6 +552,7 @@
         bulletPenetration = 0;
         bulletKnockback = 0;
         bulletRange = 500;
+        bulletLifeSteal = 0;
         playerHP = 100;
         hp = playerHP;
 
@@ -884,6 +892,14 @@
               e.hp -= dmg;
 
               spawnFloatText(e.x + e.w / 2, e.y - 12, -dmg, '#ff6b6b');
+
+              if (bulletLifeSteal > 0) {
+                const heal = Math.min(dmg * bulletLifeSteal, playerHP - hp);
+                if (heal > 0) {
+                  hp += heal;
+                  spawnFloatText(player.x + player.w / 2, player.y - 14, heal, '#6cff96');
+                }
+              }
 
               // 넉백 적용 (업그레이드가 누적된 값을 사용)
               if (bulletKnockback > 0) {
