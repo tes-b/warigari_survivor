@@ -657,6 +657,13 @@
         walkTime: 0,            // 걷기 애니메이션 시간
         footSize: 0.3,         // 발 크기 변화량
         leglength: 6,         // 다리 길이
+        deathAnim: {           // 죽음 애니메이션 관련
+          active: false,        // 애니메이션 활성화 여부
+          time: 0,             // 애니메이션 경과 시간
+          vy: -400,            // 수직 속도 (초기 위로 튀어오름)
+          gravity: 1200,       // 중력
+          rotation: 0          // 회전 각도
+        }
       };
 
       // --- 투사체(자동 공격) ---
@@ -758,6 +765,11 @@
         player.speed = playerSpeed;
         player.iframes = 0;
         player.hitFlash = 0;
+        // 죽음 애니메이션 초기화
+        player.deathAnim.active = false;
+        player.deathAnim.time = 0;
+        player.deathAnim.vy = -400;
+        player.deathAnim.rotation = 0;
         bullets.length = 0;
         enemies.length = 0;
         expOrbs.length = 0;
@@ -816,19 +828,28 @@
       }
 
       function gameOver() {
-        running = false;
-        const panelHTML = `
-      <div class="panel">
-        <h1>게임 오버</h1>
-        <p>웨이브: <b>${getWaveLabel()}</b></p>
-        <p>생존 시간: <b>${elapsed.toFixed(1)}초</b> · 처치 수: <b>${score}</b></p>
-        <div class="row">
-          <button id="btnRestart">다시 시작 (SPACE)</button>
-        </div>
-      </div>`;
-        overlay.innerHTML = panelHTML;
-        overlay.style.display = 'flex';
-        document.getElementById('btnRestart').onclick = startGame;
+        // 죽음 애니메이션 시작
+        player.deathAnim.active = true;
+        player.deathAnim.time = 0;
+        player.deathAnim.vy = -400;
+        player.deathAnim.rotation = 0;
+
+        // 1초 후에 게임오버 화면 표시
+        setTimeout(() => {
+          running = false;
+          const panelHTML = `
+        <div class="panel">
+          <h1>게임 오버</h1>
+          <p>웨이브: <b>${getWaveLabel()}</b></p>
+          <p>생존 시간: <b>${elapsed.toFixed(1)}초</b> · 처치 수: <b>${score}</b></p>
+          <div class="row">
+            <button id="btnRestart">다시 시작 (SPACE)</button>
+          </div>
+        </div>`;
+          overlay.innerHTML = panelHTML;
+          overlay.style.display = 'flex';
+          document.getElementById('btnRestart').onclick = startGame;
+        }, 1000);
       }
 
       // --- HUD ---
@@ -1091,6 +1112,15 @@
       // --- 업데이트 ---
       function update(dt) {
         if (paused) return; // 레벨업 중에는 업데이트 중지
+
+        // 죽음 애니메이션 업데이트
+        if (player.deathAnim.active) {
+          player.deathAnim.time += dt;
+          player.deathAnim.vy += player.deathAnim.gravity * dt;
+          player.y += player.deathAnim.vy * dt;
+          player.deathAnim.rotation += dt * 8; // 회전
+          return; // 다른 업데이트는 중지
+        }
 
         elapsed += dt;
         waveTimer += dt;
@@ -1393,6 +1423,13 @@
         if (player.hitFlash > 0) {
           ctx.shadowBlur = 20;
           ctx.shadowColor = '#ff6b6b';
+        }
+
+        // 죽음 애니메이션 시 회전 적용
+        if (player.deathAnim.active) {
+          ctx.translate(player.x + player.w / 2, player.y + player.h / 2);
+          ctx.rotate(player.deathAnim.rotation);
+          ctx.translate(-(player.x + player.w / 2), -(player.y + player.h / 2));
         }
 
         // 발 그리기
