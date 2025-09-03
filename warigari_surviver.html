@@ -352,19 +352,22 @@
       const UPGRADES = [
         {
           id: 'damage',
-          title: '🔥 공격력 증가',
+          title: '공격력 증가',
+          icon: '🔥',
           desc: '총알 피해량 +7',
           apply: () => { bulletDamage += 7; }
         },
         {
           id: 'attackSpeed',
-          title: '⚡ 공격 속도 증가',
+          title: '공격 속도 증가',
+          icon: '⚡',
           desc: '발사 속도 +25% 향상',
           apply: () => { bulletCooldown = Math.max(80, bulletCooldown * 0.75); }
         },
         {
           id: 'health',
-          title: '❤️ 체력 증가',
+          title: '체력 증가',
+          icon: '❤️',
           desc: '최대 체력 +30, 현재 체력 회복',
           apply: () => {
             playerHP += 30;
@@ -375,7 +378,8 @@
         },
         {
           id: 'orbital',
-          title: '🌟 궤도 구슬',
+          title: '궤도 구슬',
+          icon: '🌟',
           desc: '주변을 도는 공격 구슬 추가',
           apply: () => {
             if (orbitingOrbs.length >= 6) return; // 최대 6개 제한
@@ -400,7 +404,8 @@
         },
         {
           id: 'knockback',
-          title: '💥 넉백 공격',
+          title: '넉백 공격',
+          icon: '💥',
           desc: '총알이 적을 뒤로 밀어냄 (넉백 +40)',
           apply: () => {
             // 넉백 아이템을 여러 번 획득하면 효과가 누적되도록
@@ -409,25 +414,29 @@
         },
         {
           id: 'penetration',
-          title: '🎯 관통 공격',
+          title: '관통 공격',
+          icon: '🎯',
           desc: '한명의 적을 추가로 관통합니다.',
           apply: () => { bulletPenetration += 1; }
         },
         {
           id: 'range',
-          title: '📏 사거리 증가',
+          title: '사거리 증가',
+          icon: '📏',
           desc: '총알 사정거리 +20%',
           apply: () => { bulletRange *= 1.2; }
         },
         {
           id: 'lifesteal',
-          title: '🩸 흡혈',
+          title: '흡혈',
+          icon: '🩸',
           desc: '총알로 준 피해의 5%를 체력으로 회복',
           apply: () => { bulletLifeSteal += 0.05; }
         },
         {
           id: 'magnet',
-          title: '🧲 자석',
+          title: '자석',
+          icon: '🧲',
           desc: '주변의 경험치 구슬을 끌어당깁니다 (범위 +80)',
           apply: () => { magnetRadius += 80; }
         }
@@ -441,10 +450,9 @@
         for (const id in acquiredUpgrades) {
           const up = UPGRADES.find(u => u.id === id);
           if (!up) continue;
-          const icon = up.title.trim()[0];
           const div = document.createElement('div');
           div.className = 'upgrade-icon';
-          div.textContent = `${icon}×${acquiredUpgrades[id]}`;
+          div.textContent = `${up.icon}×${acquiredUpgrades[id]}`;
           hud.appendChild(div);
         }
       }
@@ -803,7 +811,7 @@
           const btn = document.createElement('div');
           btn.className = 'upgrade-btn';
           btn.innerHTML = `
-        <div class="upgrade-title">${upgrade.title}</div>
+        <div class="upgrade-title">${upgrade.icon} ${upgrade.title}</div>
         <div class="upgrade-desc">${upgrade.desc}</div>
       `;
           btn.onclick = () => {
