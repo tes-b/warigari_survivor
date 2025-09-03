@@ -134,6 +134,26 @@
       border-radius: 10px;
     }
 
+    .upgrade-hud {
+      position: absolute;
+      right: 12px;
+      top: 10px;
+      z-index: 2;
+      display: flex;
+      gap: 8px;
+      font-weight: 700;
+      text-shadow: 0 2px 6px #0009;
+    }
+
+    .upgrade-hud .upgrade-icon {
+      background: #0e1330aa;
+      border: 1px solid #2b356e;
+      padding: 6px 8px;
+      border-radius: 10px;
+      font-size: 18px;
+      line-height: 1;
+    }
+
     .bottom-tip {
       position: absolute;
       left: 50%;
@@ -231,9 +251,11 @@
         <div class="stat" id="hp">HP: 100</div>
         <div class="stat" id="score">KOs: 0</div>
         <div class="stat" id="time">Time: 0.0s</div>
-        <div class="stat" id="level">Lv: 1</div>
-        <div class="stat" id="exp">EXP: 0/10</div>
-      </div>
+      <div class="stat" id="level">Lv: 1</div>
+      <div class="stat" id="exp">EXP: 0/10</div>
+    </div>
+
+      <div class="upgrade-hud" id="upgradeHud"></div>
 
       <!-- 시작/재시작 오버레이 -->
       <div class="overlay" id="overlay">
@@ -411,6 +433,28 @@
         }
       ];
 
+      const acquiredUpgrades = {};
+
+      function updateUpgradeHUD() {
+        const hud = document.getElementById('upgradeHud');
+        hud.innerHTML = '';
+        for (const id in acquiredUpgrades) {
+          const up = UPGRADES.find(u => u.id === id);
+          if (!up) continue;
+          const icon = up.title.trim()[0];
+          const div = document.createElement('div');
+          div.className = 'upgrade-icon';
+          div.textContent = `${icon}×${acquiredUpgrades[id]}`;
+          hud.appendChild(div);
+        }
+      }
+
+      function acquireUpgrade(upgrade) {
+        upgrade.apply();
+        acquiredUpgrades[upgrade.id] = (acquiredUpgrades[upgrade.id] || 0) + 1;
+        updateUpgradeHUD();
+      }
+
       // ========================================
       // 게임 코어 로직
       // ========================================
@@ -564,6 +608,9 @@
         magnetRadius = 0;
         playerHP = 100;
         hp = playerHP;
+
+        for (const id in acquiredUpgrades) delete acquiredUpgrades[id];
+        updateUpgradeHUD();
 
         updateHUD();
       }
@@ -760,7 +807,7 @@
         <div class="upgrade-desc">${upgrade.desc}</div>
       `;
           btn.onclick = () => {
-            upgrade.apply();
+            acquireUpgrade(upgrade);
             levelupOverlay.style.display = 'none';
             paused = false;
             updateHUD();
