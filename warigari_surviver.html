@@ -317,6 +317,8 @@
       let expOrbValue = 1;             // 경험치 구슬 하나당 경험치
       let expOrbSpeed = 200;           // 경험치 구슬 이동 속도 (px/s)
       let expOrbSize = 8;              // 경험치 구슬 크기
+      let magnetRadius = 0;            // 자석 범위 (px)
+      let magnetPullSpeed = 400;       // 자석 당기는 속도 (px/s)
 
       // 궤도 구슬 관련
       let orbitingOrbs = [];           // 궤도 구슬 배열
@@ -400,6 +402,12 @@
           title: '🩸 흡혈',
           desc: '총알로 준 피해의 5%를 체력으로 회복',
           apply: () => { bulletLifeSteal += 0.05; }
+        },
+        {
+          id: 'magnet',
+          title: '🧲 자석',
+          desc: '주변의 경험치 구슬을 끌어당깁니다 (범위 +40)',
+          apply: () => { magnetRadius += 40; }
         }
       ];
 
@@ -553,6 +561,7 @@
         bulletKnockback = 0;
         bulletRange = 500;
         bulletLifeSteal = 0;
+        magnetRadius = 0;
         playerHP = 100;
         hp = playerHP;
 
@@ -831,6 +840,8 @@
         }
 
         // 경험치 구슬 업데이트
+        const px = player.x + player.w / 2;
+        const py = player.y + player.h / 2;
         for (let i = expOrbs.length - 1; i >= 0; i--) {
           const orb = expOrbs[i];
           orb.life -= dt * 1000;
@@ -845,6 +856,22 @@
             orb.y = WORLD.groundY - orb.h;
             orb.vy *= -0.6; // 반발
             orb.vx *= 0.8;  // 마찰
+          }
+
+          // 자석 효과: 플레이어 주변 경험치 구슬 끌어당김
+          if (magnetRadius > 0) {
+            const ox = orb.x + orb.w / 2;
+            const oy = orb.y + orb.h / 2;
+            const dx = px - ox;
+            const dy = py - oy;
+            const dist = Math.hypot(dx, dy);
+            if (dist < magnetRadius) {
+              const pull = magnetPullSpeed * dt;
+              orb.vx = 0;
+              orb.vy = 0;
+              orb.x += (dx / dist) * pull;
+              orb.y += (dy / dist) * pull;
+            }
           }
 
           // 플레이어와 접촉 시 획득
