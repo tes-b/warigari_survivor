@@ -335,8 +335,9 @@
       // 경험치 및 레벨 관련
       let playerExp = 0;               // 현재 경험치
       let playerLevel = 1;             // 현재 레벨
-      let expToNextLevel = 10;         // 다음 레벨까지 필요한 경험치
-      let expOrbValue = 1;             // 경험치 구슬 하나당 경험치
+      let expToNextLevel = 80;         // 다음 레벨까지 필요한 경험치
+      let expGrowthRate = 1.2;         // 다음 레벨 경험치 증가율
+      let expOrbValue = 10;             // 경험치 구슬 하나당 경험치
       let expOrbSpeed = 200;           // 경험치 구슬 이동 속도 (px/s)
       let expOrbSize = 8;              // 경험치 구슬 크기
       let magnetRadius = 0;            // 자석 범위 (px)
@@ -590,7 +591,7 @@
         hp = playerHP;
         exp = 0;
         level = 1;
-        expToNextLevel = 10;
+        expToNextLevel = 80;
         player.x = WORLD.w / 2;
         player.y = WORLD.groundY - player.h;
         player.dir = 1;
@@ -787,7 +788,7 @@
         if (exp >= expToNextLevel) {
           exp -= expToNextLevel;
           level++;
-          expToNextLevel = Math.floor(expToNextLevel * 1.3); // 다음 레벨 필요 경험치 증가
+          expToNextLevel = Math.floor(expToNextLevel * expGrowthRate); // 다음 레벨 필요 경험치 증가
           showLevelUpScreen();
         }
       }
