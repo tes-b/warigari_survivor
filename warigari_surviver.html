@@ -17,9 +17,10 @@
 
     #wrap {
       display: flex;
-      flex-direction: column;
       height: 100%;
       align-items: center;
+      justify-content: center;
+
     }
 
     header {
@@ -525,9 +526,8 @@
       // 화면/맵
       function fitCanvas() {
         const wrap = document.getElementById('canvasWrap');
-        const header = document.querySelector('header');
         const w = window.innerWidth;
-        const h = window.innerHeight - header.offsetHeight;
+        const h = window.innerHeight;
         let targetW = w;
         let targetH = w * 9 / 16;
         if (targetH > h) {
