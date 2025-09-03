@@ -266,11 +266,11 @@
         <div class="stat" id="hp">HP: 1000</div>
         <div class="stat" id="score">KOs: 0</div>
         <div class="stat" id="time">Time: 0.0s</div>
-      <div class="stat" id="level">Lv: 1</div>
-      <div class="stat" id="exp">EXP: 0/80</div>
-    </div>
+        <div class="stat" id="level">Lv: 1</div>
+        <div class="stat" id="exp">EXP: 0/80</div>
+      </div>
 
-    <div class="wave-display" id="waveDisplay"></div>
+      <div class="wave-display" id="waveDisplay"></div>
 
       <div class="upgrade-hud" id="upgradeHud"></div>
 
@@ -287,16 +287,16 @@
 
       <div class="bottom-tip" id="tip">TIP: 웨이브가 진행될수록 적의 스폰 주기가 짧아지고 체력과 공격력이 증가합니다.</div>
       <div class="levelup-overlay" id="levelupOverlay">
-      <div class="levelup-panel">
-        <h1>🎉 레벨 업! 🎉</h1>
-        <p>능력을 선택하세요:</p>
-        <div class="upgrade-grid" id="upgradeGrid">
-          <!-- 업그레이드 옵션들이 여기에 동적으로 생성됩니다 -->
+        <div class="levelup-panel">
+          <h1>🎉 레벨 업! 🎉</h1>
+          <p>능력을 선택하세요:</p>
+          <div class="upgrade-grid" id="upgradeGrid">
+            <!-- 업그레이드 옵션들이 여기에 동적으로 생성됩니다 -->
+          </div>
         </div>
       </div>
     </div>
   </div>
-</div>
 
   <script>
     (() => {
@@ -304,30 +304,77 @@
       // 게임 밸런스 변수 (수정 편의성을 위해 상단 집중 배치)
       // ========================================
 
-      // 플레이어 관련
-      let playerHP = 1000;             // 플레이어 최대 HP
-      let playerSpeed = 160;           // 플레이어 이동 속도 (px/s)
-      let playerIframeDuration = 250;  // 피격 후 무적 시간 (ms)
-      let playerHitFlashDuration = 200; // 피격 시 시각 효과 지속 시간 (ms)
-      let playerDefense = 0;           // 플레이어 방어력
+      // 게임 초기 상수 값들 (변경이 필요한 경우 여기서만 수정하면 됩니다)
+      const INIT = {
+        // 플레이어 관련
+        PLAYER: {
+          HP: 1000,             // 플레이어 최대 HP
+          SPEED: 160,           // 플레이어 이동 속도 (px/s)
+          IFRAMES: 250,         // 피격 후 무적 시간 (ms)
+          HITFLASH: 200,        // 피격 시 시각 효과 지속 시간 (ms)
+          DEFENSE: 0,           // 플레이어 방어력
+        },
+        // 총알 관련
+        BULLET: {
+          SPEED: 360,           // 총알 속도 (px/s)
+          SIZE: 10,             // 총알 크기
+          COOLDOWN: 500,        // 총알 발사 쿨다운 (ms)
+          DAMAGE: 180,          // 총알 피해량
+          PENETRATION: 0,       // 총알 관통 수
+          KNOCKBACK: 0,         // 총알 넉백 거리 (px)
+          RANGE: 400,           // 총알 사정거리 (px)
+          LIFESTEAL: 0,         // 총알 피해로 체력 회복 비율
+        },
+        // 적 관련
+        ENEMY: {
+          CONTACT_DAMAGE: 100,  // 적 접촉 시 플레이어가 받는 피해
+          REWARD: 1,            // 적 처치 시 점수
+          SIZE: 28,             // 적 크기
+        },
+        // 궤도 구슬 관련
+        ORBITAL: {
+          RADIUS: 70,          // 궤도 반지름
+          SPEED: 5,            // 궤도 회전 속도 (rad/s)
+          DAMAGE: 500,         // 궤도 구슬 피해량
+        },
+        // 경험치 관련
+        EXP: {
+          ORB_VALUE: 10,       // 경험치 구슬 하나당 경험치
+          ORB_SPEED: 200,      // 경험치 구슬 이동 속도 (px/s)
+          ORB_SIZE: 8,         // 경험치 구슬 크기
+          GROWTH_RATE: 1.2,    // 다음 레벨 경험치 증가율
+          FIRST_LEVEL: 80,     // 첫 레벨업에 필요한 경험치
+        },
+        // 레벨업 임펄스 관련
+        LEVELUP: {
+          DAMAGE: 180,         // 레벨업 시 주변 적에게 줄 피해
+          RADIUS: 100,         // 임펄스 범위 (px)
+          KNOCKBACK: 80,       // 넉백 거리 (px)
+        },
+      };
 
-      // 총알 관련
-      let bulletSpeed = 460;           // 총알 속도 (px/s)
-      let bulletSize = 8;              // 총알 크기
-      let bulletCooldown = 420;        // 총알 발사 쿨다운 (ms)
-      let bulletDamage = 180;          // 총알 피해량
-      let bulletPenetration = 0;       // 총알 관통 수
-      let bulletKnockback = 0;         // 총알 넉백 거리 (px)
-      let bulletRange = 500;          // 총알 사정거리 (px)
-      let bulletLifeSteal = 0;        // 총알 피해로 체력 회복 비율
+      // 가변 상태 변수들 (게임 진행 중 변경됨)
+      let playerHP = INIT.PLAYER.HP;
+      let playerSpeed = INIT.PLAYER.SPEED;
+      let playerIframeDuration = INIT.PLAYER.IFRAMES;
+      let playerHitFlashDuration = INIT.PLAYER.HITFLASH;
+      let playerDefense = INIT.PLAYER.DEFENSE;
 
-      // 적 관련
-      let enemyContactDamage = 100;    // 적 접촉 시 플레이어가 받는 피해
-      let enemyReward = 1;             // 적 처치 시 점수
-      let enemySize = 28;              // 적 크기
+      let bulletSpeed = INIT.BULLET.SPEED;
+      let bulletSize = INIT.BULLET.SIZE;
+      let bulletCooldown = INIT.BULLET.COOLDOWN;
+      let bulletDamage = INIT.BULLET.DAMAGE;
+      let bulletPenetration = INIT.BULLET.PENETRATION;
+      let bulletKnockback = INIT.BULLET.KNOCKBACK;
+      let bulletRange = INIT.BULLET.RANGE;
+      let bulletLifeSteal = INIT.BULLET.LIFESTEAL;
+
+      let enemyContactDamage = INIT.ENEMY.CONTACT_DAMAGE;
+      let enemyReward = INIT.ENEMY.REWARD;
+      let enemySize = INIT.ENEMY.SIZE;
 
       // 웨이브 관련
-      const waveDurations = [30,35,40,45,50,55,60,65,70,75,80]; // 각 웨이브 진행 시간(초)
+      const waveDurations = [30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80]; // 각 웨이브 진행 시간(초)
       let currentWave = 0;
       let waveTimer = 0;
       let enemyScale = 1;              // 웨이브에 따른 적 체력/공격력 배율
@@ -344,8 +391,8 @@
       // 적 종류
       const enemyTypes = [
         { id: 'balanced', hpMul: 1, speedMul: 1, damageMul: 1, range: 0, defense: 0 },
-        { id: 'offense', hpMul: 0.6, speedMul: 1.5, damageMul: 1.8, range: 20, defense: 0 },
-        { id: 'tank', hpMul: 2, speedMul: 0.7, damageMul: 1, range: 0, defense: 10, knockbackImmune: true },
+        { id: 'offense', hpMul: 0.6, speedMul: 2, damageMul: 2, range: 30, defense: 0 },
+        { id: 'tank', hpMul: 2, speedMul: 0.7, damageMul: 1, range: 0, defense: 20, knockbackImmune: true },
       ];
 
       // 스폰 관련 (발생 주기 1.5배 빈번하게)
@@ -358,24 +405,24 @@
       // 경험치 및 레벨 관련
       let playerExp = 0;               // 현재 경험치
       let playerLevel = 1;             // 현재 레벨
-      let expToNextLevel = 80;         // 다음 레벨까지 필요한 경험치
-      let expGrowthRate = 1.2;         // 다음 레벨 경험치 증가율
-      let expOrbValue = 10;             // 경험치 구슬 하나당 경험치
-      let expOrbSpeed = 200;           // 경험치 구슬 이동 속도 (px/s)
-      let expOrbSize = 8;              // 경험치 구슬 크기
+      let expToNextLevel = INIT.EXP.FIRST_LEVEL;         // 다음 레벨까지 필요한 경험치
+      let expGrowthRate = INIT.EXP.GROWTH_RATE;         // 다음 레벨 경험치 증가율
+      let expOrbValue = INIT.EXP.ORB_VALUE;             // 경험치 구슬 하나당 경험치
+      let expOrbSpeed = INIT.EXP.ORB_SPEED;           // 경험치 구슬 이동 속도 (px/s)
+      let expOrbSize = INIT.EXP.ORB_SIZE;              // 경험치 구슬 크기
       let magnetRadius = 0;            // 자석 범위 (px)
       let magnetPullSpeed = 400;       // 자석 당기는 속도 (px/s)
 
       // 궤도 구슬 관련
       let orbitingOrbs = [];           // 궤도 구슬 배열
-      let orbitalRadius = 70;          // 궤도 반지름
-      let orbitalSpeed = 5;            // 궤도 회전 속도 (rad/s)
-      let orbitalDamage = 500;         // 궤도 구슬 피해량
+      let orbitalRadius = INIT.ORBITAL.RADIUS;          // 궤도 반지름
+      let orbitalSpeed = INIT.ORBITAL.SPEED;            // 궤도 회전 속도 (rad/s)
+      let orbitalDamage = INIT.ORBITAL.DAMAGE;         // 궤도 구슬 피해량
 
       // 레벨업 임펄스 설정
-      let levelUpImpulseDamage = 180;   // 레벨업 시 주변 적에게 줄 피해
-      let levelUpImpulseRadius = 100;   // 임펄스 범위 (px)
-      let levelUpImpulseKnockback = 80; // 넉백 거리 (px) - 넉백 2단계 업그레이드와 동일
+      let levelUpImpulseDamage = INIT.LEVELUP.DAMAGE;   // 레벨업 시 주변 적에게 줄 피해
+      let levelUpImpulseRadius = INIT.LEVELUP.RADIUS;   // 임펄스 범위 (px)
+      let levelUpImpulseKnockback = INIT.LEVELUP.KNOCKBACK; // 넉백 거리 (px) - 넉백 2단계 업그레이드와 동일
 
       // 업그레이드 옵션들
       const UPGRADES = [
@@ -670,16 +717,16 @@
         orbitalAngle = 0;
 
         // 업그레이드 초기화
-        bulletDamage = 180;
-        bulletCooldown = 420;
-        bulletPenetration = 0;
-        bulletKnockback = 0;
-        bulletRange = 500;
-        bulletLifeSteal = 0;
+        bulletDamage = INIT.BULLET.DAMAGE;
+        bulletCooldown = INIT.BULLET.COOLDOWN;
+        bulletPenetration = INIT.BULLET.PENETRATION;
+        bulletKnockback = INIT.BULLET.KNOCKBACK;
+        bulletRange = INIT.BULLET.RANGE;
+        bulletLifeSteal = INIT.BULLET.LIFESTEAL;
         magnetRadius = 0;
-        expOrbValue = 10;
-        playerDefense = 0;
-        playerHP = 1000;
+        expOrbValue = INIT.EXP.ORB_VALUE;
+        playerDefense = INIT.PLAYER.DEFENSE;
+        playerHP = INIT.PLAYER.HP;
         hp = playerHP;
 
         for (const id in acquiredUpgrades) delete acquiredUpgrades[id];
@@ -758,9 +805,9 @@
         const left = Math.random() < 0.5;
         const tier = weightedTier();
         let typePool;
-        if (tier.name === 'Weak' || tier.name === 'Basic') {
+        if (tier.name === 'Weak') {
           typePool = [enemyTypes[0]]; // 균형형만
-        } else if (tier.name === 'Medium') {
+        } else if (tier.name === 'Medium' || tier.name === 'Basic') {
           typePool = [enemyTypes[0], enemyTypes[1]]; // 균형형 + 공격형
         } else {
           typePool = enemyTypes; // 균형형 + 공격형 + 탱크형
@@ -1346,6 +1393,20 @@
         for (const e of enemies) {
           ctx.fillStyle = e.color;
           ctx.fillRect(e.x, e.y, e.w, e.h);
+
+          // tank 타입: 앞부분에 단색 사각형 방패 표시 (테두리/무늬 없음)
+          if (e.type && e.type.id === 'tank') {
+            ctx.save();
+            const facing = (player.x + player.w * 0.5) >= (e.x + e.w * 0.5) ? 1 : -1;
+            const shieldW = 6;
+            const shieldH = Math.max(14, e.h * 0.9);
+            const shieldY = e.y + (e.h - shieldH) / 2;
+            const shieldX = facing > 0 ? (e.x + e.w - 0) : (e.x - shieldW + 0);
+
+            ctx.fillStyle = '#bfc7d5';
+            ctx.fillRect(shieldX, shieldY, shieldW, shieldH);
+            ctx.restore();
+          }
 
           if (e.type && e.type.id === 'offense') {
             ctx.fillStyle = '#cbd5e1';
