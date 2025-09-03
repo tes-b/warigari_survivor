@@ -165,7 +165,7 @@
 
     .wave-display {
       position: absolute;
-      top: 50%;
+      top: 35%;
       left: 50%;
       transform: translate(-50%, -50%);
       font-size: 48px;
@@ -178,7 +178,7 @@
     .levelup-overlay {
       position: absolute;
       inset: 0;
-      display: flex;
+      display: none;
       align-items: center;
       justify-content: center;
       background: linear-gradient(180deg, rgba(15, 18, 40, 0.95), rgba(15, 18, 40, 0.95));
@@ -282,7 +282,8 @@
         </div>
       </div>
 
-    <div class="bottom-tip" id="tip">TIP: 웨이브가 진행될수록 적의 스폰 주기가 짧아지고 체력과 공격력이 증가합니다.</div>
+      <div class="bottom-tip" id="tip">TIP: 웨이브가 진행될수록 적의 스폰 주기가 짧아지고 체력과 공격력이 증가합니다.</div>
+      <div class="levelup-overlay" id="levelupOverlay">
       <div class="levelup-panel">
         <h1>🎉 레벨 업! 🎉</h1>
         <p>능력을 선택하세요:</p>
@@ -292,6 +293,7 @@
       </div>
     </div>
   </div>
+</div>
 
   <script>
     (() => {
