@@ -368,6 +368,11 @@
       let orbitalSpeed = 5;            // 궤도 회전 속도 (rad/s)
       let orbitalDamage = 500;         // 궤도 구슬 피해량
 
+      // 레벨업 임펄스 설정
+      let levelUpImpulseDamage = 180;   // 레벨업 시 주변 적에게 줄 피해
+      let levelUpImpulseRadius = 100;   // 임펄스 범위 (px)
+      let levelUpImpulseKnockback = 80; // 넉백 거리 (px) - 넉백 2단계 업그레이드와 동일
+
       // 업그레이드 옵션들
       const UPGRADES = [
         {
@@ -547,6 +552,9 @@
 
       // --- 떠다니는 텍스트(피해/회복 수치) ---
       const floatTexts = [];
+
+      // --- 레벨업 임펄스 이펙트 ---
+      const impulseEffects = [];
 
       // 입력: 클릭/스페이스 → 방향 전환
       function toggleDirection() { player.dir *= -1; }
@@ -769,6 +777,44 @@
         });
       }
 
+      // 레벨업 후 주위 적들에게 피해와 넉백을 주는 임펄스
+      function levelUpImpulse() {
+        const px = player.x + player.w / 2;
+        const py = player.y + player.h / 2;
+        impulseEffects.push({
+          x: px,
+          y: py,
+          radius: levelUpImpulseRadius,
+          life: 0,
+          duration: 200,
+        });
+        for (let i = enemies.length - 1; i >= 0; i--) {
+          const e = enemies[i];
+          const ex = e.x + e.w / 2;
+          const ey = e.y + e.h / 2;
+          const dx = ex - px;
+          const dy = ey - py;
+          const dist = Math.hypot(dx, dy);
+          if (dist <= levelUpImpulseRadius) {
+            const raw = levelUpImpulseDamage - (e.defense || 0);
+            const dmg = Math.min(Math.max(raw, 0), e.hp);
+            e.hp -= dmg;
+            spawnFloatText(e.x + e.w / 2, e.y - 12, -dmg, '#ff6b6b');
+            if (e.hp <= 0) {
+              spawnExpOrb(e.x + e.w / 2, e.y + e.h / 2);
+              enemies.splice(i, 1);
+              score += e.reward;
+              continue;
+            }
+            if (!e.knockbackImmune) {
+              const nx = dx / (dist || 1);
+              e.x += nx * levelUpImpulseKnockback;
+              e.x = clamp(e.x, -enemySize, WORLD.w);
+            }
+          }
+        }
+      }
+
       function weightedTier() {
         const t = elapsed;
 
@@ -897,6 +943,7 @@
       `;
           btn.onclick = () => {
             acquireUpgrade(upgrade);
+            levelUpImpulse();
             levelupOverlay.style.display = 'none';
             paused = false;
             updateHUD();
@@ -932,6 +979,13 @@
           ft.y -= 20 * dt;
           ft.life += dt * 1000;
           if (ft.life > 800) floatTexts.splice(i, 1);
+        }
+
+        // 레벨업 임펄스 이펙트 업데이트
+        for (let i = impulseEffects.length - 1; i >= 0; i--) {
+          const eff = impulseEffects[i];
+          eff.life += dt * 1000;
+          if (eff.life >= eff.duration) impulseEffects.splice(i, 1);
         }
 
         // 궤도 구슬 회전
@@ -1279,6 +1333,18 @@
 
           // 적 HP바 (머리 위)
           drawHPBar(e.x + e.w / 2 - 18, e.y - 8, 36, 4, e.hp, e.hpMax);
+        }
+
+        // 레벨업 임펄스 이펙트
+        for (const eff of impulseEffects) {
+          ctx.save();
+          ctx.strokeStyle = '#9ec4ff';
+          ctx.lineWidth = 2;
+          ctx.globalAlpha = 1 - eff.life / eff.duration;
+          ctx.beginPath();
+          ctx.arc(eff.x, eff.y, eff.radius, 0, Math.PI * 2);
+          ctx.stroke();
+          ctx.restore();
         }
 
         // 떠다니는 텍스트
