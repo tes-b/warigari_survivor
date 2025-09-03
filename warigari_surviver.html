@@ -163,10 +163,22 @@
       font-size: 13px;
     }
 
+    .wave-display {
+      position: absolute;
+      top: 35%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-size: 48px;
+      font-weight: 700;
+      color: #fff;
+      text-shadow: 0 0 10px #000;
+      pointer-events: none;
+    }
+
     .levelup-overlay {
       position: absolute;
       inset: 0;
-      display: flex;
+      display: none;
       align-items: center;
       justify-content: center;
       background: linear-gradient(180deg, rgba(15, 18, 40, 0.95), rgba(15, 18, 40, 0.95));
@@ -255,6 +267,8 @@
       <div class="stat" id="exp">EXP: 0/80</div>
     </div>
 
+    <div class="wave-display" id="waveDisplay"></div>
+
       <div class="upgrade-hud" id="upgradeHud"></div>
 
       <!-- 시작/재시작 오버레이 -->
@@ -268,11 +282,8 @@
         </div>
       </div>
 
-      <div class="bottom-tip" id="tip">TIP: 시간이 경과하면 적의 스폰 주기가 짧아지고 속도가 상승하며, 320초 이후부터 체력과 공격력이 증가합니다.</div>
-    </div>
-
-    <!-- 레벨업 오버레이 -->
-    <div class="levelup-overlay" id="levelupOverlay" style="display: none;">
+      <div class="bottom-tip" id="tip">TIP: 웨이브가 진행될수록 적의 스폰 주기가 짧아지고 체력과 공격력이 증가합니다.</div>
+      <div class="levelup-overlay" id="levelupOverlay">
       <div class="levelup-panel">
         <h1>🎉 레벨 업! 🎉</h1>
         <p>능력을 선택하세요:</p>
@@ -282,6 +293,7 @@
       </div>
     </div>
   </div>
+</div>
 
   <script>
     (() => {
@@ -309,8 +321,12 @@
       let enemyContactDamage = 100;    // 적 접촉 시 플레이어가 받는 피해
       let enemyReward = 1;             // 적 처치 시 점수
       let enemySize = 28;              // 적 크기
-      let enemyGrowthRate = 0.01;      // 적 체력/공격력 초당 1% 증가
-      let enemyGrowthStart = 320;      // 적 체력/공격력 증가 시작 시간 (초)
+
+      // 웨이브 관련
+      const waveDurations = [30,35,40,45,50,55,60,65,70,75,80]; // 각 웨이브 진행 시간(초)
+      let currentWave = 0;
+      let waveTimer = 0;
+      let enemyScale = 1;              // 웨이브에 따른 적 체력/공격력 배율
 
       // 적 티어별 설정 (5단계로 확장, 체력 증가/속도 감소)
       let enemyTiers = [
@@ -331,11 +347,6 @@
       // 스폰 관련 (발생 주기 1.5배 빈번하게)
       let initialSpawnInterval = 1300; // 초기 적 스폰 간격 (ms) - 2000에서 1300으로
       let minSpawnInterval = 200;      // 최소 스폰 간격 (ms) - 300에서 200으로
-      let difficultyIncrease = 8;      // 초당 스폰 간격 감소량 (ms)
-
-      // 속도 증가 관련
-      let maxSpeedBoost = 0.7;         // 최대 속도 증가율 (70%)
-      let speedBoostTime = 120;        // 최대 속도 증가에 도달하는 시간 (초)
 
       // 충돌 분리 관련
       let separationDistance = 2;      // 겹침 해소 시 최소 거리 (px)
@@ -537,11 +548,6 @@
       // --- 떠다니는 텍스트(피해/회복 수치) ---
       const floatTexts = [];
 
-      // 난이도 스케일링(시간이 지날수록 가속)
-      function updateDifficulty(seconds) {
-        currentSpawnInterval = Math.max(minSpawnInterval, initialSpawnInterval - seconds * difficultyIncrease);
-      }
-
       // 입력: 클릭/스페이스 → 방향 전환
       function toggleDirection() { player.dir *= -1; }
       canvas.addEventListener('click', () => { if (running) toggleDirection(); });
@@ -581,7 +587,7 @@
 
       const tipElem = document.getElementById('tip');
       const tips = [
-        'TIP: 시간이 경과하면 적의 스폰 주기가 짧아지고 속도가 상승하며, 320초 이후부터 체력과 공격력이 증가합니다.',
+        'TIP: 웨이브가 진행될수록 적의 스폰 주기가 짧아지고 체력과 공격력이 증가합니다.',
         'TIP: 적은 양쪽 끝에서 나타나 플레이어 쪽으로 전진합니다.'
       ];
       let tipIndex = 0;
@@ -612,7 +618,10 @@
         orbitingOrbs.length = 0;
         shootTimer = 0;
         spawnTimer = 0;
-        currentSpawnInterval = initialSpawnInterval;
+        currentWave = 0;
+        waveTimer = 0;
+        enemyScale = 1;
+        applyWaveDifficulty();
         orbitalAngle = 0;
 
         // 업그레이드 초기화
@@ -645,6 +654,7 @@
         const panelHTML = `
       <div class="panel">
         <h1>게임 오버</h1>
+        <p>웨이브: <b>${getWaveLabel()}</b></p>
         <p>생존 시간: <b>${elapsed.toFixed(1)}초</b> · 처치 수: <b>${score}</b></p>
         <div class="row">
           <button id="btnRestart">다시 시작</button>
@@ -661,6 +671,15 @@
       const timeEl = document.getElementById('time');
       const levelEl = document.getElementById('level');
       const expEl = document.getElementById('exp');
+      const waveEl = document.getElementById('waveDisplay');
+
+      function getWaveLabel() {
+        return currentWave < waveDurations.length - 1 ? currentWave + 1 : 'Final';
+      }
+
+      function updateWaveDisplay() {
+        waveEl.textContent = `Wave ${getWaveLabel()}`;
+      }
       function updateHUD() {
         hpEl.textContent = `HP: ${Math.max(0, Math.round(hp))}`;
         scoreEl.textContent = `KOs: ${score}`;
@@ -682,8 +701,7 @@
           typePool = enemyTypes; // 균형형 + 공격형 + 탱크형
         }
         const type = typePool[Math.floor(Math.random() * typePool.length)];
-        const growthElapsed = Math.max(0, elapsed - enemyGrowthStart);
-        const scale = 1 + growthElapsed * enemyGrowthRate;
+        const scale = enemyScale;
         const hpBase = tier.hp * scale * type.hpMul;
         enemies.push({
           id: nextEnemyId++,
@@ -807,6 +825,13 @@
         return enemyTiers[4];
       }
 
+      function applyWaveDifficulty() {
+        enemyScale = 1 + currentWave * 0.15;
+        currentSpawnInterval = Math.max(minSpawnInterval, initialSpawnInterval - currentWave * 100);
+        spawnTimer = 0;
+        updateWaveDisplay();
+      }
+
       // 레벨업 처리
       function checkLevelUp() {
         if (exp >= expToNextLevel) {
@@ -857,7 +882,14 @@
         if (paused) return; // 레벨업 중에는 업데이트 중지
 
         elapsed += dt;
-        updateDifficulty(elapsed);
+        waveTimer += dt;
+        if (waveTimer >= waveDurations[currentWave]) {
+          waveTimer = 0;
+          if (currentWave < waveDurations.length - 1) {
+            currentWave++;
+            applyWaveDifficulty();
+          }
+        }
         shootTimer += dt * 1000;
         spawnTimer += dt * 1000;
         if (player.iframes > 0) player.iframes -= dt * 1000;
@@ -981,8 +1013,7 @@
           const pCenter = player.x + player.w * 0.5;
           const dir = Math.sign(pCenter - eCenter) || (Math.random() < 0.5 ? -1 : 1);
           const baseSpeed = e.tier.speed * (e.speedMul || 1);
-          const globalBoost = 1 + Math.min(maxSpeedBoost, elapsed / speedBoostTime);
-          e.vx = dir * baseSpeed * globalBoost;
+          e.vx = dir * baseSpeed;
 
           // 플레이어와 겹침 방지: 이동 전에 미래 위치 계산
           let nextX = e.x + e.vx * dt;
