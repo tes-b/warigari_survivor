@@ -277,7 +277,7 @@
           <h1>와리가리 서바이버</h1>
           <p>클릭 또는 <span class="kbd">스페이스바</span>로 <b>방향 전환</b></p>
           <div class="row">
-            <button id="btnStart">게임 시작</button>
+            <button id="btnStart">게임 시작 (SPACE)</button>
           </div>
         </div>
       </div>
@@ -492,7 +492,7 @@
 
       // --- 게임 상태 ---
       let running = false;
-      let paused = false;              // 레벨업 시 일시정지
+      let paused = false;              // 레벨업/ESC 일시정지
       let lastTime = 0;
       let elapsed = 0;            // 생존 시간(초)
       let score = 0;
@@ -552,7 +552,20 @@
       function toggleDirection() { player.dir *= -1; }
       canvas.addEventListener('click', () => { if (running) toggleDirection(); });
       window.addEventListener('keydown', (e) => {
-        if (e.code === 'Space') { e.preventDefault(); if (running) toggleDirection(); }
+        if (e.code === 'Space') {
+          e.preventDefault();
+          if (!running) {
+            startGame();
+          } else if (!paused) {
+            toggleDirection();
+          }
+        } else if (e.code === 'Escape' && running) {
+          const lvlOverlay = document.getElementById('levelupOverlay');
+          if (lvlOverlay.style.display !== 'flex') {
+            e.preventDefault();
+            togglePause();
+          }
+        }
       });
 
       // --- 유틸 ---
@@ -649,6 +662,24 @@
         requestAnimationFrame(loop);
       }
 
+      function togglePause() {
+        if (!running) return;
+        if (!paused) {
+          paused = true;
+          overlay.innerHTML = `
+      <div class="panel">
+        <h1>일시정지</h1>
+        <div class="row"><button id="btnResume">계속하기</button></div>
+      </div>`;
+          overlay.style.display = 'flex';
+          document.getElementById('btnResume').onclick = togglePause;
+        } else {
+          overlay.style.display = 'none';
+          paused = false;
+          requestAnimationFrame(loop);
+        }
+      }
+
       function gameOver() {
         running = false;
         const panelHTML = `
@@ -657,7 +688,7 @@
         <p>웨이브: <b>${getWaveLabel()}</b></p>
         <p>생존 시간: <b>${elapsed.toFixed(1)}초</b> · 처치 수: <b>${score}</b></p>
         <div class="row">
-          <button id="btnRestart">다시 시작</button>
+          <button id="btnRestart">다시 시작 (SPACE)</button>
         </div>
       </div>`;
         overlay.innerHTML = panelHTML;
