@@ -248,11 +248,11 @@
       <canvas id="game" width="960" height="540"></canvas>
 
       <div class="hud" id="hud">
-        <div class="stat" id="hp">HP: 100</div>
+        <div class="stat" id="hp">HP: 1000</div>
         <div class="stat" id="score">KOs: 0</div>
         <div class="stat" id="time">Time: 0.0s</div>
       <div class="stat" id="level">Lv: 1</div>
-      <div class="stat" id="exp">EXP: 0/10</div>
+      <div class="stat" id="exp">EXP: 0/80</div>
     </div>
 
       <div class="upgrade-hud" id="upgradeHud"></div>
@@ -268,7 +268,7 @@
         </div>
       </div>
 
-      <div class="bottom-tip" id="tip">TIP: 시간이 경과하면 적의 스폰 주기가 짧아지고 속도/체력/공격력이 상승합니다.</div>
+      <div class="bottom-tip" id="tip">TIP: 시간이 경과하면 적의 스폰 주기가 짧아지고 속도가 상승하며, 320초 이후부터 체력과 공격력이 증가합니다.</div>
     </div>
 
     <!-- 레벨업 오버레이 -->
@@ -290,7 +290,7 @@
       // ========================================
 
       // 플레이어 관련
-      let playerHP = 100;              // 플레이어 최대 HP
+      let playerHP = 1000;             // 플레이어 최대 HP
       let playerSpeed = 160;           // 플레이어 이동 속도 (px/s)
       let playerIframeDuration = 800;  // 피격 후 무적 시간 (ms)
       let playerHitFlashDuration = 200; // 피격 시 시각 효과 지속 시간 (ms)
@@ -299,25 +299,33 @@
       let bulletSpeed = 460;           // 총알 속도 (px/s)
       let bulletSize = 8;              // 총알 크기
       let bulletCooldown = 420;        // 총알 발사 쿨다운 (ms)
-      let bulletDamage = 18;           // 총알 피해량
+      let bulletDamage = 180;          // 총알 피해량
       let bulletPenetration = 0;       // 총알 관통 수
       let bulletKnockback = 0;         // 총알 넉백 거리 (px)
       let bulletRange = 500;          // 총알 사정거리 (px)
       let bulletLifeSteal = 0;        // 총알 피해로 체력 회복 비율
 
       // 적 관련
-      let enemyContactDamage = 10;     // 적 접촉 시 플레이어가 받는 피해
+      let enemyContactDamage = 100;    // 적 접촉 시 플레이어가 받는 피해
       let enemyReward = 1;             // 적 처치 시 점수
       let enemySize = 28;              // 적 크기
       let enemyGrowthRate = 0.01;      // 적 체력/공격력 초당 1% 증가
+      let enemyGrowthStart = 320;      // 적 체력/공격력 증가 시작 시간 (초)
 
       // 적 티어별 설정 (5단계로 확장, 체력 증가/속도 감소)
       let enemyTiers = [
-        { name: 'Weak', speed: 35, color: '#4ade80', hp: 25 },  // 1단계: 매우 약함
-        { name: 'Basic', speed: 45, color: '#60a5fa', hp: 40 },  // 2단계: 기본
-        { name: 'Medium', speed: 55, color: '#a78bfa', hp: 60 },  // 3단계: 중간
-        { name: 'Strong', speed: 65, color: '#f59e0b', hp: 85 },  // 4단계: 강함
-        { name: 'Elite', speed: 75, color: '#ef4444', hp: 120 }, // 5단계: 정예
+        { name: 'Weak', speed: 35, color: '#4ade80', hp: 250 },   // 1단계: 매우 약함
+        { name: 'Basic', speed: 45, color: '#60a5fa', hp: 400 },  // 2단계: 기본
+        { name: 'Medium', speed: 55, color: '#a78bfa', hp: 600 }, // 3단계: 중간
+        { name: 'Strong', speed: 65, color: '#f59e0b', hp: 850 }, // 4단계: 강함
+        { name: 'Elite', speed: 75, color: '#ef4444', hp: 1200 }, // 5단계: 정예
+      ];
+
+      // 적 종류
+      const enemyTypes = [
+        { id: 'balanced', hpMul: 1, speedMul: 1, damageMul: 1, range: 0, defense: 0 },
+        { id: 'offense', hpMul: 0.6, speedMul: 1.5, damageMul: 1.8, range: 20, defense: 0 },
+        { id: 'tank', hpMul: 2, speedMul: 0.7, damageMul: 1, range: 0, defense: 10, knockbackImmune: true },
       ];
 
       // 스폰 관련 (발생 주기 1.5배 빈번하게)
@@ -347,7 +355,7 @@
       let orbitingOrbs = [];           // 궤도 구슬 배열
       let orbitalRadius = 70;          // 궤도 반지름
       let orbitalSpeed = 5;            // 궤도 회전 속도 (rad/s)
-      let orbitalDamage = 50;          // 궤도 구슬 피해량
+      let orbitalDamage = 500;         // 궤도 구슬 피해량
 
       // 업그레이드 옵션들
       const UPGRADES = [
@@ -355,8 +363,8 @@
           id: 'damage',
           title: '공격력 증가',
           icon: '🔥',
-          desc: '총알 피해량 +7',
-          apply: () => { bulletDamage += 7; }
+          desc: '현재 공격력의 30% 증가',
+          apply: () => { bulletDamage *= 1.3; }
         },
         {
           id: 'attackSpeed',
@@ -369,10 +377,10 @@
           id: 'health',
           title: '체력 증가',
           icon: '❤️',
-          desc: '최대 체력 +30, 현재 체력 회복',
+          desc: '최대 체력 +300, 현재 체력 회복',
           apply: () => {
-            playerHP += 30;
-            const healed = Math.min(30, playerHP - hp);
+            playerHP += 300;
+            const healed = Math.min(300, playerHP - hp);
             hp += healed;
             if (healed > 0) spawnFloatText(player.x + player.w / 2, player.y - 14, healed, '#6cff96');
           }
@@ -573,7 +581,7 @@
 
       const tipElem = document.getElementById('tip');
       const tips = [
-        'TIP: 시간이 경과하면 적의 스폰 주기가 짧아지고 속도/체력/공격력이 상승합니다.',
+        'TIP: 시간이 경과하면 적의 스폰 주기가 짧아지고 속도가 상승하며, 320초 이후부터 체력과 공격력이 증가합니다.',
         'TIP: 적은 양쪽 끝에서 나타나 플레이어 쪽으로 전진합니다.'
       ];
       let tipIndex = 0;
@@ -608,14 +616,14 @@
         orbitalAngle = 0;
 
         // 업그레이드 초기화
-        bulletDamage = 18;
+        bulletDamage = 180;
         bulletCooldown = 420;
         bulletPenetration = 0;
         bulletKnockback = 0;
         bulletRange = 500;
         bulletLifeSteal = 0;
         magnetRadius = 0;
-        playerHP = 100;
+        playerHP = 1000;
         hp = playerHP;
 
         for (const id in acquiredUpgrades) delete acquiredUpgrades[id];
@@ -665,7 +673,18 @@
       function spawnEnemy() {
         const left = Math.random() < 0.5;
         const tier = weightedTier();
-        const scale = 1 + elapsed * enemyGrowthRate;
+        let typePool;
+        if (tier.name === 'Weak' || tier.name === 'Basic') {
+          typePool = [enemyTypes[0]]; // 균형형만
+        } else if (tier.name === 'Medium') {
+          typePool = [enemyTypes[0], enemyTypes[1]]; // 균형형 + 공격형
+        } else {
+          typePool = enemyTypes; // 균형형 + 공격형 + 탱크형
+        }
+        const type = typePool[Math.floor(Math.random() * typePool.length)];
+        const growthElapsed = Math.max(0, elapsed - enemyGrowthStart);
+        const scale = 1 + growthElapsed * enemyGrowthRate;
+        const hpBase = tier.hp * scale * type.hpMul;
         enemies.push({
           id: nextEnemyId++,
           x: left ? -enemySize : WORLD.w,
@@ -673,12 +692,17 @@
           w: enemySize,
           h: enemySize,
           tier,
+          type,
           vx: 0,
           color: tier.color,
-          damage: enemyContactDamage * scale,
+          damage: enemyContactDamage * scale * type.damageMul,
           reward: enemyReward,
-          hp: tier.hp * scale,
-          hpMax: tier.hp * scale,
+          hp: hpBase,
+          hpMax: hpBase,
+          speedMul: type.speedMul,
+          range: enemySize + type.range,
+          defense: type.defense || 0,
+          knockbackImmune: !!type.knockbackImmune,
         });
       }
 
@@ -956,7 +980,7 @@
           const eCenter = e.x + e.w * 0.5;
           const pCenter = player.x + player.w * 0.5;
           const dir = Math.sign(pCenter - eCenter) || (Math.random() < 0.5 ? -1 : 1);
-          const baseSpeed = e.tier.speed;
+          const baseSpeed = e.tier.speed * (e.speedMul || 1);
           const globalBoost = 1 + Math.min(maxSpeedBoost, elapsed / speedBoostTime);
           e.vx = dir * baseSpeed * globalBoost;
 
@@ -971,7 +995,8 @@
             const b = bullets[j];
             if (b.hitSet.has(e.id)) continue;
             if (aabb(e, b)) {
-              const dmg = Math.min(b.dmg, e.hp);
+              const raw = b.dmg - (e.defense || 0);
+              const dmg = Math.min(Math.max(raw, 0), e.hp);
               e.hp -= dmg;
 
               spawnFloatText(e.x + e.w / 2, e.y - 12, -dmg, '#ff6b6b');
@@ -985,7 +1010,7 @@
               }
 
               // 넉백 적용 (업그레이드가 누적된 값을 사용)
-              if (bulletKnockback > 0) {
+              if (bulletKnockback > 0 && !e.knockbackImmune) {
                 const knockDir = Math.sign(b.vx);
                 e.x += knockDir * bulletKnockback;
                 e.x = clamp(e.x, -enemySize, WORLD.w);
@@ -1018,7 +1043,8 @@
             if (aabb(e, { x: orbX, y: orbY, w: orb.size, h: orb.size })) {
               if (orb.hitSet.has(e.id)) continue;
               orb.hitSet.add(e.id);
-              const dmg = Math.min(orb.damage, e.hp);
+              const raw = orb.damage - (e.defense || 0);
+              const dmg = Math.min(Math.max(raw, 0), e.hp);
               e.hp -= dmg;
 
               spawnFloatText(e.x + e.w / 2, e.y - 12, -dmg, '#ff6b6b');
@@ -1033,9 +1059,20 @@
           }
           if (e._killed) continue;
 
-          // 플레이어와 충돌 → 피해 + 즉시 분리(separation)
-          if (aabb(e, player)) {
-            // 피해(무적 시간 적용)
+          // 플레이어와 충돌/공격 처리
+          const playerCollide = aabb(e, player);
+          let attackRect = { x: e.x, y: e.y, w: e.w, h: e.h };
+          if (e.type && e.type.id === 'offense') {
+            const extra = e.range - e.w;
+            if (e.vx >= 0) {
+              attackRect.w += extra;
+            } else {
+              attackRect.x -= extra;
+              attackRect.w += extra;
+            }
+          }
+
+          if (playerCollide || aabb(attackRect, player)) {
             if (player.iframes <= 0) {
               const dmg = Math.min(e.damage, hp);
               hp -= dmg;
@@ -1044,7 +1081,9 @@
               player.hitFlash = playerHitFlashDuration;
               if (hp <= 0) { hp = 0; gameOver(); return; }
             }
-            // 겹침 해소: 적을 플레이어 바깥으로 밀어냄
+          }
+
+          if (playerCollide) {
             const playerLeft = player.x;
             const playerRight = player.x + player.w;
             const eLeft = e.x;
@@ -1052,15 +1091,11 @@
 
             const overlapLeft = Math.max(0, playerRight - eLeft);
             const overlapRight = Math.max(0, eRight - playerLeft);
-            // 어느 쪽이 겹침이 작은지에 따라 밖으로 위치 조정
             if (overlapLeft < overlapRight) {
-              // 적을 왼쪽(플레이어 오른쪽 바깥)으로
               e.x = playerRight + separationDistance;
             } else {
-              // 적을 오른쪽(플레이어 왼쪽 바깥)으로
               e.x = playerLeft - e.w - separationDistance;
             }
-            // 겹침 직후 프레임에서 다시 파고들지 않도록 순간 속도 감소
             e.vx = 0;
           }
         }
@@ -1168,6 +1203,14 @@
         for (const e of enemies) {
           ctx.fillStyle = e.color;
           ctx.fillRect(e.x, e.y, e.w, e.h);
+
+          if (e.type && e.type.id === 'offense') {
+            ctx.fillStyle = '#cbd5e1';
+            const extra = e.range - e.w;
+            const sx = e.vx >= 0 ? e.x + e.w : e.x - extra;
+            ctx.fillRect(sx, e.y + e.h * 0.5 - 1, extra, 2);
+          }
+
           ctx.fillStyle = '#0008';
           const ex = e.x + (e.vx > 0 ? e.w - 8 : 2);
           ctx.fillRect(ex, e.y + 8, 6, 6);
