@@ -306,6 +306,7 @@
       let playerSpeed = 160;           // 플레이어 이동 속도 (px/s)
       let playerIframeDuration = 250;  // 피격 후 무적 시간 (ms)
       let playerHitFlashDuration = 200; // 피격 시 시각 효과 지속 시간 (ms)
+      let playerDefense = 0;           // 플레이어 방어력
 
       // 총알 관련
       let bulletSpeed = 460;           // 총알 속도 (px/s)
@@ -464,6 +465,20 @@
           icon: '🧲',
           desc: '주변의 경험치 구슬을 끌어당깁니다 (범위 +80)',
           apply: () => { magnetRadius += 80; }
+        },
+        {
+          id: 'expBoost',
+          title: '경험치 증가',
+          icon: '📘',
+          desc: '경험치 획득량 20% 증가',
+          apply: () => { expOrbValue *= 1.2; }
+        },
+        {
+          id: 'defense',
+          title: '방어력 증가',
+          icon: '🛡️',
+          desc: '방어력 +10',
+          apply: () => { playerDefense += 10; }
         }
       ];
 
@@ -653,6 +668,8 @@
         bulletRange = 500;
         bulletLifeSteal = 0;
         magnetRadius = 0;
+        expOrbValue = 10;
+        playerDefense = 0;
         playerHP = 1000;
         hp = playerHP;
 
@@ -1190,7 +1207,8 @@
 
           if (playerCollide || aabb(attackRect, player)) {
             if (player.iframes <= 0) {
-              const dmg = Math.min(e.damage, hp);
+              const raw = e.damage - playerDefense;
+              const dmg = Math.min(Math.max(raw, 0), hp);
               hp -= dmg;
               spawnFloatText(player.x + player.w / 2, player.y - 14, -dmg, '#ff6b6b');
               player.iframes = playerIframeDuration;
