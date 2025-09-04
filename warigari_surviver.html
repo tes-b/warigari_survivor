@@ -9,6 +9,7 @@
     :root {
       --ui-scale: 1;
     }
+
     html,
     body {
       height: 100%;
@@ -370,13 +371,13 @@
         },
         // 총알 관련
         BULLET: {
-          SPEED: 360,           // 총알 속도 (px/s)
+          SPEED: 500,           // 총알 속도 (px/s)
           SIZE: 10,             // 총알 크기
           COOLDOWN: 500,        // 총알 발사 쿨다운 (ms)
           DAMAGE: 180,          // 총알 피해량
           PENETRATION: 0,       // 총알 관통 수
           KNOCKBACK: 0,         // 총알 넉백 거리 (px)
-          RANGE: 400,           // 총알 사정거리 (px)
+          RANGE: 250,           // 총알 사정거리 (px)
           LIFESTEAL: 0,         // 총알 피해로 체력 회복 비율
         },
         // 적 관련
@@ -395,7 +396,7 @@
         EXP: {
           ORB_VALUE: 10,       // 경험치 구슬 하나당 경험치
           ORB_SPEED: 200,      // 경험치 구슬 이동 속도 (px/s)
-          ORB_SIZE: 8,         // 경험치 구슬 크기
+          ORB_SIZE: 10,         // 경험치 구슬 크기
           GROWTH_RATE: 1.2,    // 다음 레벨 경험치 증가율
           FIRST_LEVEL: 80,     // 첫 레벨업에 필요한 경험치
         },
@@ -575,45 +576,45 @@
           desc: '주변의 경험치 구슬을 끌어당깁니다 (범위 +80)',
           apply: () => { magnetRadius += 80; }
         },
-          {
-            id: 'expBoost',
-            title: '경험치 증가',
-            icon: '📘',
-            desc: '경험치 획득량 20% 증가',
-            apply: () => { expOrbValue *= 1.2; }
-          },
-          {
-            id: 'bomb',
-            title: '폭탄',
-            icon: '💣',
-            desc: '주기적으로 가장 가까운 적에게 폭탄을 던집니다',
-            apply: () => {
-              const level = acquiredUpgrades['bomb'] || 0;
-              if (level === 0) {
-                bombEnabled = true;
-              } else {
-                bombDamage *= 1.5;
-                bombRadius *= 1.2;
-              }
+        {
+          id: 'expBoost',
+          title: '경험치 증가',
+          icon: '📘',
+          desc: '경험치 획득량 20% 증가',
+          apply: () => { expOrbValue *= 1.2; }
+        },
+        {
+          id: 'bomb',
+          title: '폭탄',
+          icon: '💣',
+          desc: '주기적으로 가장 가까운 적에게 폭탄을 던집니다',
+          apply: () => {
+            const level = acquiredUpgrades['bomb'] || 0;
+            if (level === 0) {
+              bombEnabled = true;
+            } else {
+              bombDamage *= 1.5;
+              bombRadius *= 1.2;
             }
-          },
-          {
-            id: 'iceFloor',
-            title: '얼음 바닥',
-            icon: '❄️',
-            desc: '이동 경로에 얼음 바닥을 생성해 적을 둔화시키고 피해를 줍니다',
-            apply: () => {
-              const level = acquiredUpgrades['iceFloor'] || 0;
-              if (level === 0) iceFloorEnabled = true;
-              iceFloorDuration += 1000;
-              iceFloorDamage += 10;
-            }
-          },
-          {
-            id: 'defense',
-            title: '방어력 증가',
-            icon: '🛡️',
-            desc: '방어력 +10',
+          }
+        },
+        {
+          id: 'iceFloor',
+          title: '얼음 바닥',
+          icon: '❄️',
+          desc: '이동 경로에 얼음 바닥을 생성해 적을 둔화시키고 피해를 줍니다',
+          apply: () => {
+            const level = acquiredUpgrades['iceFloor'] || 0;
+            if (level === 0) iceFloorEnabled = true;
+            iceFloorDuration += 1000;
+            iceFloorDamage += 10;
+          }
+        },
+        {
+          id: 'defense',
+          title: '방어력 증가',
+          icon: '🛡️',
+          desc: '방어력 +10',
           apply: () => { playerDefense += 10; }
         }
       ];
@@ -1615,7 +1616,7 @@
         // 얼음 바닥
         for (const f of iceFloors) {
           ctx.save();
-          ctx.globalAlpha = 0.5 * (1 - f.life / f.duration);
+          ctx.globalAlpha = 0.2 * (2 - f.life / f.duration);
           ctx.fillStyle = '#7dd3fc';
           ctx.fillRect(f.x, f.y, f.w, f.h);
           ctx.restore();
