@@ -1780,8 +1780,29 @@
           if (e.type && e.type.id === 'offense') {
             ctx.fillStyle = '#cbd5e1';
             const extra = e.range - e.w;
+            const tipLen = Math.min(4, extra);
+            const shaftLen = extra - tipLen;
             const sx = e.vx >= 0 ? e.x + e.w : e.x - extra;
-            ctx.fillRect(sx, e.y + e.h * 0.5 - 1, extra, 2);
+            const sy = e.y + e.h * 0.5 - 1;
+            if (e.vx >= 0) {
+              ctx.fillRect(sx, sy, shaftLen, 2);
+            } else {
+              ctx.fillRect(sx + tipLen, sy, shaftLen, 2);
+            }
+            const tx = e.vx >= 0 ? sx + shaftLen : sx + tipLen;
+            const ty = e.y + e.h * 0.5;
+            ctx.beginPath();
+            if (e.vx >= 0) {
+              ctx.moveTo(tx, ty - 3);
+              ctx.lineTo(tx + tipLen, ty);
+              ctx.lineTo(tx, ty + 3);
+            } else {
+              ctx.moveTo(tx, ty - 3);
+              ctx.lineTo(tx - tipLen, ty);
+              ctx.lineTo(tx, ty + 3);
+            }
+            ctx.closePath();
+            ctx.fill();
           }
 
           ctx.fillStyle = '#0008';
