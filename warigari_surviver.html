@@ -570,18 +570,33 @@
           desc: '주변의 경험치 구슬을 끌어당깁니다 (범위 +80)',
           apply: () => { magnetRadius += 80; }
         },
-        {
-          id: 'expBoost',
-          title: '경험치 증가',
-          icon: '📘',
-          desc: '경험치 획득량 20% 증가',
-          apply: () => { expOrbValue *= 1.2; }
-        },
-        {
-          id: 'defense',
-          title: '방어력 증가',
-          icon: '🛡️',
-          desc: '방어력 +10',
+          {
+            id: 'expBoost',
+            title: '경험치 증가',
+            icon: '📘',
+            desc: '경험치 획득량 20% 증가',
+            apply: () => { expOrbValue *= 1.2; }
+          },
+          {
+            id: 'bomb',
+            title: '폭탄',
+            icon: '💣',
+            desc: '주기적으로 가장 가까운 적에게 폭탄을 던집니다',
+            apply: () => {
+              const level = acquiredUpgrades['bomb'] || 0;
+              if (level === 0) {
+                bombEnabled = true;
+              } else {
+                bombDamage *= 1.5;
+                bombRadius *= 1.2;
+              }
+            }
+          },
+          {
+            id: 'defense',
+            title: '방어력 증가',
+            icon: '🛡️',
+            desc: '방어력 +10',
           apply: () => { playerDefense += 10; }
         }
       ];
@@ -674,6 +689,15 @@
       // --- 투사체(자동 공격) ---
       const bullets = [];
       let shootTimer = 0;
+
+      // --- 폭탄 ---
+      const bombs = [];
+      const explosions = [];
+      let bombTimer = 0;
+      let bombCooldown = 2500; // ms
+      let bombDamage = 300;
+      let bombRadius = 60;
+      let bombEnabled = false;
 
       // --- 적 ---
       const enemies = [];
@@ -939,6 +963,42 @@
         });
       }
 
+      function findNearestEnemy(px, py) {
+        let nearest = null;
+        let best = Infinity;
+        for (const e of enemies) {
+          const ex = e.x + e.w / 2;
+          const ey = e.y + e.h / 2;
+          const dist = Math.hypot(ex - px, ey - py);
+          if (dist < best) {
+            best = dist;
+            nearest = e;
+          }
+        }
+        return nearest;
+      }
+
+      function explodeBomb(b) {
+        explosions.push({ x: b.x, y: b.y, radius: b.radius, life: 0, duration: 300 });
+        for (let i = enemies.length - 1; i >= 0; i--) {
+          const e = enemies[i];
+          const ex = e.x + e.w / 2;
+          const ey = e.y + e.h / 2;
+          const dist = Math.hypot(ex - b.x, ey - b.y);
+          if (dist <= b.radius) {
+            const raw = b.damage - (e.defense || 0);
+            const dmg = Math.min(Math.max(raw, 0), e.hp);
+            e.hp -= dmg;
+            spawnFloatText(ex, ey - 12, -dmg, '#ff6b6b');
+            if (e.hp <= 0) {
+              spawnExpOrb(e.x + e.w / 2, e.y + e.h / 2);
+              enemies.splice(i, 1);
+              score += e.reward;
+            }
+          }
+        }
+      }
+
       // 레벨업 후 주위 적들에게 피해와 넉백을 주는 임펄스
       function levelUpImpulse() {
         const px = player.x + player.w / 2;
@@ -1140,6 +1200,7 @@
           }
         }
         shootTimer += dt * 1000;
+        bombTimer += dt * 1000;
         spawnTimer += dt * 1000;
         if (player.iframes > 0) player.iframes -= dt * 1000;
         if (player.hitFlash > 0) player.hitFlash -= dt * 1000;
@@ -1200,6 +1261,22 @@
           });
         }
 
+        if (bombEnabled && bombTimer >= bombCooldown) {
+          bombTimer = 0;
+          const sx = player.x + player.w / 2;
+          const sy = player.y;
+          const target = findNearestEnemy(sx, sy);
+          if (target) {
+            const tx = target.x + target.w / 2;
+            const ty = target.y;
+            const flight = 0.7;
+            const g = 1200;
+            const vx = (tx - sx) / flight;
+            const vy = (ty - sy - 0.5 * g * flight * flight) / flight;
+            bombs.push({ x: sx, y: sy, vx, vy, g, life: flight, damage: bombDamage, radius: bombRadius });
+          }
+        }
+
         // 탄 업데이트
         for (let i = bullets.length - 1; i >= 0; i--) {
           const b = bullets[i];
@@ -1209,6 +1286,26 @@
           if (b.range <= 0 || b.x < -40 || b.x > WORLD.w + 40) {
             bullets.splice(i, 1);
           }
+        }
+
+        // 폭탄 업데이트
+        for (let i = bombs.length - 1; i >= 0; i--) {
+          const b = bombs[i];
+          b.vy += b.g * dt;
+          b.x += b.vx * dt;
+          b.y += b.vy * dt;
+          b.life -= dt;
+          if (b.life <= 0 || b.y > WORLD.groundY) {
+            explodeBomb(b);
+            bombs.splice(i, 1);
+          }
+        }
+
+        // 폭발 이펙트 업데이트
+        for (let i = explosions.length - 1; i >= 0; i--) {
+          const ex = explosions[i];
+          ex.life += dt * 1000;
+          if (ex.life >= ex.duration) explosions.splice(i, 1);
         }
 
         // 경험치 구슬 업데이트
@@ -1516,6 +1613,25 @@
         // 탄
         ctx.fillStyle = '#fff';
         for (const b of bullets) ctx.fillRect(b.x, b.y, b.w, b.h);
+
+        // 폭탄
+        ctx.fillStyle = '#f87171';
+        for (const b of bombs) {
+          ctx.beginPath();
+          ctx.arc(b.x, b.y, 6, 0, Math.PI * 2);
+          ctx.fill();
+        }
+
+        // 폭발 이펙트
+        for (const ex of explosions) {
+          ctx.save();
+          ctx.globalAlpha = 1 - ex.life / ex.duration;
+          ctx.fillStyle = '#fca5a5';
+          ctx.beginPath();
+          ctx.arc(ex.x, ex.y, ex.radius, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.restore();
+        }
 
         // 경험치 구슬
         for (const orb of expOrbs) {
