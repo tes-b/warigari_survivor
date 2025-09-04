@@ -434,51 +434,10 @@
       let enemySize = INIT.ENEMY.SIZE;
 
       // 웨이브 관련
-      const WAVE_DURATION = 30; // 기본 웨이브 지속 시간
-      const WAVES_PER_BOSS = 3; // 보스 등장 전 웨이브 수
-      const TOTAL_WAVES = 9;    // 최종 보스 전까지의 총 웨이브 수
+      const waveDurations = [30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80]; // 각 웨이브 진행 시간(초)
       let currentWave = 0;
       let waveTimer = 0;
       let enemyScale = 1;              // 웨이브에 따른 적 체력/공격력 배율
-      let isBossStage = false;         // 현재 보스 스테이지인지 여부
-      let currentBoss = null;          // 현재 보스 객체
-      let isInfiniteMode = false;      // 무한 모드 여부
-      let infiniteWaveCount = 0;       // 무한 모드에서의 웨이브 카운트
-      let currentBossNumber = 0;       // 현재 보스 번호 (1, 2, 3)
-
-      // 보스 정의
-      const bosses = [
-        {
-          hp: 10000,
-          w: 80,
-          h: 80,
-          color: '#ef4444',
-          damage: 200,
-          defense: 30,
-          reward: 10,
-          knockbackImmune: true
-        },
-        {
-          hp: 20000,
-          w: 100,
-          h: 100,
-          color: '#7c3aed',
-          damage: 300,
-          defense: 50,
-          reward: 20,
-          knockbackImmune: true
-        },
-        {
-          hp: 40000,
-          w: 120,
-          h: 120,
-          color: '#fbbf24',
-          damage: 400,
-          defense: 70,
-          reward: 30,
-          knockbackImmune: true
-        }
-      ];
 
       // 적 티어별 설정 (5단계로 확장, 체력 증가/속도 감소)
       let enemyTiers = [
@@ -583,7 +542,7 @@
           id: 'knockback',
           title: '넉백 공격',
           icon: '💥',
-          desc: '총알이 적을 뒤로 밀어냄 \n(넉백 +40)',
+          desc: '총알이 적을 뒤로 밀어냄 (넉백 +40)',
           apply: () => {
             // 넉백 아이템을 여러 번 획득하면 효과가 누적되도록
             bulletKnockback += 40;
@@ -614,7 +573,7 @@
           id: 'magnet',
           title: '자석',
           icon: '🧲',
-          desc: '주변의 경험치 구슬을 끌어당깁니다 \n(범위 +80)',
+          desc: '주변의 경험치 구슬을 끌어당깁니다 (범위 +80)',
           apply: () => { magnetRadius += 80; }
         },
         {
@@ -628,7 +587,7 @@
           id: 'bomb',
           title: '폭탄',
           icon: '💣',
-          desc: '주기적으로 가장 가까운 적에게 폭탄을 던집니다. \n(피해 +50%, 범위 +20%)',
+          desc: '주기적으로 가장 가까운 적에게 폭탄을 던집니다',
           apply: () => {
             const level = acquiredUpgrades['bomb'] || 0;
             if (level === 0) {
@@ -643,7 +602,7 @@
           id: 'iceFloor',
           title: '얼음 바닥',
           icon: '❄️',
-          desc: '얼음을 생성해 적을 둔화시키고 피해를 줍니다. \n(지속 시간 +1초, 피해 +10)',
+          desc: '이동 경로에 얼음 바닥을 생성해 적을 둔화시키고 피해를 줍니다',
           apply: () => {
             const level = acquiredUpgrades['iceFloor'] || 0;
             if (level === 0) iceFloorEnabled = true;
@@ -967,17 +926,11 @@
       const waveEl = document.getElementById('waveDisplay');
 
       function getWaveLabel() {
-        if (isInfiniteMode) {
-          return `Wave ${infiniteWaveCount + 1} (Infinite)`;
-        } else if (isBossStage) {
-          return currentBossNumber === 3 ? 'FINAL BOSS' : `BOSS ${currentBossNumber}`;
-        } else {
-          return `Wave ${currentWave + 1}`;
-        }
+        return currentWave < waveDurations.length - 1 ? currentWave + 1 : 'Final';
       }
 
       function updateWaveDisplay() {
-        waveEl.textContent = getWaveLabel();
+        waveEl.textContent = `Wave ${getWaveLabel()}`;
       }
       function updateHUD() {
         hpEl.textContent = `HP: ${Math.max(0, Math.round(hp))}`;
@@ -994,37 +947,7 @@
       }
 
       // --- 스폰 ---
-      function spawnBoss(bossIndex) {
-        // 보스 정보 가져오기
-        const bossInfo = bosses[bossIndex];
-        if (!bossInfo) return;
-
-        // 보스 생성
-        const boss = {
-          id: nextEnemyId++,
-          x: WORLD.w + bossInfo.w, // 오른쪽에서 등장
-          y: WORLD.groundY - bossInfo.h,
-          w: bossInfo.w,
-          h: bossInfo.h,
-          color: bossInfo.color,
-          damage: bossInfo.damage,
-          defense: bossInfo.defense,
-          reward: bossInfo.reward,
-          hp: bossInfo.hp,
-          hpMax: bossInfo.hp,
-          knockbackImmune: bossInfo.knockbackImmune,
-          isBoss: true,
-          vx: 0 // 움직이지 않음
-        };
-
-        enemies.push(boss);
-        currentBoss = boss;
-      }
-
       function spawnEnemy() {
-        // 보스 스테이지에서는 일반 몬스터를 소환하지 않음
-        if (isBossStage) return;
-
         const left = Math.random() < 0.5;
         const tier = weightedTier();
         let typePool;
@@ -1235,18 +1158,8 @@
       }
 
       function applyWaveDifficulty() {
-        if (!isInfiniteMode) {
-          enemyScale = 1 + currentWave * 0.15;
-          currentSpawnInterval = Math.max(minSpawnInterval, initialSpawnInterval - currentWave * 100);
-        }
-        spawnTimer = 0;
-        updateWaveDisplay();
-      }
-
-      function applyInfiniteModeWave() {
-        // 무한 모드에서는 웨이브가 진행될 때마다 적이 더 강해짐
-        enemyScale = 2 + infiniteWaveCount * 0.1; // 기본 2배에서 시작
-        currentSpawnInterval = Math.max(minSpawnInterval, initialSpawnInterval - (infiniteWaveCount * 50));
+        enemyScale = 1 + currentWave * 0.15;
+        currentSpawnInterval = Math.max(minSpawnInterval, initialSpawnInterval - currentWave * 100);
         spawnTimer = 0;
         updateWaveDisplay();
       }
@@ -1312,32 +1225,16 @@
 
         elapsed += dt;
         waveTimer += dt;
-        if (waveTimer >= WAVE_DURATION) {
+        if (waveTimer >= waveDurations[currentWave]) {
           waveTimer = 0;
-
-          if (isInfiniteMode) {
-            // 무한 모드: 웨이브가 끝날 때마다 난이도 증가
-            infiniteWaveCount++;
-            applyInfiniteModeWave();
-          } else if (!isBossStage) {
-            // 일반 웨이브 진행
+          if (currentWave < waveDurations.length - 1) {
             currentWave++;
-
-            // 3웨이브마다 보스 스테이지 시작
-            if (currentWave % WAVES_PER_BOSS === 0) {
-              isBossStage = true;
-              currentBossNumber = currentWave / WAVES_PER_BOSS;
-              spawnBoss(currentBossNumber - 1);
-            } else {
-              applyWaveDifficulty();
-            }
+            applyWaveDifficulty();
           }
         }
         shootTimer += dt * 1000;
         bombTimer += dt * 1000;
-        if (!isBossStage) {
-          spawnTimer += dt * 1000;
-        }
+        spawnTimer += dt * 1000;
         iceFloorTimer += dt * 1000;
         if (player.iframes > 0) player.iframes -= dt * 1000;
         if (player.hitFlash > 0) player.hitFlash -= dt * 1000;
@@ -1562,32 +1459,13 @@
             }
           }
           if (e._killed) continue;
+          const baseSpeed = e.tier.speed * (e.speedMul || 1) * slowMul;
+          e.vx = dir * baseSpeed;
 
-          let nextX;
-          if (e.isBoss) {
-            // 보스는 이미 vx가 설정되어 있으므로 그대로 사용
-            nextX = e.x + e.vx * dt;
-          } else {
-            // 일반 몬스터는 기존 로직 사용
-            const baseSpeed = e.tier.speed * (e.speedMul || 1) * slowMul;
-            e.vx = dir * baseSpeed;
-            nextX = e.x + e.vx * dt;
-          }
+          // 플레이어와 겹침 방지: 이동 전에 미래 위치 계산
+          let nextX = e.x + e.vx * dt;
 
-          if (e.isBoss) {
-            // 보스는 화면 오른쪽에서 등장 후 오른쪽 끝에 멈춤
-            if (e.x > WORLD.w - e.w - 50) {
-              e.vx = -100;
-              nextX = e.x + e.vx * dt;
-            } else {
-              e.vx = 0;
-              nextX = e.x;
-            }
-          } else {
-            nextX = e.x + e.vx * dt;
-          }
-
-          // 이동 적용
+          // 우선 이동
           e.x = nextX;
 
           // 총알과 충돌(피해 처리)
@@ -1628,22 +1506,7 @@
                 spawnExpOrb(e.x + e.w / 2, e.y + e.h / 2);
                 enemies.splice(i, 1);
                 score += e.reward;
-
-                // 보스 처치 시 다음 웨이브로 진행
-                if (e.isBoss) {
-                  isBossStage = false;
-                  currentBoss = null;
-                  currentBossNumber = 0;
-
-                  // 마지막 보스(3번째 보스) 처치 시 무한 모드 시작
-                  if (currentWave >= TOTAL_WAVES) {
-                    isInfiniteMode = true;
-                    infiniteWaveCount = 0;
-                    applyInfiniteModeWave();
-                  } else {
-                    applyWaveDifficulty();
-                  }
-                } e._killed = true;
+                e._killed = true;
                 break;
               }
             }
