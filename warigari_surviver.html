@@ -6,6 +6,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
   <title>와리가리 서바이버</title>
   <style>
+    :root {
+      --ui-scale: 1;
+    }
     html,
     body {
       height: 100%;
@@ -258,9 +261,9 @@
       position: absolute;
       left: 0;
       right: 0;
-      bottom: 42px;
+      bottom: calc(42px * var(--ui-scale));
       /* 위치를 위로 올림 */
-      padding: 16px;
+      padding: calc(16px * var(--ui-scale));
       pointer-events: none;
       z-index: 5;
     }
@@ -268,8 +271,8 @@
     .exp-gauge {
       background: #0e1330aa;
       border: 1px solid #2b356e;
-      height: 20px;
-      border-radius: 4px;
+      height: calc(20px * var(--ui-scale));
+      border-radius: calc(4px * var(--ui-scale));
       position: relative;
       overflow: hidden;
     }
@@ -291,9 +294,9 @@
       transform: translateX(-50%);
       color: #ffffff;
       font-weight: bold;
-      font-size: 13px;
+      font-size: calc(13px * var(--ui-scale));
       background: #0e1330aa;
-      padding: 2px 8px;
+      padding: calc(2px * var(--ui-scale)) calc(8px * var(--ui-scale));
       white-space: nowrap;
       z-index: 20;
       /* z-index를 높여서 다른 UI 위에 표시 */
@@ -634,6 +637,8 @@
         }
         wrap.style.width = targetW + 'px';
         wrap.style.height = targetH + 'px';
+        const scale = targetW / 960;
+        document.documentElement.style.setProperty('--ui-scale', scale);
       }
       window.addEventListener('resize', fitCanvas);
       fitCanvas();
