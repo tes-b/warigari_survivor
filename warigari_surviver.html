@@ -434,12 +434,17 @@
       let enemySize = INIT.ENEMY.SIZE;
 
       // 웨이브 관련
-      const waveDurations = [30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80]; // 각 웨이브 진행 시간(초)
+      const WAVE_DURATION = 30; // 기본 웨이브 지속 시간
+      const WAVES_PER_BOSS = 3; // 보스 등장 전 웨이브 수
+      const TOTAL_WAVES = 9;    // 최종 보스 전까지의 총 웨이브 수
       let currentWave = 0;
       let waveTimer = 0;
       let enemyScale = 1;              // 웨이브에 따른 적 체력/공격력 배율
       let isBossStage = false;         // 현재 보스 스테이지인지 여부
       let currentBoss = null;          // 현재 보스 객체
+      let isInfiniteMode = false;      // 무한 모드 여부
+      let infiniteWaveCount = 0;       // 무한 모드에서의 웨이브 카운트
+      let currentBossNumber = 0;       // 현재 보스 번호 (1, 2, 3)
 
       // 보스 정의
       const bosses = [
@@ -962,11 +967,17 @@
       const waveEl = document.getElementById('waveDisplay');
 
       function getWaveLabel() {
-        return currentWave < waveDurations.length - 1 ? currentWave + 1 : 'Final';
+        if (isInfiniteMode) {
+          return `Wave ${infiniteWaveCount + 1} (Infinite)`;
+        } else if (isBossStage) {
+          return currentBossNumber === 3 ? 'FINAL BOSS' : `BOSS ${currentBossNumber}`;
+        } else {
+          return `Wave ${currentWave + 1}`;
+        }
       }
 
       function updateWaveDisplay() {
-        waveEl.textContent = `Wave ${getWaveLabel()}`;
+        waveEl.textContent = getWaveLabel();
       }
       function updateHUD() {
         hpEl.textContent = `HP: ${Math.max(0, Math.round(hp))}`;
@@ -1224,8 +1235,18 @@
       }
 
       function applyWaveDifficulty() {
-        enemyScale = 1 + currentWave * 0.15;
-        currentSpawnInterval = Math.max(minSpawnInterval, initialSpawnInterval - currentWave * 100);
+        if (!isInfiniteMode) {
+          enemyScale = 1 + currentWave * 0.15;
+          currentSpawnInterval = Math.max(minSpawnInterval, initialSpawnInterval - currentWave * 100);
+        }
+        spawnTimer = 0;
+        updateWaveDisplay();
+      }
+
+      function applyInfiniteModeWave() {
+        // 무한 모드에서는 웨이브가 진행될 때마다 적이 더 강해짐
+        enemyScale = 2 + infiniteWaveCount * 0.1; // 기본 2배에서 시작
+        currentSpawnInterval = Math.max(minSpawnInterval, initialSpawnInterval - (infiniteWaveCount * 50));
         spawnTimer = 0;
         updateWaveDisplay();
       }
@@ -1291,14 +1312,22 @@
 
         elapsed += dt;
         waveTimer += dt;
-        if (waveTimer >= waveDurations[currentWave]) {
+        if (waveTimer >= WAVE_DURATION) {
           waveTimer = 0;
-          if (currentWave < waveDurations.length - 1) {
+
+          if (isInfiniteMode) {
+            // 무한 모드: 웨이브가 끝날 때마다 난이도 증가
+            infiniteWaveCount++;
+            applyInfiniteModeWave();
+          } else if (!isBossStage) {
+            // 일반 웨이브 진행
             currentWave++;
-            // 웨이브 3,6,9에서 보스 스테이지 시작
-            if ((currentWave + 1) % 3 === 0) {
+
+            // 3웨이브마다 보스 스테이지 시작
+            if (currentWave % WAVES_PER_BOSS === 0) {
               isBossStage = true;
-              spawnBoss(Math.floor(currentWave / 3));
+              currentBossNumber = currentWave / WAVES_PER_BOSS;
+              spawnBoss(currentBossNumber - 1);
             } else {
               applyWaveDifficulty();
             }
@@ -1604,10 +1633,17 @@
                 if (e.isBoss) {
                   isBossStage = false;
                   currentBoss = null;
-                  applyWaveDifficulty();
-                }
+                  currentBossNumber = 0;
 
-                e._killed = true;
+                  // 마지막 보스(3번째 보스) 처치 시 무한 모드 시작
+                  if (currentWave >= TOTAL_WAVES) {
+                    isInfiniteMode = true;
+                    infiniteWaveCount = 0;
+                    applyInfiniteModeWave();
+                  } else {
+                    applyWaveDifficulty();
+                  }
+                } e._killed = true;
                 break;
               }
             }
