@@ -261,7 +261,7 @@
       position: absolute;
       left: 0;
       right: 0;
-      bottom: calc(42px * var(--ui-scale));
+      bottom: calc(16px * var(--ui-scale));
       /* 위치를 위로 올림 */
       padding: calc(16px * var(--ui-scale));
       pointer-events: none;
@@ -339,7 +339,7 @@
         </div>
       </div>
 
-      <div class="bottom-tip" id="tip">TIP: 웨이브가 진행될수록 적의 스폰 주기가 짧아지고 체력과 공격력이 증가합니다.</div>
+      <div class="bottom-tip" id="tip">TIP: 팁을 보려면 팁을 내세요.</div>
       <div class="levelup-overlay" id="levelupOverlay">
         <div class="levelup-panel">
           <h1>🎉 레벨 업! 🎉</h1>
@@ -745,8 +745,11 @@
 
       const tipElem = document.getElementById('tip');
       const tips = [
-        'TIP: 웨이브가 진행될수록 적의 스폰 주기가 짧아지고 체력과 공격력이 증가합니다.',
-        'TIP: 적은 양쪽 끝에서 나타나 플레이어 쪽으로 전진합니다.'
+        'TIP: 웨이브가 진행될수록 더 귀여운 적이 등장합니다.',
+        'TIP: 변수 이름을 temp로 짓는 순간, 영구 변수가 됩니다.',
+        'TIP: “한 줄만 고치면 돼”는 세 시간짜리 퀘스트 입니다.',
+        'TIP: 당신은 바보입니다.',
+        'TIP: 가위바위보에서 "보"를 내면 손이 가장 크게 보입니다.',
       ];
       let tipIndex = 0;
       setInterval(() => {
