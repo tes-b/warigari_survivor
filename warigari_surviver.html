@@ -405,6 +405,11 @@
           RADIUS: 100,         // 임펄스 범위 (px)
           KNOCKBACK: 80,       // 넉백 거리 (px)
         },
+        // 얼음 바닥 관련
+        ICEFLOOR: {
+          DAMAGE: 20,         // 초당 피해량
+          DURATION: 3000,     // 기본 지속 시간 (ms)
+        },
       };
 
       // 가변 상태 변수들 (게임 진행 중 변경됨)
@@ -593,6 +598,18 @@
             }
           },
           {
+            id: 'iceFloor',
+            title: '얼음 바닥',
+            icon: '❄️',
+            desc: '이동 경로에 얼음 바닥을 생성해 적을 둔화시키고 피해를 줍니다',
+            apply: () => {
+              const level = acquiredUpgrades['iceFloor'] || 0;
+              if (level === 0) iceFloorEnabled = true;
+              iceFloorDuration += 1000;
+              iceFloorDamage += 10;
+            }
+          },
+          {
             id: 'defense',
             title: '방어력 증가',
             icon: '🛡️',
@@ -698,6 +715,16 @@
       let bombDamage = 300;
       let bombRadius = 60;
       let bombEnabled = false;
+
+      // --- 얼음 바닥 ---
+      const iceFloors = [];
+      let iceFloorTimer = 0;
+      let iceFloorEnabled = false;
+      let iceFloorDamage = INIT.ICEFLOOR.DAMAGE;
+      let iceFloorDuration = INIT.ICEFLOOR.DURATION;
+      const iceFloorSpawnInterval = 1000; // ms
+      const iceFloorSlow = 0.5;
+      const iceFloorTickInterval = 500; // ms
 
       // --- 적 ---
       const enemies = [];
@@ -826,6 +853,11 @@
         playerDefense = INIT.PLAYER.DEFENSE;
         playerHP = INIT.PLAYER.HP;
         hp = playerHP;
+        iceFloors.length = 0;
+        iceFloorTimer = 0;
+        iceFloorEnabled = false;
+        iceFloorDamage = INIT.ICEFLOOR.DAMAGE;
+        iceFloorDuration = INIT.ICEFLOOR.DURATION;
 
         for (const id in acquiredUpgrades) delete acquiredUpgrades[id];
         updateUpgradeHUD();
@@ -1202,6 +1234,7 @@
         shootTimer += dt * 1000;
         bombTimer += dt * 1000;
         spawnTimer += dt * 1000;
+        iceFloorTimer += dt * 1000;
         if (player.iframes > 0) player.iframes -= dt * 1000;
         if (player.hitFlash > 0) player.hitFlash -= dt * 1000;
 
@@ -1274,6 +1307,38 @@
             const vx = (tx - sx) / flight;
             const vy = (ty - sy - 0.5 * g * flight * flight) / flight;
             bombs.push({ x: sx, y: sy, vx, vy, g, life: flight, damage: bombDamage, radius: bombRadius });
+          }
+        }
+
+        // 얼음 바닥 생성
+        if (iceFloorEnabled && iceFloorTimer >= iceFloorSpawnInterval) {
+          iceFloorTimer = 0;
+          iceFloors.push({
+            x: player.x + player.w / 2 - 30,
+            y: WORLD.groundY - 10,
+            w: 60,
+            h: 10,
+            life: 0,
+            duration: iceFloorDuration,
+            damage: iceFloorDamage,
+            slow: iceFloorSlow,
+            tick: 0,
+            doDamage: false,
+          });
+        }
+
+        // 얼음 바닥 업데이트
+        for (let i = iceFloors.length - 1; i >= 0; i--) {
+          const f = iceFloors[i];
+          f.life += dt * 1000;
+          f.tick += dt * 1000;
+          f.doDamage = false;
+          if (f.tick >= iceFloorTickInterval) {
+            f.tick -= iceFloorTickInterval;
+            f.doDamage = true;
+          }
+          if (f.life >= f.duration) {
+            iceFloors.splice(i, 1);
           }
         }
 
@@ -1369,7 +1434,31 @@
           const eCenter = e.x + e.w * 0.5;
           const pCenter = player.x + player.w * 0.5;
           const dir = Math.sign(pCenter - eCenter) || (Math.random() < 0.5 ? -1 : 1);
-          const baseSpeed = e.tier.speed * (e.speedMul || 1);
+
+          let slowMul = 1;
+          let iceDamage = 0;
+          for (const f of iceFloors) {
+            if (aabb(e, f)) {
+              slowMul *= f.slow;
+              if (f.doDamage) {
+                iceDamage = Math.max(iceDamage, f.damage);
+              }
+            }
+          }
+          if (iceDamage > 0) {
+            const raw = iceDamage * (iceFloorTickInterval / 1000) - (e.defense || 0);
+            const dmg = Math.min(Math.max(raw, 0), e.hp);
+            e.hp -= dmg;
+            spawnFloatText(e.x + e.w / 2, e.y - 12, -dmg, '#60a5fa');
+            if (e.hp <= 0) {
+              spawnExpOrb(e.x + e.w / 2, e.y + e.h / 2);
+              enemies.splice(i, 1);
+              score += e.reward;
+              e._killed = true;
+            }
+          }
+          if (e._killed) continue;
+          const baseSpeed = e.tier.speed * (e.speedMul || 1) * slowMul;
           e.vx = dir * baseSpeed;
 
           // 플레이어와 겹침 방지: 이동 전에 미래 위치 계산
@@ -1522,6 +1611,15 @@
         ctx.moveTo(0, WORLD.groundY + 0.5);
         ctx.lineTo(canvas.width, WORLD.groundY + 0.5);
         ctx.stroke();
+
+        // 얼음 바닥
+        for (const f of iceFloors) {
+          ctx.save();
+          ctx.globalAlpha = 0.5 * (1 - f.life / f.duration);
+          ctx.fillStyle = '#7dd3fc';
+          ctx.fillRect(f.x, f.y, f.w, f.h);
+          ctx.restore();
+        }
 
         // 플레이어
         ctx.save();
