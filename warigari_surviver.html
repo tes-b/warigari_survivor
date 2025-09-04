@@ -489,6 +489,16 @@
       let levelUpImpulseRadius = levelUpImpulseRadiusBase;
       let levelUpImpulseKnockback = INIT.LEVELUP.KNOCKBACK; // 넉백 거리 (px) - 넉백 2단계 업그레이드와 동일
 
+      // 폭탄 관련
+      const bombs = [];
+      const explosions = [];
+      let bombTimer = 0;
+      let bombCooldown = 2500; // ms
+      let bombDamage = 100;
+      let bombRadiusBase = 60;        // 기본 폭탄 반경
+      let bombRadius = bombRadiusBase;
+      let bombEnabled = false;
+
       // 업그레이드 옵션들
       const UPGRADES = [
         {
@@ -739,16 +749,6 @@
       // --- 투사체(자동 공격) ---
       const bullets = [];
       let shootTimer = 0;
-
-      // --- 폭탄 ---
-      const bombs = [];
-      const explosions = [];
-      let bombTimer = 0;
-      let bombCooldown = 2500; // ms
-      let bombDamage = 100;
-      let bombRadiusBase = 60;        // 기본 폭탄 반경
-      let bombRadius = bombRadiusBase;
-      let bombEnabled = false;
 
       // --- 얼음 바닥 ---
       const iceFloors = [];
