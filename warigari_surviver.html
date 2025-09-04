@@ -1780,26 +1780,27 @@
           if (e.type && e.type.id === 'offense') {
             ctx.fillStyle = '#cbd5e1';
             const extra = e.range - e.w;
-            const tipLen = Math.min(4, extra);
+            const tipLen = Math.min(6, extra);
             const shaftLen = extra - tipLen;
+            const shaftThickness = 3;
             const sx = e.vx >= 0 ? e.x + e.w : e.x - extra;
-            const sy = e.y + e.h * 0.5 - 1;
+            const sy = e.y + e.h * 0.5 - shaftThickness / 2;
             if (e.vx >= 0) {
-              ctx.fillRect(sx, sy, shaftLen, 2);
+              ctx.fillRect(sx, sy, shaftLen, shaftThickness);
             } else {
-              ctx.fillRect(sx + tipLen, sy, shaftLen, 2);
+              ctx.fillRect(sx + tipLen, sy, shaftLen, shaftThickness);
             }
             const tx = e.vx >= 0 ? sx + shaftLen : sx + tipLen;
             const ty = e.y + e.h * 0.5;
             ctx.beginPath();
             if (e.vx >= 0) {
-              ctx.moveTo(tx, ty - 3);
+              ctx.moveTo(tx, ty - 4);
               ctx.lineTo(tx + tipLen, ty);
-              ctx.lineTo(tx, ty + 3);
+              ctx.lineTo(tx, ty + 4);
             } else {
-              ctx.moveTo(tx, ty - 3);
+              ctx.moveTo(tx, ty - 4);
               ctx.lineTo(tx - tipLen, ty);
-              ctx.lineTo(tx, ty + 3);
+              ctx.lineTo(tx, ty + 4);
             }
             ctx.closePath();
             ctx.fill();
