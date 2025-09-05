@@ -775,6 +775,16 @@
         floatTexts.push({ x, y, value, color, life: 0 });
       }
 
+      function pickWeightedIndex(weights) {
+        const total = weights.reduce((s, w) => s + w, 0);
+        let r = Math.random() * total;
+        for (let i = 0; i < weights.length; i++) {
+          r -= weights[i];
+          if (r < 0) return i;
+        }
+        return weights.length - 1;
+      }
+
       // 체력바 그리기
       function drawHPBar(x, y, w, h, hp, hpMax) {
         const ratio = Math.max(0, Math.min(1, hp / hpMax));
@@ -1073,89 +1083,23 @@
 
       function weightedTier() {
         const t = elapsed;
+        const pick = (weights) => enemyTiers[pickWeightedIndex(weights)];
 
-        // 처음 30초: 가장 약한 적만 등장 (2배 길게)
-        if (t < 30) {
-          return enemyTiers[0]; // Weak만
-        }
+        if (t < 30) return enemyTiers[0];
+        if (t < 60) return pick([8, 2]);
+        if (t < 100) return pick([5, 5]);
+        if (t < 160) return pick([2, 5, 1]);
+        if (t < 240) return pick([2, 5, 3, 1]);
+        if (t < 320) return pick([1, 3, 4, 4, 2]);
 
-        // 30-60초: 약한 적 위주 + 기본 적 조금 (2배 길게)
-        if (t < 60) {
-          const w1 = 8;  // Weak 높은 비율
-          const w2 = 2;  // Basic 낮은 비율
-          const sum = w1 + w2;
-          const r = Math.random() * sum;
-          if (r < w1) return enemyTiers[0];
-          return enemyTiers[1];
-        }
-
-        // 60-100초: 약한/기본 적 균형 (2배 길게)
-        if (t < 100) {
-          const w1 = 5;  // Weak
-          const w2 = 5;  // Basic
-          const sum = w1 + w2;
-          const r = Math.random() * sum;
-          if (r < w1) return enemyTiers[0];
-          return enemyTiers[1];
-        }
-
-        // 100-160초: 기본 적 위주, 약간의 중간 적 (2배 길게)
-        if (t < 160) {
-          const w1 = 2;  // Weak
-          const w2 = 5;  // Basic
-          const w3 = 1;  // Medium
-          const sum = w1 + w2 + w3;
-          const r = Math.random() * sum;
-          if (r < w1) return enemyTiers[0];
-          if (r < w1 + w2) return enemyTiers[1];
-          return enemyTiers[2];
-        }
-
-        // 160-240초: 기본/중간 적 위주, 약간의 강한 적 (2배 길게)
-        if (t < 240) {
-          const w1 = 2;  // Weak
-          const w2 = 5;  // Basic
-          const w3 = 3;  // Medium
-          const w4 = 1;  // Strong 조금
-          const sum = w1 + w2 + w3 + w4;
-          const r = Math.random() * sum;
-          if (r < w1) return enemyTiers[0];
-          if (r < w1 + w2) return enemyTiers[1];
-          if (r < w1 + w2 + w3) return enemyTiers[2];
-          return enemyTiers[3];
-        }
-
-        // 240-320초: 중간/강한 적 위주, 정예 적 등장 (2배 길게)
-        if (t < 320) {
-          const w1 = 1;  // Weak
-          const w2 = 3;  // Basic
-          const w3 = 4;  // Medium
-          const w4 = 4;  // Strong
-          const w5 = 2;  // Elite 조금
-          const sum = w1 + w2 + w3 + w4 + w5;
-          const r = Math.random() * sum;
-          if (r < w1) return enemyTiers[0];
-          if (r < w1 + w2) return enemyTiers[1];
-          if (r < w1 + w2 + w3) return enemyTiers[2];
-          if (r < w1 + w2 + w3 + w4) return enemyTiers[3];
-          return enemyTiers[4];
-        }
-
-        // 320초 이후: 모든 적 등장, 시간이 지날수록 강한 적 비율 증가 (2배 긴 주기)
-        const timeBonus = Math.min(10, (t - 320) / 40); // 40초마다 강한 적 비율 증가
-        const w1 = Math.max(0.5, 2 - timeBonus * 0.15); // Weak 비율 서서히 감소
-        const w2 = Math.max(1, 3 - timeBonus * 0.25);   // Basic 비율 감소
-        const w3 = Math.max(2, 4 - timeBonus * 0.2);    // Medium 비율 약간 감소
-        const w4 = 3 + timeBonus * 0.4;                 // Strong 비율 증가
-        const w5 = 2 + timeBonus * 0.8;                 // Elite 비율 큰 폭 증가
-
-        const sum = w1 + w2 + w3 + w4 + w5;
-        const r = Math.random() * sum;
-        if (r < w1) return enemyTiers[0];
-        if (r < w1 + w2) return enemyTiers[1];
-        if (r < w1 + w2 + w3) return enemyTiers[2];
-        if (r < w1 + w2 + w3 + w4) return enemyTiers[3];
-        return enemyTiers[4];
+        const timeBonus = Math.min(10, (t - 320) / 40);
+        return pick([
+          Math.max(0.5, 2 - timeBonus * 0.15),
+          Math.max(1, 3 - timeBonus * 0.25),
+          Math.max(2, 4 - timeBonus * 0.2),
+          3 + timeBonus * 0.4,
+          2 + timeBonus * 0.8,
+        ]);
       }
 
       function applyWaveDifficulty() {
