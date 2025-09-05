@@ -434,10 +434,11 @@
       let enemySize = INIT.ENEMY.SIZE;
 
       // 웨이브 관련
-      const waveDurations = [30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80]; // 각 웨이브 진행 시간(초)
+      const waveDurations = [30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30]; // 각 웨이브 진행 시간(초)
       let currentWave = 0;
       let waveTimer = 0;
       let enemyScale = 1;              // 웨이브에 따른 적 체력/공격력 배율
+      let infiniteMode = false;        // 12웨이브 이후 무한 모드 여부
 
       // 적 티어별 설정 (5단계로 확장, 체력 증가/속도 감소)
       let enemyTiers = [
@@ -848,6 +849,7 @@
         spawnTimer = 0;
         currentWave = 0;
         waveTimer = 0;
+        infiniteMode = false;
         enemyScale = 1;
         applyWaveDifficulty();
         orbitalAngle = 0;
@@ -937,7 +939,7 @@
       const waveEl = document.getElementById('waveDisplay');
 
       function getWaveLabel() {
-        return currentWave < waveDurations.length - 1 ? currentWave + 1 : 'Final';
+        return currentWave + 1;
       }
 
       function updateWaveDisplay() {
@@ -1170,12 +1172,14 @@
 
         elapsed += dt;
         waveTimer += dt;
-        if (waveTimer >= waveDurations[currentWave]) {
+        const currentDuration = infiniteMode ? 30 : waveDurations[currentWave];
+        if (waveTimer >= currentDuration) {
           waveTimer = 0;
-          if (currentWave < waveDurations.length - 1) {
-            currentWave++;
-            applyWaveDifficulty();
+          currentWave++;
+          if (!infiniteMode && currentWave >= waveDurations.length) {
+            infiniteMode = true;
           }
+          applyWaveDifficulty();
         }
         shootTimer += dt * 1000;
         bombTimer += dt * 1000;
