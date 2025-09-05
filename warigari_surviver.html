@@ -439,6 +439,7 @@
       let waveTimer = 0;
       let enemyScale = 1;              // 웨이브에 따른 적 체력/공격력 배율
       let infiniteMode = false;        // 12웨이브 이후 무한 모드 여부
+      let infiniteStartTime = 0;       // 무한 모드 시작 시간
 
       // 적 티어별 설정 (5단계로 확장, 체력 증가/속도 감소)
       let enemyTiers = [
@@ -850,6 +851,7 @@
         currentWave = 0;
         waveTimer = 0;
         infiniteMode = false;
+        infiniteStartTime = 0;
         enemyScale = 1;
         applyWaveDifficulty();
         orbitalAngle = 0;
@@ -1084,17 +1086,20 @@
       }
 
       function weightedTier() {
-        const t = elapsed;
         const pick = (weights) => enemyTiers[pickWeightedIndex(weights)];
 
-        if (t < 30) return enemyTiers[0];
-        if (t < 60) return pick([8, 2]);
-        if (t < 100) return pick([5, 5]);
-        if (t < 160) return pick([2, 5, 1]);
-        if (t < 240) return pick([2, 5, 3, 1]);
-        if (t < 320) return pick([1, 3, 4, 4, 2]);
+        if (!infiniteMode) {
+          const w = currentWave;
+          if (w < 1) return enemyTiers[0];
+          if (w < 2) return pick([8, 2]);
+          if (w < 4) return pick([5, 5]);
+          if (w < 6) return pick([2, 5, 1]);
+          if (w < 8) return pick([2, 5, 3, 1]);
+          return pick([1, 3, 4, 4, 2]);
+        }
 
-        const timeBonus = Math.min(10, (t - 320) / 40);
+        const t = elapsed - infiniteStartTime;
+        const timeBonus = Math.min(10, t / 40);
         return pick([
           Math.max(0.5, 2 - timeBonus * 0.15),
           Math.max(1, 3 - timeBonus * 0.25),
@@ -1178,6 +1183,7 @@
           currentWave++;
           if (!infiniteMode && currentWave >= waveDurations.length) {
             infiniteMode = true;
+            infiniteStartTime = elapsed;
           }
           applyWaveDifficulty();
         }
