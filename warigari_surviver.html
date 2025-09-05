@@ -547,7 +547,7 @@
           id: 'knockback',
           title: '넉백 공격',
           icon: '💥',
-          desc: '총알이 적을 뒤로 밀어냄 (넉백 +40)',
+          desc: '총알이 적을 뒤로 밀어냄 \n(넉백 +40)',
           apply: () => {
             // 넉백 아이템을 여러 번 획득하면 효과가 누적되도록
             bulletKnockback += 40;
@@ -578,7 +578,7 @@
           id: 'magnet',
           title: '자석',
           icon: '🧲',
-          desc: '주변의 경험치 구슬을 끌어당깁니다 (범위 +80)',
+          desc: '주변의 경험치 구슬을 끌어당깁니다 \n(범위 +80)',
           apply: () => { magnetRadius += 80; }
         },
         {
@@ -592,7 +592,7 @@
           id: 'bomb',
           title: '폭탄',
           icon: '💣',
-          desc: '주기적으로 가장 가까운 적에게 폭탄을 던집니다',
+          desc: '가장 가까운 적에게 폭탄을 던집니다. \n(피해 +50%, 범위 +20%)',
           apply: () => {
             const level = acquiredUpgrades['bomb'] || 0;
             if (level === 0) {
@@ -607,7 +607,7 @@
           id: 'iceFloor',
           title: '얼음 바닥',
           icon: '❄️',
-          desc: '이동 경로에 얼음 바닥을 생성해 적을 둔화시키고 피해를 줍니다',
+          desc: '얼음을 생성해 적을 둔화시키고 피해를 줍니다. \n(지속 시간 +1초, 피해 +10)',
           apply: () => {
             const level = acquiredUpgrades['iceFloor'] || 0;
             if (level === 0) iceFloorEnabled = true;
@@ -937,7 +937,7 @@
         <div class="panel">
           <h1>게임 오버</h1>
           <p>웨이브: <b>${getWaveLabel()}</b></p>
-          <p>생존 시간: <b>${Math.floor(elapsed/60)}분 ${(elapsed%60).toFixed(2).padStart(5,'0')}초</b></p>
+          <p>생존 시간: <b>${Math.floor(elapsed / 60)}분 ${(elapsed % 60).toFixed(2).padStart(5, '0')}초</b></p>
           <p>처치 수: <b>${score}</b></p>
           <div class="row">
             <button id="btnRestart">다시 시작 (SPACE)</button>
@@ -967,7 +967,7 @@
       function updateHUD() {
         hpEl.textContent = `HP: ${Math.max(0, Math.round(hp))}`;
         scoreEl.textContent = `KOs: ${score}`;
-        timeEl.textContent = `Time: ${Math.floor(elapsed/60)}:${(elapsed%60).toFixed(2).padStart(5,'0')}`;
+        timeEl.textContent = `Time: ${Math.floor(elapsed / 60)}:${(elapsed % 60).toFixed(2).padStart(5, '0')}`;
         levelEl.textContent = `Lv: ${level}`;
 
         // Update exp gauge
@@ -1114,15 +1114,15 @@
         const pick = (weights) => enemyTiers[pickWeightedIndex(weights)];
 
         const w = currentWave;
-        if (w < 1)  return enemyTiers[0]; // Wave 1
-        if (w < 2)  return pick([8, 2]);
-        if (w < 3)  return pick([5, 5]);
-        if (w < 4)  return pick([5, 5]); // Boss 1
-        if (w < 5)  return pick([0, 8, 2]);
-        if (w < 6)  return pick([0, 5, 5]);
-        if (w < 7)  return pick([0, 2, 5, 2]);
-        if (w < 8)  return pick([0, 2, 5, 2]); // Boss 2
-        if (w < 9)  return pick([0, 0, 8, 2]);
+        if (w < 1) return enemyTiers[0]; // Wave 1
+        if (w < 2) return pick([8, 2]);
+        if (w < 3) return pick([5, 5]);
+        if (w < 4) return pick([5, 5]); // Boss 1
+        if (w < 5) return pick([0, 8, 2]);
+        if (w < 6) return pick([0, 5, 5]);
+        if (w < 7) return pick([0, 2, 5, 2]);
+        if (w < 8) return pick([0, 2, 5, 2]); // Boss 2
+        if (w < 9) return pick([0, 0, 8, 2]);
         if (w < 10) return pick([0, 0, 5, 5]);
         if (w < 11) return pick([0, 0, 2, 5, 2]);
         if (w < 12) return pick([0, 0, 2, 5, 2]); // Boss 3
