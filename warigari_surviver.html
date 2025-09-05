@@ -437,6 +437,7 @@
       const waveDurations = [30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30]; // 각 웨이브 진행 시간(초)
       let currentWave = 0;
       let waveTimer = 0;
+      const bossWaves = [3, 7, 11]; // 4,8,12 웨이브는 보스 스테이지
       let enemyScale = 1;              // 웨이브에 따른 적 체력/공격력 배율
       let infiniteMode = false;        // 12웨이브 이후 무한 모드 여부
       let infiniteStartTime = 0;       // 무한 모드 시작 시간
@@ -961,6 +962,10 @@
         return currentWave + 1;
       }
 
+      function isBossWave(w = currentWave) {
+        return bossWaves.includes(w);
+      }
+
       function updateWaveDisplay() {
         waveEl.textContent = `Wave ${getWaveLabel()}`;
       }
@@ -1019,6 +1024,40 @@
               y2: (i + 1) / seg,
             }))
           )(6),
+        });
+      }
+
+      function spawnBoss() {
+        const left = Math.random() < 0.5;
+        const size = enemySize * 3;
+        const hpBase = 5000 * enemyScale;
+        enemies.push({
+          id: nextEnemyId++,
+          isBoss: true,
+          x: left ? -size : WORLD.w,
+          y: WORLD.groundY - size,
+          w: size,
+          h: size,
+          tier: { name: 'Boss', speed: 30, color: '#ff6b9d', hp: hpBase },
+          type: enemyTypes[0],
+          vx: 0,
+          color: '#ff6b9d',
+          damage: enemyContactDamage * enemyScale * 3,
+          reward: enemyReward * 10,
+          hp: hpBase,
+          hpMax: hpBase,
+          speedMul: 1,
+          range: size,
+          defense: 10,
+          knockbackImmune: true,
+          cracks: (seg =>
+            Array.from({ length: seg }, (_, i) => ({
+              x1: 0.5 + (i % 2 ? 0.1 : -0.1),
+              y1: i / seg,
+              x2: 0.5 + ((i + 1) % 2 ? 0.1 : -0.1),
+              y2: (i + 1) / seg,
+            }))
+          )(8),
         });
       }
 
@@ -1158,6 +1197,11 @@
             initialSpawnInterval - timeBonus * 100
           );
         }
+        if (isBossWave()) {
+          enemies.length = 0;
+          spawnBoss();
+          currentSpawnInterval = Infinity;
+        }
         spawnTimer = 0;
         updateWaveDisplay();
       }
@@ -1232,16 +1276,18 @@
         }
 
         elapsed += dt;
-        waveTimer += dt;
-        const currentDuration = infiniteMode ? 30 : waveDurations[currentWave];
-        if (waveTimer >= currentDuration) {
-          waveTimer = 0;
-          currentWave++;
-          if (!infiniteMode && currentWave >= waveDurations.length) {
-            infiniteMode = true;
-            infiniteStartTime = elapsed;
+        if (!isBossWave()) {
+          waveTimer += dt;
+          const currentDuration = infiniteMode ? 30 : waveDurations[currentWave];
+          if (waveTimer >= currentDuration) {
+            waveTimer = 0;
+            currentWave++;
+            if (!infiniteMode && currentWave >= waveDurations.length) {
+              infiniteMode = true;
+              infiniteStartTime = elapsed;
+            }
+            applyWaveDifficulty();
           }
-          applyWaveDifficulty();
         }
         shootTimer += dt * 1000;
         bombTimer += dt * 1000;
@@ -1435,7 +1481,7 @@
         }
 
         // 적 스폰
-        if (spawnTimer >= currentSpawnInterval) {
+        if (!isBossWave() && spawnTimer >= currentSpawnInterval) {
           spawnTimer = 0;
           spawnEnemy();
         }
@@ -1573,7 +1619,7 @@
             }
           }
 
-          if (playerCollide) {
+        if (playerCollide) {
             const playerLeft = player.x;
             const playerRight = player.x + player.w;
             const eLeft = e.x;
@@ -1588,6 +1634,10 @@
             }
             e.vx = 0;
           }
+        }
+
+        if (isBossWave() && !enemies.some(e => e.isBoss)) {
+          skipWave();
         }
 
         updateHUD();
