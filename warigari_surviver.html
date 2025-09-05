@@ -906,7 +906,8 @@
         <div class="panel">
           <h1>게임 오버</h1>
           <p>웨이브: <b>${getWaveLabel()}</b></p>
-          <p>생존 시간: <b>${elapsed.toFixed(1)}초</b> · 처치 수: <b>${score}</b></p>
+          <p>생존 시간: <b>${Math.floor(elapsed/60)}분 ${(elapsed%60).toFixed(2).padStart(5,'0')}초</b></p>
+          <p>처치 수: <b>${score}</b></p>
           <div class="row">
             <button id="btnRestart">다시 시작 (SPACE)</button>
           </div>
@@ -935,7 +936,7 @@
       function updateHUD() {
         hpEl.textContent = `HP: ${Math.max(0, Math.round(hp))}`;
         scoreEl.textContent = `KOs: ${score}`;
-        timeEl.textContent = `Time: ${elapsed.toFixed(1)}s`;
+        timeEl.textContent = `Time: ${Math.floor(elapsed/60)}:${(elapsed%60).toFixed(2).padStart(5,'0')}`;
         levelEl.textContent = `Lv: ${level}`;
 
         // Update exp gauge
