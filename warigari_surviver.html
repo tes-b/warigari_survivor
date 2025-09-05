@@ -1143,7 +1143,7 @@
         } else {
           // 무한 모드에서는 경과 시간에 따라 난이도 상승
           const t = elapsed - infiniteStartTime; // 무한 모드 진행 시간
-          const timeBonus = Math.min(10, t / 40); // 40초마다 1단계, 최대 10단계
+          const timeBonus = (t / 30); // 30초마다 1단계 상승
           enemyScale = 1 + timeBonus * 0.15;
           currentSpawnInterval = Math.max(
             minSpawnInterval,
