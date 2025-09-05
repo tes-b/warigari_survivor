@@ -441,6 +441,9 @@
       let infiniteMode = false;        // 12웨이브 이후 무한 모드 여부
       let infiniteStartTime = 0;       // 무한 모드 시작 시간
 
+      // 치트
+      let cheatInvincible = false;
+
       // 적 티어별 설정 (5단계로 확장, 체력 증가/속도 감소)
       let enemyTiers = [
         { name: 'Weak', speed: 35, color: '#4ade80', hp: 250 },   // 1단계: 매우 약함
@@ -764,6 +767,19 @@
             e.preventDefault();
             togglePause();
           }
+        } else if (e.code === 'Digit1') {
+          e.preventDefault();
+          cheatInvincible = true;
+        } else if (e.code === 'Digit2') {
+          e.preventDefault();
+          if (running) skipWave();
+        } else if (e.code === 'Digit3') {
+          e.preventDefault();
+          if (running) {
+            exp += 1000;
+            checkLevelUp();
+            updateHUD();
+          }
         }
       });
 
@@ -853,6 +869,7 @@
         infiniteMode = false;
         infiniteStartTime = 0;
         enemyScale = 1;
+        cheatInvincible = false;
         applyWaveDifficulty();
         orbitalAngle = 0;
 
@@ -1114,6 +1131,16 @@
         currentSpawnInterval = Math.max(minSpawnInterval, initialSpawnInterval - currentWave * 100);
         spawnTimer = 0;
         updateWaveDisplay();
+      }
+
+      function skipWave() {
+        waveTimer = 0;
+        currentWave++;
+        if (!infiniteMode && currentWave >= waveDurations.length) {
+          infiniteMode = true;
+          infiniteStartTime = elapsed;
+        }
+        applyWaveDifficulty();
       }
 
       // 레벨업 처리
@@ -1506,7 +1533,7 @@
           }
 
           if (playerCollide || aabb(attackRect, player)) {
-            if (player.iframes <= 0) {
+            if (player.iframes <= 0 && !cheatInvincible) {
               const raw = e.damage - playerDefense;
               const dmg = Math.min(Math.max(raw, 0), hp);
               hp -= dmg;
