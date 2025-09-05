@@ -1011,12 +1011,14 @@
           range: enemySize + type.range,
           defense: type.defense || 0,
           knockbackImmune: !!type.knockbackImmune,
-          cracks: Array.from({ length: 6 }, (_, i, arr) => ({
-            x1: 0.5 + (i % 2 ? 0.1 : -0.1),
-            y1: i / arr.length,
-            x2: 0.5 + ((i + 1) % 2 ? 0.1 : -0.1),
-            y2: (i + 1) / arr.length,
-          })),
+          cracks: (seg =>
+            Array.from({ length: seg }, (_, i) => ({
+              x1: 0.5 + (i % 2 ? 0.1 : -0.1),
+              y1: i / seg,
+              x2: 0.5 + ((i + 1) % 2 ? 0.1 : -0.1),
+              y2: (i + 1) / seg,
+            }))
+          )(6),
         });
       }
 
