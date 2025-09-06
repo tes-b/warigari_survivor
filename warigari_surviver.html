@@ -1217,6 +1217,14 @@
           }
         }
 
+        function updateAllBosses(dt) {
+          for (const e of enemies) {
+            if (e.isBoss) {
+              updateBossBehavior(e, dt);
+            }
+          }
+        }
+
         function spawnExpOrb(x, y) {
           expOrbs.push({
             x: x,
@@ -1698,6 +1706,8 @@
             spawnEnemy();
           }
 
+          updateAllBosses(dt);
+
           // 적 이동 및 충돌 처리
           for (let i = enemies.length - 1; i >= 0; i--) {
             const e = enemies[i];
@@ -1727,9 +1737,7 @@
             }
             if (e._killed) continue;
 
-            if (e.isBoss) {
-              updateBossBehavior(e, dt);
-            } else {
+            if (!e.isBoss) {
               const eCenter = e.x + e.w * 0.5;
               const pCenter = player.x + player.w * 0.5;
               const dir =
