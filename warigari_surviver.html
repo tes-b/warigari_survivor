@@ -782,6 +782,9 @@
         const bullets = [];
         let shootTimer = 0;
 
+        // --- 보스 레이저 ---
+        const bossLasers = [];
+
         // --- 폭탄 ---
         const bombs = [];
         const explosions = [];
@@ -938,6 +941,7 @@
           player.deathAnim.vy = -400;
           player.deathAnim.rotation = 0;
           bullets.length = 0;
+          bossLasers.length = 0;
           enemies.length = 0;
           expOrbs.length = 0;
           orbitingOrbs.length = 0;
@@ -1117,6 +1121,7 @@
             tier: { name: "Boss", speed: 0, color: "#ff6b9d", hp: hpBase },
             type: enemyTypes[0],
             vx: 0,
+            vy: 0,
             color: "#ff6b9d",
             damage: enemyContactDamage * enemyScale * 3,
             reward: enemyReward * 10,
@@ -1126,6 +1131,13 @@
             range: size,
             defense: 10,
             knockbackImmune: true,
+            attackState: "laser",
+            attackCooldown: 1000,
+            laserCount: 0,
+            jumpCount: 0,
+            jumping: false,
+            startX: WORLD.w - size,
+            returning: false,
             cracks: ((seg) =>
               Array.from({ length: seg }, (_, i) => ({
                 x1: 0.5 + (i % 2 ? 0.1 : -0.1),
@@ -1134,6 +1146,83 @@
                 y2: (i + 1) / seg,
               })))(8),
           });
+        }
+
+        function fireBossLaser(boss) {
+          const dir =
+            player.x + player.w / 2 >= boss.x + boss.w / 2 ? 1 : -1;
+          bossLasers.push({
+            owner: boss,
+            x: dir > 0 ? boss.x + boss.w : boss.x - player.w * 3,
+            y: boss.y + boss.h / 2 - 3,
+            w: player.w * 3,
+            h: 6,
+            vx: dir * 600,
+            life: 500,
+            hit: false,
+          });
+        }
+
+        function updateBossBehavior(b, dt) {
+          if (b.attackState === "laser") {
+            b.attackCooldown -= dt * 1000;
+            if (b.attackCooldown <= 0) {
+              if (b.laserCount < 3) {
+                fireBossLaser(b);
+                b.laserCount++;
+                b.attackCooldown = 700;
+              } else if (!bossLasers.some((l) => l.owner === b)) {
+                b.attackState = "jump";
+                b.attackCooldown = 1000;
+                b.jumpCount = 0;
+                b.returning = false;
+              }
+            }
+            b.vx = 0;
+          } else if (b.attackState === "jump") {
+            if (b.jumping) {
+              b.vy += 1500 * dt;
+              b.x += b.vx * dt;
+              b.y += b.vy * dt;
+              if (b.y >= WORLD.groundY - b.h) {
+                b.y = WORLD.groundY - b.h;
+                b.vy = 0;
+                b.jumping = false;
+                b.attackCooldown = 500;
+              }
+            } else {
+              b.attackCooldown -= dt * 1000;
+              if (b.attackCooldown <= 0) {
+                const dur = 0.8;
+                if (b.jumpCount < 5) {
+                  const targetX = player.x;
+                  b.vx = (targetX - b.x) / dur;
+                  b.vy = -800;
+                  b.jumping = true;
+                  b.jumpCount++;
+                } else if (!b.returning) {
+                  b.vx = (b.startX - b.x) / dur;
+                  b.vy = -800;
+                  b.jumping = true;
+                  b.returning = true;
+                } else {
+                  b.attackState = "laser";
+                  b.laserCount = 0;
+                  b.attackCooldown = 1000;
+                  b.jumpCount = 0;
+                  b.returning = false;
+                }
+              }
+            }
+          }
+        }
+
+        function updateAllBosses(dt) {
+          for (const e of enemies) {
+            if (e.isBoss) {
+              updateBossBehavior(e, dt);
+            }
+          }
         }
 
         function spawnExpOrb(x, y) {
@@ -1507,6 +1596,41 @@
             }
           }
 
+          // 보스 레이저 업데이트
+          for (let i = bossLasers.length - 1; i >= 0; i--) {
+            const l = bossLasers[i];
+            l.x += l.vx * dt;
+            l.life -= dt * 1000;
+            if (l.life <= 0 || l.x < -100 || l.x > WORLD.w + 100) {
+              bossLasers.splice(i, 1);
+              continue;
+            }
+            const rect = { x: l.x, y: l.y, w: l.w, h: l.h };
+            if (!l.hit && aabb(rect, player)) {
+              const bossLeft = l.owner.x + l.owner.w / 2 < player.x + player.w / 2;
+              const facingBoss = bossLeft ? player.dir < 0 : player.dir > 0;
+              if (facingBoss && player.iframes <= 0 && !cheatInvincible) {
+                const raw = l.owner.damage - playerDefense;
+                const dmg = Math.min(Math.max(raw, 0), hp);
+                hp -= dmg;
+                spawnFloatText(
+                  player.x + player.w / 2,
+                  player.y - 14,
+                  -dmg,
+                  "#ff6b6b",
+                );
+                player.iframes = playerIframeDuration;
+                player.hitFlash = playerHitFlashDuration;
+                if (hp <= 0) {
+                  hp = 0;
+                  gameOver();
+                  return;
+                }
+              }
+              l.hit = true;
+            }
+          }
+
           // 폭탄 업데이트
           for (let i = bombs.length - 1; i >= 0; i--) {
             const b = bombs[i];
@@ -1582,13 +1706,11 @@
             spawnEnemy();
           }
 
+          updateAllBosses(dt);
+
           // 적 이동 및 충돌 처리
           for (let i = enemies.length - 1; i >= 0; i--) {
             const e = enemies[i];
-            const eCenter = e.x + e.w * 0.5;
-            const pCenter = player.x + player.w * 0.5;
-            const dir =
-              Math.sign(pCenter - eCenter) || (Math.random() < 0.5 ? -1 : 1);
 
             let slowMul = 1;
             let iceDamage = 0;
@@ -1614,14 +1736,21 @@
               }
             }
             if (e._killed) continue;
-            const baseSpeed = e.tier.speed * (e.speedMul || 1) * slowMul;
-            e.vx = dir * baseSpeed;
 
-            // 플레이어와 겹침 방지: 이동 전에 미래 위치 계산
-            let nextX = e.x + e.vx * dt;
+            if (!e.isBoss) {
+              const eCenter = e.x + e.w * 0.5;
+              const pCenter = player.x + player.w * 0.5;
+              const dir =
+                Math.sign(pCenter - eCenter) || (Math.random() < 0.5 ? -1 : 1);
+              const baseSpeed = e.tier.speed * (e.speedMul || 1) * slowMul;
+              e.vx = dir * baseSpeed;
 
-            // 우선 이동
-            e.x = nextX;
+              // 플레이어와 겹침 방지: 이동 전에 미래 위치 계산
+              let nextX = e.x + e.vx * dt;
+
+              // 우선 이동
+              e.x = nextX;
+            }
 
             // 총알과 충돌(피해 처리)
             for (let j = bullets.length - 1; j >= 0; j--) {
@@ -1934,6 +2063,10 @@
           // 탄
           ctx.fillStyle = "#fff";
           for (const b of bullets) ctx.fillRect(b.x, b.y, b.w, b.h);
+
+          // 보스 레이저
+          ctx.fillStyle = "#ff6b9d";
+          for (const l of bossLasers) ctx.fillRect(l.x, l.y, l.w, l.h);
 
           // 폭탄
           ctx.fillStyle = "#f87171";
