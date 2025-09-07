@@ -469,11 +469,11 @@
 
       // 적 티어별 설정 (5단계로 확장, 체력 증가/속도 감소)
       let enemyTiers = [
-        { name: "Weak", speed: 35, color: "#4ade80", hp: 250 }, // 1단계: 매우 약함
-        { name: "Basic", speed: 45, color: "#60a5fa", hp: 400 }, // 2단계: 기본
-        { name: "Medium", speed: 55, color: "#a78bfa", hp: 600 }, // 3단계: 중간
-        { name: "Strong", speed: 65, color: "#f59e0b", hp: 850 }, // 4단계: 강함
-        { name: "Elite", speed: 75, color: "#ef4444", hp: 1200 }, // 5단계: 정예
+        { name: "Weak", speed: 35, color: "#4ade80", hp: 150 },    // 250에서 150으로
+        { name: "Basic", speed: 45, color: "#60a5fa", hp: 250 },   // 400에서 250으로
+        { name: "Medium", speed: 55, color: "#a78bfa", hp: 450 },  // 600에서 400으로
+        { name: "Strong", speed: 65, color: "#f59e0b", hp: 850 },  // 850에서 600으로
+        { name: "Elite", speed: 75, color: "#ef4444", hp: 1200 },   // 1200에서 800으로
       ];
 
       // 적 종류
@@ -505,9 +505,9 @@
         },
       ];
 
-      // 스폰 관련 (발생 주기 1.5배 빈번하게)
-      let initialSpawnInterval = 1300; // 초기 적 스폰 간격 (ms) - 2000에서 1300으로
-      let minSpawnInterval = 200; // 최소 스폰 간격 (ms) - 300에서 200으로
+      // 스폰 관련
+      let initialSpawnInterval = 800; // 1300에서 800으로 감소
+      let minSpawnInterval = 150;    // 200에서 150으로 감소
 
       // 충돌 분리 관련
       let separationDistance = 2; // 겹침 해소 시 최소 거리 (px)
@@ -1137,7 +1137,15 @@
 
       function spawnBoss() {
         const size = enemySize * 3;
-        const hpBase = 5000 * enemyScale;
+        let hpBase;
+        // 보스별 체력 차등 적용
+        if (currentWave === 3) {
+          hpBase = 3500 * enemyScale; // 첫 번째 보스
+        } else if (currentWave === 7) {
+          hpBase = 7000 * enemyScale; // 두 번째 보스
+        } else if (currentWave === 11) {
+          hpBase = 12000 * enemyScale; // 최종 보스
+        }
         const startX = WORLD.w - size - 10;
         const boss = {
           id: nextEnemyId++,
