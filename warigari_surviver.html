@@ -1188,13 +1188,15 @@
           bossLasers.push({
             owner: boss,
             x,
-            y: 0,
+            y: -WORLD.groundY,
             w,
             h: WORLD.groundY,
             vx: 0,
+            vy: 400,
             life: 3000,
             ignoreFacing: true,
             persistent: true,
+            active: false,
           });
         }
       }
@@ -1695,6 +1697,12 @@
         for (let i = bossLasers.length - 1; i >= 0; i--) {
           const l = bossLasers[i];
           l.x += l.vx * dt;
+          if (l.active === false) {
+            l.y += l.vy * dt;
+            if (l.y < 0) continue;
+            l.y = 0;
+            l.active = true;
+          }
           l.life -= dt * 1000;
           if (l.life <= 0 || l.x < -100 || l.x > WORLD.w + 100) {
             bossLasers.splice(i, 1);
