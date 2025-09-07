@@ -1182,18 +1182,27 @@
       }
 
       function fireBossAirLasers(boss) {
-        const w = WORLD.w / 5;
-        const lanes = [0, 1, 2, 3, 4];
-        for (let i = lanes.length - 1; i > 0; i--) {
-          const j = (Math.random() * (i + 1)) | 0;
-          [lanes[i], lanes[j]] = [lanes[j], lanes[i]];
+        // Divide the field into 12 zones and fire 3 lasers that span two
+        // zones each, leaving at least one empty zone between lasers so the
+        // player always has room to dodge.
+        const zone = WORLD.w / 12;
+        const starts = Array.from({ length: 11 }, (_, i) => i);
+        const chosen = [];
+        while (chosen.length < 3) {
+          const pickIdx = (Math.random() * starts.length) | 0;
+          const start = starts[pickIdx];
+          chosen.push(start);
+          // Remove indices that are too close to maintain a one-zone gap
+          for (let i = starts.length - 1; i >= 0; i--) {
+            if (Math.abs(starts[i] - start) < 3) starts.splice(i, 1);
+          }
         }
-        for (const idx of lanes.slice(0, 3)) {
+        for (const s of chosen) {
           bossLasers.push({
             owner: boss,
-            x: idx * w,
+            x: s * zone,
             y: -WORLD.groundY,
-            w,
+            w: zone * 2,
             h: WORLD.groundY,
             vx: 0,
             vy: 400,
