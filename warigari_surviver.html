@@ -787,7 +787,6 @@
 
       // --- 보스 레이저 ---
       const bossLasers = [];
-      const bossBombs = [];
 
       // --- 폭탄 ---
       const bombs = [];
@@ -949,7 +948,6 @@
         player.deathAnim.rotation = 0;
         bullets.length = 0;
         bossLasers.length = 0;
-        bossBombs.length = 0;
         enemies.length = 0;
         expOrbs.length = 0;
         orbitingOrbs.length = 0;
@@ -1125,12 +1123,11 @@
       }
 
       function pickBossPattern(b) {
-        const patterns = ["laser", "jump", "airLaser", "bomb"];
+        const patterns = ["laser", "jump", "airLaser", "timedLaser"];
         b.attackState = patterns[(Math.random() * patterns.length) | 0];
         b.attackCooldown = 1000;
         b.laserCount = 0;
         b.jumpCount = 0;
-        b.bombCount = 0;
         b.jumping = false;
         b.returning = false;
       }
@@ -1147,8 +1144,6 @@
         )
           return true;
         if (b.attackState === "airLaser" && b.laserCount === 0 && b.attackCooldown <= 1000)
-          return true;
-        if (b.attackState === "bomb" && b.bombCount === 0 && b.attackCooldown <= 1000)
           return true;
         if (b.attackState === "timedLaser" && b.laserCount === 0 && b.attackCooldown <= 1000)
           return true;
@@ -1273,25 +1268,6 @@
         }
       }
 
-      function throwBossBomb(boss) {
-        const speed = 500;
-        const dir =
-          player.x + player.w / 2 >= boss.x + boss.w / 2 ? 1 : -1;
-        const travel = ((WORLD.w + boss.w) / speed) * 1000;
-        bossBombs.push({
-          owner: boss,
-          x: dir > 0 ? boss.x + boss.w : boss.x - 12,
-          y: boss.y + boss.h * 0.65,
-          w: 12,
-          h: 12,
-          vx: dir * speed,
-          life: travel,
-          damage: boss.damage,
-          radius: 80,
-          returned: false,
-        });
-      }
-
       function updateBossBehavior(b, dt) {
         if (b.attackState === "laser") {
           b.attackCooldown -= dt * 1000;
@@ -1386,24 +1362,6 @@
               b.laserCount++;
               b.attackCooldown = 700;
             } else if (!bossLasers.some((l) => l.owner === b)) {
-              if (currentWave === 7) {
-                b.attackState = "airLaser";
-                b.laserCount = 0;
-                b.attackCooldown = 1000;
-              } else if (currentWave === 11) {
-                pickBossPattern(b);
-              }
-            }
-          }
-          b.vx = 0;
-        } else if (b.attackState === "bomb") {
-          b.attackCooldown -= dt * 1000;
-          if (b.attackCooldown <= 0) {
-            if (b.bombCount < 5) {
-              throwBossBomb(b);
-              b.bombCount++;
-              b.attackCooldown = 800;
-            } else if (!bossBombs.some((bb) => bb.owner === b)) {
               if (currentWave === 7) {
                 b.attackState = "airLaser";
                 b.laserCount = 0;
@@ -1847,60 +1805,6 @@
             }
           }
         }
-
-        // 보스 폭탄 업데이트
-        for (let i = bossBombs.length - 1; i >= 0; i--) {
-          const b = bossBombs[i];
-          b.x += b.vx * dt;
-          b.life -= dt * 1000;
-          if (b.life <= 0 || b.x < -50 || b.x > WORLD.w + 50) {
-            bossBombs.splice(i, 1);
-            continue;
-          }
-          const rect = { x: b.x, y: b.y, w: b.w, h: b.h };
-          if (!b.returned && aabb(rect, player)) {
-            const bossLeft = b.owner.x + b.owner.w / 2 < player.x + player.w / 2;
-            const facingBoss = bossLeft ? player.dir < 0 : player.dir > 0;
-            const facingBefore = bossLeft ? player.prevDir < 0 : player.prevDir > 0;
-            const justTurned = elapsed - player.lastDirChange < 0.2;
-            if (facingBoss) {
-              if (justTurned && !facingBefore) {
-                b.returned = true;
-                b.vx *= -1;
-                const speed = Math.abs(b.vx);
-                b.life = ((WORLD.w + b.owner.w) / speed) * 1000;
-              } else if (player.iframes <= 0 && !cheatInvincible) {
-                explodeBomb(b);
-                const raw = b.owner.damage - playerDefense;
-                const dmg = Math.min(Math.max(raw, 0), hp);
-                hp -= dmg;
-                spawnFloatText(
-                  player.x + player.w / 2,
-                  player.y - 14,
-                  -dmg,
-                  "#ff6b6b",
-                );
-                player.iframes = playerIframeDuration;
-                player.hitFlash = playerHitFlashDuration;
-                bossBombs.splice(i, 1);
-                if (hp <= 0) {
-                  hp = 0;
-                  gameOver();
-                  return;
-                }
-                continue;
-              } else {
-                bossBombs.splice(i, 1);
-                continue;
-              }
-            }
-          } else if (b.returned && aabb(rect, b.owner)) {
-            explodeBomb(b);
-            bossBombs.splice(i, 1);
-            continue;
-          }
-        }
-
         // 폭탄 업데이트
         for (let i = bombs.length - 1; i >= 0; i--) {
           const b = bombs[i];
@@ -2347,14 +2251,6 @@
           ctx.fillRect(l.x, l.y, l.w, l.h);
         }
         ctx.restore();
-
-        // 보스 폭탄
-        ctx.fillStyle = "#facc15";
-        for (const b of bossBombs) {
-          ctx.beginPath();
-          ctx.arc(b.x, b.y, 6, 0, Math.PI * 2);
-          ctx.fill();
-        }
 
         // 폭탄
         ctx.fillStyle = "#f87171";
