@@ -1105,6 +1105,7 @@
       function spawnBoss() {
         const size = enemySize * 3;
         const hpBase = 5000 * enemyScale;
+        const startX = WORLD.w - size - 10;
         enemies.push({
           id: nextEnemyId++,
           isBoss: true,
@@ -1130,7 +1131,7 @@
           laserCount: 0,
           jumpCount: 0,
           jumping: false,
-          startX: WORLD.w - size,
+          startX: startX,
           returning: false,
           cracks: ((seg) =>
             Array.from({ length: seg }, (_, i) => ({
@@ -1164,7 +1165,7 @@
         if (b.attackState === "laser") {
           b.attackCooldown -= dt * 1000;
           if (b.attackCooldown <= 0) {
-            if (b.laserCount < 3) {
+            if (b.laserCount < 5) {
               fireBossLaser(b);
               b.laserCount++;
               b.attackCooldown = 700;
