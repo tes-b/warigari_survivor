@@ -422,6 +422,12 @@
           RADIUS: 100, // 임펄스 범위 (px)
           KNOCKBACK: 80, // 넉백 거리 (px)
         },
+        // 폭탄 관련
+        BOMB: {
+          COOLDOWN: 2500, // 폭탄 던지기 쿨다운 (ms)
+          DAMAGE: 100, // 폭탄 피해량
+          RADIUS: 60, // 폭탄 폭발 범위 (px)
+        },
         // 얼음 바닥 관련
         ICEFLOOR: {
           DAMAGE: 20, // 초당 피해량
@@ -786,9 +792,9 @@
       const bombs = [];
       const explosions = [];
       let bombTimer = 0;
-      let bombCooldown = 2500; // ms
-      let bombDamage = 100;
-      let bombRadius = 60;
+      let bombCooldown = INIT.BOMB.COOLDOWN; // ms
+      let bombDamage = INIT.BOMB.DAMAGE;
+      let bombRadius = INIT.BOMB.RADIUS;
       let bombEnabled = false;
 
       // --- 얼음 바닥 ---
@@ -975,6 +981,14 @@
         iceFloorEnabled = false;
         iceFloorDamage = INIT.ICEFLOOR.DAMAGE;
         iceFloorDuration = INIT.ICEFLOOR.DURATION;
+
+        bombs.length = 0;
+        explosions.length = 0;
+        bombTimer = 0;
+        bombCooldown = INIT.BOMB.COOLDOWN;
+        bombDamage = INIT.BOMB.DAMAGE;
+        bombRadius = INIT.BOMB.RADIUS;
+        bombEnabled = false;
 
         for (const id in acquiredUpgrades) delete acquiredUpgrades[id];
         updateUpgradeHUD();
