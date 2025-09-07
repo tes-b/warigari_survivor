@@ -1123,7 +1123,7 @@
       }
 
       function pickBossPattern(b) {
-        const patterns = ["laser", "jump", "airLaser", "timedLaser"];
+        const patterns = ["jump", "airLaser", "timedLaser"];
         b.attackState = patterns[(Math.random() * patterns.length) | 0];
         b.attackCooldown = 1000;
         b.laserCount = 0;
