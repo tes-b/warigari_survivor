@@ -2248,8 +2248,16 @@
         for (const b of bullets) ctx.fillRect(b.x, b.y, b.w, b.h);
 
         // 보스 레이저
-        ctx.fillStyle = "#ff6b9d";
-        for (const l of bossLasers) ctx.fillRect(l.x, l.y, l.w, l.h);
+        ctx.save();
+        for (const l of bossLasers) {
+          // 공중 레이저(웨이브 8 보스)는 반투명하게 처리
+          if (l.ignoreFacing) {
+            ctx.globalAlpha = 0.7;  // 40% 불투명도
+          }
+          ctx.fillStyle = "#ff6b9d";
+          ctx.fillRect(l.x, l.y, l.w, l.h);
+        }
+        ctx.restore();
 
         // 보스 폭탄
         ctx.fillStyle = "#facc15";
