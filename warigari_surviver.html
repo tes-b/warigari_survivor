@@ -1178,7 +1178,7 @@
         };
         if (currentWave === 3) {
           Object.assign(boss, {
-            attackState: "laser",
+            attackState: "jump",
             attackCooldown: 1000,
             laserCount: 0,
             jumpCount: 0,
@@ -1195,6 +1195,8 @@
         } else if (currentWave === 11) {
           pickBossPattern(boss);
         }
+        // 보스 스폰 후 5초후에 패턴 시작
+        boss.attackCooldown = 4000;
         enemies.push(boss);
       }
 
