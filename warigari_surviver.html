@@ -1183,17 +1183,21 @@
 
       function fireBossAirLasers(boss) {
         const w = WORLD.w / 5;
-        const xs = [0, w * 2, w * 4];
-        for (const x of xs) {
+        const lanes = [0, 1, 2, 3, 4];
+        for (let i = lanes.length - 1; i > 0; i--) {
+          const j = (Math.random() * (i + 1)) | 0;
+          [lanes[i], lanes[j]] = [lanes[j], lanes[i]];
+        }
+        for (const idx of lanes.slice(0, 3)) {
           bossLasers.push({
             owner: boss,
-            x,
+            x: idx * w,
             y: -WORLD.groundY,
             w,
             h: WORLD.groundY,
             vx: 0,
             vy: 400,
-            life: 3000,
+            life: 2000,
             ignoreFacing: true,
             persistent: true,
             active: false,
@@ -1279,7 +1283,7 @@
             if (b.laserCount < 5) {
               fireBossAirLasers(b);
               b.laserCount++;
-              b.attackCooldown = 4000;
+              b.attackCooldown = 3000;
             } else if (!bossLasers.some((l) => l.owner === b)) {
               b.attackState = "bomb";
               b.bombCount = 0;
