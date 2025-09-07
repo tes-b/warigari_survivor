@@ -756,6 +756,8 @@
         w: 28,
         h: 30,
         dir: 1, // 1 → 오른쪽, -1 → 왼쪽
+        prevDir: 1,
+        lastDirChange: 0,
         speed: playerSpeed,
         iframes: 0, // 무적 시간(ms)
         hitFlash: 0, // 피격 시 시각 효과
@@ -778,6 +780,7 @@
 
       // --- 보스 레이저 ---
       const bossLasers = [];
+      const bossBombs = [];
 
       // --- 폭탄 ---
       const bombs = [];
@@ -818,7 +821,9 @@
 
       // 입력: 클릭/스페이스 → 방향 전환
       function toggleDirection() {
+        player.prevDir = player.dir;
         player.dir *= -1;
+        player.lastDirChange = elapsed;
       }
       canvas.addEventListener("click", () => {
         if (running) toggleDirection();
@@ -926,6 +931,8 @@
         player.x = WORLD.w / 2;
         player.y = WORLD.groundY - player.h - player.leglength;
         player.dir = 1;
+        player.prevDir = 1;
+        player.lastDirChange = 0;
         player.speed = playerSpeed;
         player.iframes = 0;
         player.hitFlash = 0;
@@ -936,6 +943,7 @@
         player.deathAnim.rotation = 0;
         bullets.length = 0;
         bossLasers.length = 0;
+        bossBombs.length = 0;
         enemies.length = 0;
         expOrbs.length = 0;
         orbitingOrbs.length = 0;
@@ -1106,7 +1114,7 @@
         const size = enemySize * 3;
         const hpBase = 5000 * enemyScale;
         const startX = WORLD.w - size - 10;
-        enemies.push({
+        const boss = {
           id: nextEnemyId++,
           isBoss: true,
           x: WORLD.w - size,
@@ -1126,13 +1134,7 @@
           range: size,
           defense: 10,
           knockbackImmune: true,
-          attackState: "laser",
-          attackCooldown: 1000,
-          laserCount: 0,
-          jumpCount: 0,
-          jumping: false,
           startX: startX,
-          returning: false,
           cracks: ((seg) =>
             Array.from({ length: seg }, (_, i) => ({
               x1: 0.5 + (i % 2 ? 0.1 : -0.1),
@@ -1140,7 +1142,25 @@
               x2: 0.5 + ((i + 1) % 2 ? 0.1 : -0.1),
               y2: (i + 1) / seg,
             })))(8),
-        });
+        };
+        if (currentWave === 3) {
+          Object.assign(boss, {
+            attackState: "laser",
+            attackCooldown: 1000,
+            laserCount: 0,
+            jumpCount: 0,
+            jumping: false,
+            returning: false,
+          });
+        } else if (currentWave === 7) {
+          Object.assign(boss, {
+            attackState: "airLaser",
+            attackCooldown: 1000,
+            laserCount: 0,
+            bombCount: 0,
+          });
+        }
+        enemies.push(boss);
       }
 
       function fireBossLaser(boss) {
@@ -1158,6 +1178,43 @@
           vx: dir * speed,
           life: travel,
           hit: false,
+        });
+      }
+
+      function fireBossAirLasers(boss) {
+        const w = WORLD.w / 5;
+        const xs = [0, w * 2, w * 4];
+        for (const x of xs) {
+          bossLasers.push({
+            owner: boss,
+            x,
+            y: 0,
+            w,
+            h: WORLD.groundY,
+            vx: 0,
+            life: 3000,
+            ignoreFacing: true,
+            persistent: true,
+          });
+        }
+      }
+
+      function throwBossBomb(boss) {
+        const speed = 300;
+        const dir =
+          player.x + player.w / 2 >= boss.x + boss.w / 2 ? 1 : -1;
+        const travel = ((WORLD.w + boss.w) / speed) * 1000;
+        bossBombs.push({
+          owner: boss,
+          x: dir > 0 ? boss.x + boss.w : boss.x - 12,
+          y: boss.y + boss.h / 2,
+          w: 12,
+          h: 12,
+          vx: dir * speed,
+          life: travel,
+          damage: boss.damage,
+          radius: 80,
+          returned: false,
         });
       }
 
@@ -1214,6 +1271,34 @@
               }
             }
           }
+        } else if (b.attackState === "airLaser") {
+          b.attackCooldown -= dt * 1000;
+          if (b.attackCooldown <= 0) {
+            if (b.laserCount < 5) {
+              fireBossAirLasers(b);
+              b.laserCount++;
+              b.attackCooldown = 4000;
+            } else if (!bossLasers.some((l) => l.owner === b)) {
+              b.attackState = "bomb";
+              b.bombCount = 0;
+              b.attackCooldown = 1000;
+            }
+          }
+          b.vx = 0;
+        } else if (b.attackState === "bomb") {
+          b.attackCooldown -= dt * 1000;
+          if (b.attackCooldown <= 0) {
+            if (b.bombCount < 5) {
+              throwBossBomb(b);
+              b.bombCount++;
+              b.attackCooldown = 800;
+            } else if (!bossBombs.some((bb) => bb.owner === b)) {
+              b.attackState = "airLaser";
+              b.laserCount = 0;
+              b.attackCooldown = 1000;
+            }
+          }
+          b.vx = 0;
         }
       }
 
@@ -1616,10 +1701,10 @@
             continue;
           }
           const rect = { x: l.x, y: l.y, w: l.w, h: l.h };
-          if (!l.hit && aabb(rect, player)) {
+          if ((l.persistent || !l.hit) && aabb(rect, player)) {
             const bossLeft = l.owner.x + l.owner.w / 2 < player.x + player.w / 2;
             const facingBoss = bossLeft ? player.dir < 0 : player.dir > 0;
-            if (facingBoss && player.iframes <= 0 && !cheatInvincible) {
+            if ((l.ignoreFacing || facingBoss) && player.iframes <= 0 && !cheatInvincible) {
               const raw = l.owner.damage - playerDefense;
               const dmg = Math.min(Math.max(raw, 0), hp);
               hp -= dmg;
@@ -1636,8 +1721,61 @@
                 gameOver();
                 return;
               }
+              if (!l.persistent) l.hit = true;
             }
-            l.hit = true;
+          }
+        }
+
+        // 보스 폭탄 업데이트
+        for (let i = bossBombs.length - 1; i >= 0; i--) {
+          const b = bossBombs[i];
+          b.x += b.vx * dt;
+          b.life -= dt * 1000;
+          if (b.life <= 0 || b.x < -50 || b.x > WORLD.w + 50) {
+            bossBombs.splice(i, 1);
+            continue;
+          }
+          const rect = { x: b.x, y: b.y, w: b.w, h: b.h };
+          if (!b.returned && aabb(rect, player)) {
+            const bossLeft = b.owner.x + b.owner.w / 2 < player.x + player.w / 2;
+            const facingBoss = bossLeft ? player.dir < 0 : player.dir > 0;
+            const facingBefore = bossLeft ? player.prevDir < 0 : player.prevDir > 0;
+            const justTurned = elapsed - player.lastDirChange < 0.2;
+            if (facingBoss) {
+              if (justTurned && !facingBefore) {
+                b.returned = true;
+                b.vx *= -1;
+                const speed = Math.abs(b.vx);
+                b.life = ((WORLD.w + b.owner.w) / speed) * 1000;
+              } else if (player.iframes <= 0 && !cheatInvincible) {
+                explodeBomb(b);
+                const raw = b.owner.damage - playerDefense;
+                const dmg = Math.min(Math.max(raw, 0), hp);
+                hp -= dmg;
+                spawnFloatText(
+                  player.x + player.w / 2,
+                  player.y - 14,
+                  -dmg,
+                  "#ff6b6b",
+                );
+                player.iframes = playerIframeDuration;
+                player.hitFlash = playerHitFlashDuration;
+                bossBombs.splice(i, 1);
+                if (hp <= 0) {
+                  hp = 0;
+                  gameOver();
+                  return;
+                }
+                continue;
+              } else {
+                bossBombs.splice(i, 1);
+                continue;
+              }
+            }
+          } else if (b.returned && aabb(rect, b.owner)) {
+            explodeBomb(b);
+            bossBombs.splice(i, 1);
+            continue;
           }
         }
 
@@ -2077,6 +2215,14 @@
         // 보스 레이저
         ctx.fillStyle = "#ff6b9d";
         for (const l of bossLasers) ctx.fillRect(l.x, l.y, l.w, l.h);
+
+        // 보스 폭탄
+        ctx.fillStyle = "#facc15";
+        for (const b of bossBombs) {
+          ctx.beginPath();
+          ctx.arc(b.x, b.y, 6, 0, Math.PI * 2);
+          ctx.fill();
+        }
 
         // 폭탄
         ctx.fillStyle = "#f87171";
