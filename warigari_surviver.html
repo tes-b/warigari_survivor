@@ -1133,6 +1133,8 @@
         b.bombCount = 0;
         b.jumping = false;
         b.returning = false;
+        b.telegraphed = false;
+        b.warning = 0;
       }
 
       function spawnBoss() {
@@ -1168,6 +1170,8 @@
           defense: 10,
           knockbackImmune: true,
           startX: startX,
+          warning: 0,
+          telegraphed: false,
           cracks: ((seg) =>
             Array.from({ length: seg }, (_, i) => ({
               x1: 0.5 + (i % 2 ? 0.1 : -0.1),
@@ -1196,6 +1200,8 @@
           pickBossPattern(boss);
         }
         // 보스 스폰 후 5초후에 패턴 시작
+        boss.telegraphed = false;
+        boss.warning = 0;
         boss.attackCooldown = 4000;
         enemies.push(boss);
       }
@@ -1203,7 +1209,7 @@
       function fireBossLaser(boss) {
         const dir =
           player.x + player.w / 2 >= boss.x + boss.w / 2 ? 1 : -1;
-        const speed = 600;
+        const speed = 500;
         const travel =
           ((WORLD.w + boss.w + player.w * 3) / speed) * 1000;
         bossLasers.push({
@@ -1242,7 +1248,7 @@
             w: zone * 2,
             h: WORLD.groundY,
             vx: 0,
-            vy: 400,
+            vy: 300,
             life: 500,
             ignoreFacing: true,
             persistent: true,
@@ -1273,17 +1279,29 @@
       function updateBossBehavior(b, dt) {
         if (b.attackState === "laser") {
           b.attackCooldown -= dt * 1000;
+          if (!b.telegraphed && b.attackCooldown <= 500) {
+            b.warning = 500;
+            b.telegraphed = true;
+          }
+          if (b.warning > 0) {
+            b.warning -= dt * 1000;
+            b.vx = 0;
+            return;
+          }
           if (b.attackCooldown <= 0) {
             if (b.laserCount < 5) {
               fireBossLaser(b);
               b.laserCount++;
               b.attackCooldown = 700;
+              b.telegraphed = true;
             } else if (!bossLasers.some((l) => l.owner === b)) {
               if (currentWave === 3) {
                 b.attackState = "jump";
                 b.attackCooldown = 1000;
                 b.jumpCount = 0;
                 b.returning = false;
+                b.telegraphed = false;
+                b.warning = 0;
               } else if (currentWave === 11) {
                 pickBossPattern(b);
               }
@@ -1304,6 +1322,15 @@
             }
           } else {
             b.attackCooldown -= dt * 1000;
+            if (!b.telegraphed && b.attackCooldown <= 500) {
+              b.warning = 500;
+              b.telegraphed = true;
+            }
+            if (b.warning > 0) {
+              b.warning -= dt * 1000;
+              b.vx = 0;
+              return;
+            }
             if (b.attackCooldown <= 0) {
               const jumpVy = -800;
               const flight = (-2 * jumpVy) / 1500;
@@ -1325,6 +1352,8 @@
                   b.attackCooldown = 1000;
                   b.jumpCount = 0;
                   b.returning = false;
+                  b.telegraphed = false;
+                  b.warning = 0;
                 } else if (currentWave === 11) {
                   pickBossPattern(b);
                 }
@@ -1333,16 +1362,28 @@
           }
         } else if (b.attackState === "airLaser") {
           b.attackCooldown -= dt * 1000;
+          if (!b.telegraphed && b.attackCooldown <= 500) {
+            b.warning = 500;
+            b.telegraphed = true;
+          }
+          if (b.warning > 0) {
+            b.warning -= dt * 1000;
+            b.vx = 0;
+            return;
+          }
           if (b.attackCooldown <= 0) {
             if (b.laserCount < 5) {
               fireBossAirLasers(b);
               b.laserCount++;
               b.attackCooldown = 1500;
+              b.telegraphed = true;
             } else if (!bossLasers.some((l) => l.owner === b)) {
               if (currentWave === 7) {
                 b.attackState = "bomb";
                 b.bombCount = 0;
                 b.attackCooldown = 1000;
+                b.telegraphed = false;
+                b.warning = 0;
               } else if (currentWave === 11) {
                 pickBossPattern(b);
               }
@@ -1351,16 +1392,28 @@
           b.vx = 0;
         } else if (b.attackState === "bomb") {
           b.attackCooldown -= dt * 1000;
+          if (!b.telegraphed && b.attackCooldown <= 500) {
+            b.warning = 500;
+            b.telegraphed = true;
+          }
+          if (b.warning > 0) {
+            b.warning -= dt * 1000;
+            b.vx = 0;
+            return;
+          }
           if (b.attackCooldown <= 0) {
             if (b.bombCount < 5) {
               throwBossBomb(b);
               b.bombCount++;
               b.attackCooldown = 800;
+              b.telegraphed = true;
             } else if (!bossBombs.some((bb) => bb.owner === b)) {
               if (currentWave === 7) {
                 b.attackState = "airLaser";
                 b.laserCount = 0;
                 b.attackCooldown = 1000;
+                b.telegraphed = false;
+                b.warning = 0;
               } else if (currentWave === 11) {
                 pickBossPattern(b);
               }
@@ -2368,6 +2421,15 @@
         for (const e of enemies) {
           ctx.fillStyle = e.color;
           ctx.fillRect(e.x, e.y, e.w, e.h);
+
+          if (e.warning > 0) {
+            ctx.save();
+            ctx.strokeStyle = "#fff";
+            ctx.lineWidth = 3;
+            ctx.globalAlpha = e.warning / 500;
+            ctx.strokeRect(e.x - 4, e.y - 4, e.w + 8, e.h + 8);
+            ctx.restore();
+          }
 
           // 체력 금 표시
           const dmgRatio = 1 - e.hp / e.hpMax;
