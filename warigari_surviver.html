@@ -1209,7 +1209,7 @@
       function fireBossLaser(boss) {
         const dir =
           player.x + player.w / 2 >= boss.x + boss.w / 2 ? 1 : -1;
-        const speed = 500;
+        const speed = 600;
         const travel =
           ((WORLD.w + boss.w + player.w * 3) / speed) * 1000;
         bossLasers.push({
@@ -1248,7 +1248,7 @@
             w: zone * 2,
             h: WORLD.groundY,
             vx: 0,
-            vy: 300,
+            vy: 400,
             life: 500,
             ignoreFacing: true,
             persistent: true,
