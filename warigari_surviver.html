@@ -540,7 +540,7 @@
           id: "damage",
           title: "공격력 증가",
           icon: "🔥",
-          desc: "현재 공격력의 30% 증가",
+          desc: "기본 발사의 공격력 30% 증가",
           apply: () => {
             bulletDamage *= 1.3;
           },
@@ -549,19 +549,20 @@
           id: "attackSpeed",
           title: "공격 속도 증가",
           icon: "⚡",
-          desc: "발사 속도 +25% 향상",
+          desc: "기본 발사 속도 +15% 향상",
           apply: () => {
-            bulletCooldown = Math.max(80, bulletCooldown * 0.75);
+            bulletCooldown = Math.max(80, bulletCooldown * 0.85);
           },
         },
         {
           id: "health",
           title: "체력 증가",
           icon: "❤️",
-          desc: "최대 체력 +300, 현재 체력 회복",
+          desc: "최대 체력 +500, 체력 모두 회복",
           apply: () => {
             playerHP += 300;
-            const healed = Math.min(300, playerHP - hp);
+            // const healed = Math.min(300, playerHP - hp);
+            const healed = playerHP
             hp += healed;
             if (healed > 0)
               spawnFloatText(
