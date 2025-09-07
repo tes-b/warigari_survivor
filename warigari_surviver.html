@@ -1360,7 +1360,7 @@
                 width,
               });
               b.laserCount++;
-              b.attackCooldown = 700;
+              b.attackCooldown = 500;
             } else if (!bossLasers.some((l) => l.owner === b)) {
               if (currentWave === 7) {
                 b.attackState = "airLaser";
@@ -1780,14 +1780,14 @@
             continue;
           }
           const rect = { x: l.x, y: l.y, w: l.w, h: l.h };
-            if ((l.persistent || !l.hit) && aabb(rect, player)) {
-              const bossLeft = l.owner.x + l.owner.w / 2 < player.x + player.w / 2;
-              const facingBoss = bossLeft ? player.dir < 0 : player.dir > 0;
-              const hitCondition = l.hitWhenFacing ? facingBoss : !facingBoss;
-              if ((l.ignoreFacing || hitCondition) && player.iframes <= 0 && !cheatInvincible) {
-                const raw = l.owner.damage - playerDefense;
-                const dmg = Math.min(Math.max(raw, 0), hp);
-                hp -= dmg;
+          if ((l.persistent || !l.hit) && aabb(rect, player)) {
+            const bossLeft = l.owner.x + l.owner.w / 2 < player.x + player.w / 2;
+            const facingBoss = bossLeft ? player.dir < 0 : player.dir > 0;
+            const hitCondition = l.hitWhenFacing ? facingBoss : !facingBoss;
+            if ((l.ignoreFacing || hitCondition) && player.iframes <= 0 && !cheatInvincible) {
+              const raw = l.owner.damage - playerDefense;
+              const dmg = Math.min(Math.max(raw, 0), hp);
+              hp -= dmg;
               spawnFloatText(
                 player.x + player.w / 2,
                 player.y - 14,
