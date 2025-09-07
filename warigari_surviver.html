@@ -756,6 +756,7 @@
         w: 28,
         h: 30,
         dir: 1, // 1 → 오른쪽, -1 → 왼쪽
+        prevDir: 1,
         speed: playerSpeed,
         iframes: 0, // 무적 시간(ms)
         hitFlash: 0, // 피격 시 시각 효과
@@ -778,6 +779,10 @@
 
       // --- 보스 레이저 ---
       const bossLasers = [];
+
+      // --- 보스 폭탄 ---
+      const bossSkyBombs = [];
+      const bossParryBombs = [];
 
       // --- 폭탄 ---
       const bombs = [];
@@ -926,6 +931,7 @@
         player.x = WORLD.w / 2;
         player.y = WORLD.groundY - player.h - player.leglength;
         player.dir = 1;
+        player.prevDir = 1;
         player.speed = playerSpeed;
         player.iframes = 0;
         player.hitFlash = 0;
@@ -936,6 +942,8 @@
         player.deathAnim.rotation = 0;
         bullets.length = 0;
         bossLasers.length = 0;
+        bossSkyBombs.length = 0;
+        bossParryBombs.length = 0;
         enemies.length = 0;
         expOrbs.length = 0;
         orbitingOrbs.length = 0;
@@ -1106,7 +1114,7 @@
         const size = enemySize * 3;
         const hpBase = 5000 * enemyScale;
         const startX = WORLD.w - size - 10;
-        enemies.push({
+        const boss = {
           id: nextEnemyId++,
           isBoss: true,
           x: WORLD.w - size,
@@ -1126,11 +1134,6 @@
           range: size,
           defense: 10,
           knockbackImmune: true,
-          attackState: "laser",
-          attackCooldown: 1000,
-          laserCount: 0,
-          jumpCount: 0,
-          jumping: false,
           startX: startX,
           returning: false,
           cracks: ((seg) =>
@@ -1140,7 +1143,23 @@
               x2: 0.5 + ((i + 1) % 2 ? 0.1 : -0.1),
               y2: (i + 1) / seg,
             })))(8),
-        });
+        };
+        if (currentWave === 7) {
+          boss.attackState = "sky";
+          boss.attackCooldown = 1000;
+          boss.skyBombTimer = 0;
+          boss.skyBombIndex = 0;
+          boss.parryBombIndex = 0;
+        } else {
+          boss.attackState = "laser";
+          boss.attackCooldown = 1000;
+          boss.laserCount = 0;
+          boss.jumpCount = 0;
+          boss.jumping = false;
+        }
+        enemies.push(boss);
+        bossSkyBombs.length = 0;
+        bossParryBombs.length = 0;
       }
 
       function fireBossLaser(boss) {
@@ -1161,7 +1180,70 @@
         });
       }
 
+      function throwParryBomb(boss) {
+        const sx = boss.x + boss.w / 2;
+        const sy = boss.y + boss.h / 2;
+        const px = player.x + player.w / 2;
+        const py = player.y + player.h / 2;
+        const dx = px - sx;
+        const dy = py - sy;
+        const dist = Math.hypot(dx, dy) || 1;
+        const speed = 250;
+        bossParryBombs.push({
+          owner: boss,
+          x: sx,
+          y: sy,
+          w: 12,
+          h: 12,
+          vx: (dx / dist) * speed,
+          vy: (dy / dist) * speed,
+          damage: boss.damage,
+          life: (WORLD.w * 2) / speed,
+          returning: false,
+          fromLeft: sx < px,
+          radius: 60,
+        });
+      }
+
       function updateBossBehavior(b, dt) {
+        if (currentWave === 7) {
+          if (b.attackState === "sky") {
+            b.attackCooldown -= dt * 1000;
+            if (b.attackCooldown <= 0 && b.skyBombIndex < 10) {
+              bossSkyBombs.push({
+                x: Math.random() * WORLD.w,
+                y: WORLD.groundY,
+                damage: b.damage,
+                radius: 60,
+                indicator: 60,
+                timer: 2000,
+                total: 2000,
+              });
+              b.skyBombIndex++;
+              b.attackCooldown = 1000;
+            }
+            if (b.skyBombIndex >= 10 && bossSkyBombs.length === 0) {
+              b.attackState = "parry";
+              b.parryBombIndex = 0;
+              b.attackCooldown = 1000;
+            }
+            b.vx = 0;
+          } else if (b.attackState === "parry") {
+            b.attackCooldown -= dt * 1000;
+            if (b.attackCooldown <= 0 && b.parryBombIndex < 5) {
+              throwParryBomb(b);
+              b.parryBombIndex++;
+              b.attackCooldown = 700;
+            }
+            if (b.parryBombIndex >= 5 && bossParryBombs.length === 0) {
+              b.attackState = "sky";
+              b.skyBombIndex = 0;
+              b.attackCooldown = 1000;
+            }
+            b.vx = 0;
+          }
+          return;
+        }
         if (b.attackState === "laser") {
           b.attackCooldown -= dt * 1000;
           if (b.attackCooldown <= 0) {
@@ -1654,6 +1736,67 @@
           }
         }
 
+        // 보스 낙하 폭탄 업데이트
+        for (let i = bossSkyBombs.length - 1; i >= 0; i--) {
+          const b = bossSkyBombs[i];
+          b.timer -= dt * 1000;
+          b.indicator = (b.timer / b.total) * b.radius;
+          if (b.timer <= 0) {
+            explodeBomb(b);
+            bossSkyBombs.splice(i, 1);
+          }
+        }
+
+        // 보스 패링 폭탄 업데이트
+        for (let i = bossParryBombs.length - 1; i >= 0; i--) {
+          const p = bossParryBombs[i];
+          p.x += p.vx * dt;
+          p.y += p.vy * dt;
+          p.life -= dt * 1000;
+          if (!p.returning && aabb(p, player)) {
+            const fromLeft = p.fromLeft;
+            const currentFacing = fromLeft ? player.dir < 0 : player.dir > 0;
+            const prevFacing = fromLeft ? player.prevDir < 0 : player.prevDir > 0;
+            if (currentFacing) {
+              if (player.iframes <= 0 && !cheatInvincible) {
+                const raw = p.damage - playerDefense;
+                const dmg = Math.min(Math.max(raw, 0), hp);
+                hp -= dmg;
+                spawnFloatText(
+                  player.x + player.w / 2,
+                  player.y - 14,
+                  -dmg,
+                  "#ff6b6b",
+                );
+                player.iframes = playerIframeDuration;
+                player.hitFlash = playerHitFlashDuration;
+                if (hp <= 0) {
+                  hp = 0;
+                  gameOver();
+                  return;
+                }
+              }
+              bossParryBombs.splice(i, 1);
+              continue;
+            } else if (prevFacing) {
+              const bx = p.owner.x + p.owner.w / 2;
+              const by = p.owner.y + p.owner.h / 2;
+              const dx = bx - p.x;
+              const dy = by - p.y;
+              const dist = Math.hypot(dx, dy) || 1;
+              const speed = 300;
+              p.vx = (dx / dist) * speed;
+              p.vy = (dy / dist) * speed;
+              p.returning = true;
+            }
+          } else if (p.returning && aabb(p, p.owner)) {
+            explodeBomb(p);
+            bossParryBombs.splice(i, 1);
+            continue;
+          }
+          if (p.life <= 0) bossParryBombs.splice(i, 1);
+        }
+
         // 폭발 이펙트 업데이트
         for (let i = explosions.length - 1; i >= 0; i--) {
           const ex = explosions[i];
@@ -1897,8 +2040,11 @@
 
         if (isBossWave() && !enemies.some((e) => e.isBoss)) {
           skipWave();
+          bossSkyBombs.length = 0;
+          bossParryBombs.length = 0;
         }
 
+        player.prevDir = player.dir;
         updateHUD();
       }
 
@@ -2084,6 +2230,22 @@
           ctx.beginPath();
           ctx.arc(b.x, b.y, 6, 0, Math.PI * 2);
           ctx.fill();
+        }
+
+        // 보스 패링 폭탄
+        ctx.fillStyle = "#facc15";
+        for (const p of bossParryBombs) {
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, 6, 0, Math.PI * 2);
+          ctx.fill();
+        }
+
+        // 보스 낙하 폭탄 표시
+        ctx.strokeStyle = "#ff6b9d";
+        for (const b of bossSkyBombs) {
+          ctx.beginPath();
+          ctx.arc(b.x, b.y, b.indicator, 0, Math.PI * 2);
+          ctx.stroke();
         }
 
         // 폭발 이펙트
