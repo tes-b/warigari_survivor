@@ -1151,14 +1151,17 @@
         function fireBossLaser(boss) {
           const dir =
             player.x + player.w / 2 >= boss.x + boss.w / 2 ? 1 : -1;
+          const speed = 600;
+          const travel =
+            ((WORLD.w + boss.w + player.w * 3) / speed) * 1000;
           bossLasers.push({
             owner: boss,
             x: dir > 0 ? boss.x + boss.w : boss.x - player.w * 3,
-            y: boss.y + boss.h / 2 - 3,
+            y: player.y + player.h / 2 - 3,
             w: player.w * 3,
             h: 6,
-            vx: dir * 600,
-            life: 500,
+            vx: dir * speed,
+            life: travel,
             hit: false,
           });
         }
@@ -1188,21 +1191,23 @@
                 b.y = WORLD.groundY - b.h;
                 b.vy = 0;
                 b.jumping = false;
+                b.x = b.returning ? b.startX : b.x;
                 b.attackCooldown = 500;
               }
             } else {
               b.attackCooldown -= dt * 1000;
               if (b.attackCooldown <= 0) {
-                const dur = 0.8;
+                const jumpVy = -800;
+                const flight = (-2 * jumpVy) / 1500;
                 if (b.jumpCount < 5) {
                   const targetX = player.x;
-                  b.vx = (targetX - b.x) / dur;
-                  b.vy = -800;
+                  b.vx = (targetX - b.x) / flight;
+                  b.vy = jumpVy;
                   b.jumping = true;
                   b.jumpCount++;
                 } else if (!b.returning) {
-                  b.vx = (b.startX - b.x) / dur;
-                  b.vy = -800;
+                  b.vx = (b.startX - b.x) / flight;
+                  b.vy = jumpVy;
                   b.jumping = true;
                   b.returning = true;
                 } else {
