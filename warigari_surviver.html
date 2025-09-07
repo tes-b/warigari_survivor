@@ -1233,7 +1233,7 @@
             h: WORLD.groundY,
             vx: 0,
             vy: 400,
-            life: 2000,
+            life: 500,
             ignoreFacing: true,
             persistent: true,
             active: false,
@@ -1327,7 +1327,7 @@
             if (b.laserCount < 5) {
               fireBossAirLasers(b);
               b.laserCount++;
-              b.attackCooldown = 3000;
+              b.attackCooldown = 1500;
             } else if (!bossLasers.some((l) => l.owner === b)) {
               if (currentWave === 7) {
                 b.attackState = "bomb";
