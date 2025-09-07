@@ -1124,6 +1124,17 @@
         });
       }
 
+      function pickBossPattern(b) {
+        const patterns = ["laser", "jump", "airLaser", "bomb"];
+        b.attackState = patterns[(Math.random() * patterns.length) | 0];
+        b.attackCooldown = 1000;
+        b.laserCount = 0;
+        b.jumpCount = 0;
+        b.bombCount = 0;
+        b.jumping = false;
+        b.returning = false;
+      }
+
       function spawnBoss() {
         const size = enemySize * 3;
         const hpBase = 5000 * enemyScale;
@@ -1173,6 +1184,8 @@
             laserCount: 0,
             bombCount: 0,
           });
+        } else if (currentWave === 11) {
+          pickBossPattern(boss);
         }
         enemies.push(boss);
       }
@@ -1256,10 +1269,14 @@
               b.laserCount++;
               b.attackCooldown = 700;
             } else if (!bossLasers.some((l) => l.owner === b)) {
-              b.attackState = "jump";
-              b.attackCooldown = 1000;
-              b.jumpCount = 0;
-              b.returning = false;
+              if (currentWave === 3) {
+                b.attackState = "jump";
+                b.attackCooldown = 1000;
+                b.jumpCount = 0;
+                b.returning = false;
+              } else if (currentWave === 11) {
+                pickBossPattern(b);
+              }
             }
           }
           b.vx = 0;
@@ -1292,11 +1309,15 @@
                 b.jumping = true;
                 b.returning = true;
               } else {
-                b.attackState = "laser";
-                b.laserCount = 0;
-                b.attackCooldown = 1000;
-                b.jumpCount = 0;
-                b.returning = false;
+                if (currentWave === 3) {
+                  b.attackState = "laser";
+                  b.laserCount = 0;
+                  b.attackCooldown = 1000;
+                  b.jumpCount = 0;
+                  b.returning = false;
+                } else if (currentWave === 11) {
+                  pickBossPattern(b);
+                }
               }
             }
           }
@@ -1308,9 +1329,13 @@
               b.laserCount++;
               b.attackCooldown = 3000;
             } else if (!bossLasers.some((l) => l.owner === b)) {
-              b.attackState = "bomb";
-              b.bombCount = 0;
-              b.attackCooldown = 1000;
+              if (currentWave === 7) {
+                b.attackState = "bomb";
+                b.bombCount = 0;
+                b.attackCooldown = 1000;
+              } else if (currentWave === 11) {
+                pickBossPattern(b);
+              }
             }
           }
           b.vx = 0;
@@ -1322,9 +1347,13 @@
               b.bombCount++;
               b.attackCooldown = 800;
             } else if (!bossBombs.some((bb) => bb.owner === b)) {
-              b.attackState = "airLaser";
-              b.laserCount = 0;
-              b.attackCooldown = 1000;
+              if (currentWave === 7) {
+                b.attackState = "airLaser";
+                b.laserCount = 0;
+                b.attackCooldown = 1000;
+              } else if (currentWave === 11) {
+                pickBossPattern(b);
+              }
             }
           }
           b.vx = 0;
