@@ -1150,6 +1150,8 @@
           return true;
         if (b.attackState === "bomb" && b.bombCount === 0 && b.attackCooldown <= 1000)
           return true;
+        if (b.attackState === "timedLaser" && b.laserCount === 0 && b.attackCooldown <= 1000)
+          return true;
         return false;
       }
 
@@ -1208,7 +1210,6 @@
             attackState: "airLaser",
             attackCooldown: 1000,
             laserCount: 0,
-            bombCount: 0,
           });
         } else if (currentWave === 11) {
           pickBossPattern(boss);
@@ -1218,21 +1219,24 @@
         enemies.push(boss);
       }
 
-      function fireBossLaser(boss) {
+      function fireBossLaser(boss, opts = {}) {
         const dir =
           player.x + player.w / 2 >= boss.x + boss.w / 2 ? 1 : -1;
         const speed = 600;
-        const travel =
-          ((WORLD.w + boss.w + player.w * 3) / speed) * 1000;
+        const width = opts.width || player.w * 3;
+        const travel = ((WORLD.w + boss.w + width) / speed) * 1000;
         bossLasers.push({
           owner: boss,
-          x: dir > 0 ? boss.x + boss.w : boss.x - player.w * 3,
+          x: dir > 0 ? boss.x + boss.w : boss.x - width,
           y: player.y + player.h / 2 - 3,
-          w: player.w * 3,
+          w: width,
           h: 6,
           vx: dir * speed,
           life: travel,
           hit: false,
+          color: opts.color || "#ff6b9d",
+          hitWhenFacing:
+            opts.hitWhenFacing !== undefined ? opts.hitWhenFacing : true,
         });
       }
 
@@ -1358,8 +1362,33 @@
               b.attackCooldown = 1500;
             } else if (!bossLasers.some((l) => l.owner === b)) {
               if (currentWave === 7) {
-                b.attackState = "bomb";
-                b.bombCount = 0;
+                b.attackState = "timedLaser";
+                b.laserCount = 0;
+                b.attackCooldown = 1000;
+              } else if (currentWave === 11) {
+                pickBossPattern(b);
+              }
+            }
+          }
+          b.vx = 0;
+        } else if (b.attackState === "timedLaser") {
+          b.attackCooldown -= dt * 1000;
+          if (b.attackCooldown <= 0) {
+            if (b.laserCount < 10) {
+              const requireFacing = b.laserCount % 2 === 0;
+              const color = requireFacing ? "#ff6b9d" : "#facc15";
+              const width = player.w * (2 + Math.random() * 4);
+              fireBossLaser(b, {
+                color,
+                hitWhenFacing: requireFacing,
+                width,
+              });
+              b.laserCount++;
+              b.attackCooldown = 700;
+            } else if (!bossLasers.some((l) => l.owner === b)) {
+              if (currentWave === 7) {
+                b.attackState = "airLaser";
+                b.laserCount = 0;
                 b.attackCooldown = 1000;
               } else if (currentWave === 11) {
                 pickBossPattern(b);
@@ -1793,13 +1822,14 @@
             continue;
           }
           const rect = { x: l.x, y: l.y, w: l.w, h: l.h };
-          if ((l.persistent || !l.hit) && aabb(rect, player)) {
-            const bossLeft = l.owner.x + l.owner.w / 2 < player.x + player.w / 2;
-            const facingBoss = bossLeft ? player.dir < 0 : player.dir > 0;
-            if ((l.ignoreFacing || facingBoss) && player.iframes <= 0 && !cheatInvincible) {
-              const raw = l.owner.damage - playerDefense;
-              const dmg = Math.min(Math.max(raw, 0), hp);
-              hp -= dmg;
+            if ((l.persistent || !l.hit) && aabb(rect, player)) {
+              const bossLeft = l.owner.x + l.owner.w / 2 < player.x + player.w / 2;
+              const facingBoss = bossLeft ? player.dir < 0 : player.dir > 0;
+              const hitCondition = l.hitWhenFacing ? facingBoss : !facingBoss;
+              if ((l.ignoreFacing || hitCondition) && player.iframes <= 0 && !cheatInvincible) {
+                const raw = l.owner.damage - playerDefense;
+                const dmg = Math.min(Math.max(raw, 0), hp);
+                hp -= dmg;
               spawnFloatText(
                 player.x + player.w / 2,
                 player.y - 14,
@@ -2310,8 +2340,10 @@
           // 공중 레이저(웨이브 8 보스)는 반투명하게 처리
           if (l.ignoreFacing) {
             ctx.globalAlpha = 0.7;  // 40% 불투명도
+          } else {
+            ctx.globalAlpha = 1;
           }
-          ctx.fillStyle = "#ff6b9d";
+          ctx.fillStyle = l.color || "#ff6b9d";
           ctx.fillRect(l.x, l.y, l.w, l.h);
         }
         ctx.restore();
