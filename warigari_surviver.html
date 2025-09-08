@@ -871,6 +871,14 @@
         }
       });
 
+      function autoPause() {
+        if (running && !paused) togglePause();
+      }
+      window.addEventListener("blur", autoPause);
+      document.addEventListener("visibilitychange", () => {
+        if (document.hidden) autoPause();
+      });
+
       // --- 유틸 ---
       const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
       function aabb(a, b) {
