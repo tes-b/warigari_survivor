@@ -2090,14 +2090,30 @@
 
             const overlapLeft = Math.max(0, playerRight - eLeft);
             const overlapRight = Math.max(0, eRight - playerLeft);
-            if (overlapLeft < overlapRight) {
-              e.x = playerRight + separationDistance;
+            const pushRight = overlapLeft < overlapRight;
+            const enemyPinned =
+              e.isBoss ||
+              (pushRight ? eRight >= WORLD.w : eLeft <= 0);
+
+            if (enemyPinned) {
+              // Move player instead if the enemy can't be pushed
+              if (pushRight) {
+                player.x = eLeft - player.w - separationDistance;
+              } else {
+                player.x = eRight + separationDistance;
+              }
+              player.vx = 0;
+              player.x = clamp(player.x, 0, WORLD.w - player.w);
             } else {
-              e.x = playerLeft - e.w - separationDistance;
+              if (pushRight) {
+                e.x = playerRight + separationDistance;
+              } else {
+                e.x = playerLeft - e.w - separationDistance;
+              }
+              e.vx = 0;
             }
-            e.vx = 0;
           }
-          // Keep enemies within the stage boundaries
+          // Keep entities within the stage boundaries
           e.x = clamp(e.x, 0, WORLD.w - e.w);
           e.y = clamp(e.y, 0, WORLD.groundY - e.h);
         }
