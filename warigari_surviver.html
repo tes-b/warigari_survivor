@@ -1426,7 +1426,7 @@
           w: expOrbSize,
           h: expOrbSize,
           vx: (Math.random() - 0.5) * 100,
-          vy: -150 - Math.random() * 50,
+          vy: -200 - Math.random() * 80,
           gravity: 400,
           value: expOrbValue,
           life: 5000, // 5초 후 사라짐
@@ -1875,10 +1875,19 @@
           orb.x += orb.vx * dt;
           orb.y += orb.vy * dt;
 
+          // 벽에 튕기기
+          if (orb.x < 0) {
+            orb.x = 0;
+            orb.vx *= -0.8;
+          } else if (orb.x + orb.w > WORLD.w) {
+            orb.x = WORLD.w - orb.w;
+            orb.vx *= -0.8;
+          }
+
           // 바닥에 튕기기
           if (orb.y + orb.h > WORLD.groundY) {
             orb.y = WORLD.groundY - orb.h;
-            orb.vy *= -0.6; // 반발
+            orb.vy *= -0.8; // 반발 강화
             orb.vx *= 0.8; // 마찰
           }
 
