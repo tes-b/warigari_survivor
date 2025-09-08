@@ -587,9 +587,8 @@
           desc: "최대 체력 +500, 체력 모두 회복",
           apply: () => {
             playerHP += 300;
-            // const healed = Math.min(300, playerHP - hp);
-            const healed = playerHP
-            hp += healed;
+            const healed = playerHP - hp;
+            hp = playerHP;
             if (healed > 0)
               spawnFloatText(
                 player.x + player.w / 2,
