@@ -779,6 +779,13 @@
           gravity: 1200, // 중력
           rotation: 0, // 회전 각도
         },
+        cracks: ((seg) =>
+          Array.from({ length: seg }, (_, i) => ({
+            x1: 0.5 + (i % 2 ? 0.1 : -0.1),
+            y1: i / seg,
+            x2: 0.5 + ((i + 1) % 2 ? 0.1 : -0.1),
+            y2: (i + 1) / seg,
+          })))(6),
       };
 
       // --- 투사체(자동 공격) ---
@@ -887,22 +894,6 @@
           if (r < 0) return i;
         }
         return weights.length - 1;
-      }
-
-      // 체력바 그리기
-      function drawHPBar(x, y, w, h, hp, hpMax) {
-        const ratio = Math.max(0, Math.min(1, hp / hpMax));
-        // 배경
-        ctx.fillStyle = "#0009";
-        ctx.fillRect(x, y, w, h);
-        // 채움
-        ctx.fillStyle =
-          ratio > 0.5 ? "#6cff96" : ratio > 0.25 ? "#ffd66c" : "#ff7676";
-        ctx.fillRect(x, y, w * ratio, h);
-        // 테두리
-        ctx.strokeStyle = "#111b";
-        ctx.lineWidth = 1;
-        ctx.strokeRect(x + 0.5, y + 0.5, w - 1, h - 1);
       }
 
       // --- 게임 제어 ---
@@ -2199,6 +2190,36 @@
           );
         }
 
+        // 플레이어 체력 금 표시
+        const playerDmgRatio = 1 - hp / playerHP;
+        if (playerDmgRatio > 0) {
+          const progress = playerDmgRatio * player.cracks.length;
+          const full = Math.floor(progress);
+          ctx.save();
+          ctx.strokeStyle = "#000";
+          ctx.lineWidth = 1;
+          for (let i = 0; i < full; i++) {
+            const c = player.cracks[i];
+            ctx.beginPath();
+            ctx.moveTo(player.x + c.x1 * player.w, player.y + c.y1 * player.h);
+            ctx.lineTo(player.x + c.x2 * player.w, player.y + c.y2 * player.h);
+            ctx.stroke();
+          }
+          if (full < player.cracks.length) {
+            const c = player.cracks[full];
+            const t = progress - full;
+            const x1 = player.x + c.x1 * player.w;
+            const y1 = player.y + c.y1 * player.h;
+            const x2 = player.x + c.x2 * player.w;
+            const y2 = player.y + c.y2 * player.h;
+            ctx.beginPath();
+            ctx.moveTo(x1, y1);
+            ctx.lineTo(x1 + (x2 - x1) * t, y1 + (y2 - y1) * t);
+            ctx.stroke();
+          }
+          ctx.restore();
+        }
+
         // 화살표 (방향 표시)
         ctx.fillStyle = "#d8e4ff";
         ctx.beginPath();
@@ -2214,16 +2235,6 @@
         ctx.closePath();
         ctx.fill();
         ctx.restore();
-
-        // 플레이어 HP 바(머리 위)
-        drawHPBar(
-          player.x + player.w / 2 - 22,
-          player.y - 10,
-          44,
-          5,
-          hp,
-          playerHP,
-        );
 
         // 총구 플래시
         ctx.save();
