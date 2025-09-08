@@ -907,6 +907,14 @@
         "TIP: 변수 이름을 temp로 짓는 순간, 영구 변수가 됩니다.",
         "TIP: “한 줄만 고치면 돼”는 세 시간짜리 퀘스트 입니다.",
         "TIP: 당신은 바보입니다.",
+        "TIP: 허리펴고 하세요.",
+        "TIP: 게임을 플레이한 지 겨우 2시간 밖에 안 지났습니다.",
+        "TIP: 과도한 일상생활은 정상적인 게임이용에 지장을 줄 수 있습니다.",
+        "TIP: ESC키를 누르면 일시정지 할 수 있습니다.",
+        "TIP: 보스의 빔은 뒤를 보면 피할 수 있습니다.",
+        "TIP: 초록색일때는 앞으로 가세요.",
+        "TIP: 이거 읽지 말고 게임에 집중하세요.",
+        "TIP: 업무중에 가끔 일어나 스트레칭을 하면 좋을껄요?.",
       ];
       let tipIndex = 0;
       setInterval(() => {
@@ -1343,7 +1351,7 @@
           if (b.attackCooldown <= 0) {
             if (b.laserCount < 10) {
               const requireFacing = b.laserCount % 2 === 0;
-              const color = requireFacing ? "#ff6b9d" : "#facc15";
+              const color = requireFacing ? "#ff6b9d" : "#4ade80";
               const width = player.w * (2 + Math.random() * 4);
               fireBossLaser(b, {
                 color,
