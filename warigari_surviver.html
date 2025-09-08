@@ -1420,14 +1420,15 @@
       }
 
       function spawnExpOrb(x, y) {
+        const speed = 120;
+        const angle = Math.random() * Math.PI * 2;
         expOrbs.push({
           x: x,
           y: y,
           w: expOrbSize,
           h: expOrbSize,
-          vx: (Math.random() - 0.5) * 100,
-          vy: -150 - Math.random() * 50,
-          gravity: 400,
+          vx: Math.cos(angle) * speed,
+          vy: Math.sin(angle) * speed,
           value: expOrbValue,
           life: 5000, // 5초 후 사라짐
         });
@@ -1868,21 +1869,23 @@
         const py = player.y + player.h / 2;
         for (let i = expOrbs.length - 1; i >= 0; i--) {
           const orb = expOrbs[i];
-          orb.life -= dt * 1000;
-
-          // 중력 적용
-          orb.vy += orb.gravity * dt;
-          orb.x += orb.vx * dt;
-          orb.y += orb.vy * dt;
-
-          // 바닥에 튕기기
-          if (orb.y + orb.h > WORLD.groundY) {
-            orb.y = WORLD.groundY - orb.h;
-            orb.vy *= -0.6; // 반발
-            orb.vx *= 0.8; // 마찰
-          }
-
-          // 자석 효과: 플레이어 주변 경험치 구슬 끌어당김
+            orb.life -= dt * 1000;
+            orb.x += orb.vx * dt;
+            orb.y += orb.vy * dt;
+            if (orb.x < 0) {
+              orb.x = 0;
+              orb.vx *= -1;
+            } else if (orb.x + orb.w > WORLD.w) {
+              orb.x = WORLD.w - orb.w;
+              orb.vx *= -1;
+            }
+            if (orb.y < 0) {
+              orb.y = 0;
+              orb.vy *= -1;
+            } else if (orb.y + orb.h > WORLD.groundY) {
+              orb.y = WORLD.groundY - orb.h;
+              orb.vy *= -1;
+            }
           if (magnetRadius > 0) {
             const ox = orb.x + orb.w / 2;
             const oy = orb.y + orb.h / 2;
