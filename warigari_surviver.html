@@ -257,6 +257,11 @@
       box-shadow: 0 6px 20px rgba(74, 107, 255, 0.3);
     }
 
+    .upgrade-btn.focused {
+      outline: 3px solid #fff;
+      outline-offset: -3px;
+    }
+
     .upgrade-title {
       font-weight: bold;
       font-size: 14px;
@@ -267,6 +272,22 @@
       font-size: 12px;
       opacity: 0.85;
       line-height: 1.3;
+    }
+
+    .hold-gauge {
+      height: 8px;
+      background: #1c2246;
+      border: 1px solid #2e3a7a;
+      border-radius: 6px;
+      margin-top: 16px;
+      overflow: hidden;
+    }
+
+    .hold-gauge .fill {
+      height: 100%;
+      width: 0%;
+      background: #2a58ff;
+      transition: width 0s;
     }
 
     .exp-orb {
@@ -363,6 +384,9 @@
           <p>능력을 선택하세요:</p>
           <div class="upgrade-grid" id="upgradeGrid">
             <!-- 업그레이드 옵션들이 여기에 동적으로 생성됩니다 -->
+          </div>
+          <div class="hold-gauge">
+            <div class="fill" id="holdGaugeFill"></div>
           </div>
         </div>
       </div>
@@ -731,6 +755,14 @@
       let exp = 0; // 현재 경험치
       let level = 1; // 현재 레벨
 
+      const HOLD_DURATION = 2000;
+      let levelupActive = false;
+      let focusedUpgradeIndex = 0;
+      let spaceHoldStart = null;
+      let holdTimeout = null;
+      let holdGaugeRAF = null;
+      const holdGaugeFill = document.getElementById("holdGaugeFill");
+
       // 화면/맵
       function fitCanvas() {
         const wrap = document.getElementById("canvasWrap");
@@ -844,7 +876,9 @@
       window.addEventListener("keydown", (e) => {
         if (e.code === "Space") {
           e.preventDefault();
-          if (!running) {
+          if (levelupActive) {
+            if (spaceHoldStart === null) startHold();
+          } else if (!running) {
             startGame();
           } else if (!paused) {
             toggleDirection();
@@ -868,6 +902,12 @@
             checkLevelUp();
             updateHUD();
           }
+        }
+      });
+      window.addEventListener("keyup", (e) => {
+        if (e.code === "Space" && levelupActive) {
+          e.preventDefault();
+          if (spaceHoldStart !== null) endHold(true);
         }
       });
 
@@ -1614,6 +1654,59 @@
         }
       }
 
+      function highlightFocusedUpgrade() {
+        const buttons = document.querySelectorAll("#upgradeGrid .upgrade-btn");
+        buttons.forEach((btn, idx) => {
+          btn.classList.toggle("focused", idx === focusedUpgradeIndex);
+        });
+      }
+
+      function moveFocus(delta) {
+        const buttons = document.querySelectorAll("#upgradeGrid .upgrade-btn");
+        if (!buttons.length) return;
+        focusedUpgradeIndex =
+          (focusedUpgradeIndex + delta + buttons.length) % buttons.length;
+        highlightFocusedUpgrade();
+      }
+
+      function selectCurrentUpgrade() {
+        const buttons = document.querySelectorAll("#upgradeGrid .upgrade-btn");
+        if (buttons[focusedUpgradeIndex]) {
+          buttons[focusedUpgradeIndex].click();
+        }
+      }
+
+      function updateHoldGauge() {
+        if (spaceHoldStart === null) return;
+        const progress = Math.min(
+          (performance.now() - spaceHoldStart) / HOLD_DURATION,
+          1,
+        );
+        holdGaugeFill.style.width = `${progress * 100}%`;
+        if (progress < 1) {
+          holdGaugeRAF = requestAnimationFrame(updateHoldGauge);
+        }
+      }
+
+      function startHold() {
+        spaceHoldStart = performance.now();
+        updateHoldGauge();
+        holdTimeout = setTimeout(() => {
+          endHold(false);
+          selectCurrentUpgrade();
+        }, HOLD_DURATION);
+      }
+
+      function endHold(moveNext) {
+        clearTimeout(holdTimeout);
+        holdTimeout = null;
+        cancelAnimationFrame(holdGaugeRAF);
+        holdGaugeRAF = null;
+        holdGaugeFill.style.width = "0%";
+        spaceHoldStart = null;
+        if (moveNext) moveFocus(1);
+      }
+
       function showLevelUpScreen(remainingLevels) {
         paused = true;
         const levelupOverlay = document.getElementById("levelupOverlay");
@@ -1637,9 +1730,11 @@
             <div class="upgrade-desc">${upgrade.desc}</div>
         `;
           btn.onclick = () => {
+            endHold(false);
             acquireUpgrade(upgrade);
             levelUpImpulse();
             levelupOverlay.style.display = "none";
+            levelupActive = false;
 
             // 남은 레벨업이 있으면 다음 레벨업 화면 표시
             if (remainingLevels > 1) {
@@ -1656,6 +1751,10 @@
         });
 
         levelupOverlay.style.display = "flex";
+        focusedUpgradeIndex = 0;
+        highlightFocusedUpgrade();
+        holdGaugeFill.style.width = "0%";
+        levelupActive = true;
       }
 
       // --- 업데이트 ---
