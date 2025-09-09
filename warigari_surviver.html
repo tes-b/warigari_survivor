@@ -580,7 +580,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
         LASERORB: {
           COOLDOWN: 1500, // 레이저 발사 간격 (ms)
           DAMAGE: 120, // 레이저 피해량
-          SPEED: 1400, // 레이저 속도 (px/s)
+          SPEED: 1050, // 레이저 속도 (px/s)
         },
       };
 
@@ -2151,8 +2151,8 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
             const ang = Math.atan2(ty - sy, tx - sx);
             const cos = Math.cos(ang);
             const sin = Math.sin(ang);
-            const len = 12;
-            const thick = 3;
+            const len = 72;
+            const thick = 18;
             laserShots.push({
               x: sx,
               y: sy,
