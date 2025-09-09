@@ -75,6 +75,35 @@
       padding: 24px;
     }
 
+    .office-overlay {
+      position: absolute;
+      inset: 0;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      background: #fff;
+      color: #000;
+      z-index: 30;
+      padding: 16px;
+      font-family: "Segoe UI", sans-serif;
+      flex-direction: column;
+    }
+    .office-overlay table {
+      border-collapse: collapse;
+      width: 80%;
+    }
+    .office-overlay th,
+    .office-overlay td {
+      border: 1px solid #ccc;
+      padding: 4px 8px;
+      text-align: left;
+      font-size: 14px;
+    }
+    .office-overlay h2 {
+      margin: 0 0 8px;
+      font-size: 18px;
+    }
+
     .panel {
       background: #101531;
       border: 1px solid #33407d;
@@ -366,6 +395,7 @@
         <div class="stat" id="time">Time: 0.0s</div>
         <div class="stat" id="level">Lv: 1</div>
         <div class="stat" id="wave">Wave: 1</div>
+        <div class="stat" id="officeIcon" style="display:none">💼</div>
       </div>
 
       <div class="exp-gauge-wrap">
@@ -378,6 +408,17 @@
       <div class="wave-display" id="waveDisplay"></div>
 
       <div class="upgrade-hud" id="upgradeHud"></div>
+
+      <div class="office-overlay" id="officeOverlay">
+        <h2>Quarterly Report</h2>
+        <table>
+          <tr><th>Quarter</th><th>Revenue</th><th>Cost</th></tr>
+          <tr><td>Q1</td><td>$1.2M</td><td>$0.8M</td></tr>
+          <tr><td>Q2</td><td>$1.5M</td><td>$0.9M</td></tr>
+          <tr><td>Q3</td><td>$1.7M</td><td>$1.1M</td></tr>
+          <tr><td>Q4</td><td>$2.0M</td><td>$1.3M</td></tr>
+        </table>
+      </div>
 
       <!-- 시작/재시작 오버레이 -->
       <div class="overlay" id="overlay">
@@ -932,11 +973,27 @@
               toggleDirection();
             }
           }
-        } else if (e.code === "Escape" && running) {
-          const lvlOverlay = document.getElementById("levelupOverlay");
-          if (lvlOverlay.style.display !== "flex") {
+        } else if (e.code === "Backspace") {
+          e.preventDefault();
+          officeMode = !officeMode;
+          if (!officeMode && officeOverlay.style.display !== "none") {
+            hideOfficeOverlay();
+          }
+          updateHUD();
+        } else if (e.code === "Escape") {
+          if (officeMode) {
             e.preventDefault();
-            togglePause();
+            if (officeOverlay.style.display === "none") {
+              showOfficeOverlay();
+            } else {
+              hideOfficeOverlay();
+            }
+          } else if (running) {
+            const lvlOverlay = document.getElementById("levelupOverlay");
+            if (lvlOverlay.style.display !== "flex") {
+              e.preventDefault();
+              togglePause();
+            }
           }
         } else if (e.code === "Digit1") {
           e.preventDefault();
@@ -963,12 +1020,38 @@
         }
       });
 
+      function showOfficeOverlay() {
+        officeOverlay.style.display = "flex";
+        if (running && !paused) {
+          togglePause();
+          officePaused = true;
+        } else {
+          officePaused = false;
+        }
+      }
+
+      function hideOfficeOverlay() {
+        officeOverlay.style.display = "none";
+        if (officePaused && paused) {
+          togglePause();
+        }
+        officePaused = false;
+      }
+
       function autoPause() {
         if (running && !paused) togglePause();
       }
-      window.addEventListener("blur", autoPause);
+
+      function handleBlur() {
+        if (officeMode) {
+          showOfficeOverlay();
+        } else {
+          autoPause();
+        }
+      }
+      window.addEventListener("blur", handleBlur);
       document.addEventListener("visibilitychange", () => {
-        if (document.hidden) autoPause();
+        if (document.hidden) handleBlur();
       });
 
       // --- 유틸 ---
@@ -1185,6 +1268,10 @@
       const waveHudEl = document.getElementById("wave");
       const expEl = document.getElementById("exp");
       const waveEl = document.getElementById("waveDisplay");
+      const officeIconEl = document.getElementById("officeIcon");
+      const officeOverlay = document.getElementById("officeOverlay");
+      let officeMode = false;
+      let officePaused = false;
       let waveDisplayTimeout;
 
       function getWaveLabel() {
@@ -1211,6 +1298,7 @@
           .padStart(5, "0")}`;
         levelEl.textContent = `Lv: ${level}`;
         waveHudEl.textContent = `Wave: ${getWaveLabel()}`;
+        officeIconEl.style.display = officeMode ? "block" : "none";
 
         // Update exp gauge
         const expGauge = document.getElementById("expGauge");
