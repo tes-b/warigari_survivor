@@ -462,6 +462,17 @@
         },
       };
 
+      // 궤도 구슬 무지개 색상 배열 (빨주노초파남보)
+      const RAINBOW_COLORS = [
+        "#ff0000",
+        "#ff7f00",
+        "#ffff00",
+        "#00ff00",
+        "#0000ff",
+        "#4b0082",
+        "#9400d3",
+      ];
+
       // 가변 상태 변수들 (게임 진행 중 변경됨)
       let playerHP = INIT.PLAYER.HP;
       let playerSpeed = INIT.PLAYER.SPEED;
@@ -625,11 +636,15 @@
             });
 
             // 최대치에 도달하면 폭발적 강화
-            if (orbitingOrbs.length == INIT.ORBITAL.LIMIT - 1) {
-              orbitalDamage = 500 // 궤도 구슬 피해량
+            if (orbitingOrbs.length === INIT.ORBITAL.LIMIT) {
+              orbitalDamage = 500; // 궤도 구슬 피해량
               orbitalRadius = 90; // 궤도 반지름
               orbitalSpeed = 7; // 궤도 회전 속도 (rad/s)
-            } 
+              orbitingOrbs.forEach(orb => {
+                orb.size *= 3; // 궤도 구슬 크기 3배 증가
+                orb.damage = orbitalDamage; // 궤도 구슬 피해량 갱신
+              });
+            }
           },
         },
         {
@@ -1056,6 +1071,9 @@
         bulletLifeSteal = INIT.BULLET.LIFESTEAL;
         magnetRadius = 0;
         expOrbValue = INIT.EXP.ORB_VALUE;
+        orbitalRadius = INIT.ORBITAL.RADIUS;
+        orbitalSpeed = INIT.ORBITAL.SPEED;
+        orbitalDamage = INIT.ORBITAL.DAMAGE;
         playerDefense = INIT.PLAYER.DEFENSE;
         playerHP = INIT.PLAYER.HP;
         hp = playerHP;
@@ -2504,7 +2522,7 @@
         }
 
         // 궤도 구슬
-        for (const orb of orbitingOrbs) {
+        orbitingOrbs.forEach((orb, idx) => {
           const orbX =
             player.x +
             player.w / 2 +
@@ -2515,14 +2533,18 @@
             Math.sin(orb.angle + orbitalAngle) * orbitalRadius;
 
           ctx.save();
-          ctx.fillStyle = "#ff6b9d";
+          const color =
+            orbitingOrbs.length >= INIT.ORBITAL.LIMIT
+              ? RAINBOW_COLORS[idx % RAINBOW_COLORS.length]
+              : "#ff6b9d";
+          ctx.fillStyle = color;
           ctx.shadowBlur = 10;
-          ctx.shadowColor = "#ff6b9d";
+          ctx.shadowColor = color;
           ctx.beginPath();
           ctx.arc(orbX, orbY, orb.size / 2, 0, Math.PI * 2);
           ctx.fill();
           ctx.restore();
-        }
+        });
 
         // 적
         for (const e of enemies) {
