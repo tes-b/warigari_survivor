@@ -551,6 +551,12 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
           DAMAGE: 100, // 궤도 구슬 피해량
           LIMIT: 7 // 최대 업그레이드 수
         },
+        // 레이저 구슬 관련
+        LASERORB: {
+          DAMAGE: 150, // 레이저 피해량
+          COOLDOWN: 1500, // 레이저 발사 간격 (ms)
+          LIMIT: 5, // 최대 구슬 수
+        },
         // 경험치 관련
         EXP: {
           ORB_VALUE: 10, // 경험치 구슬 하나당 경험치
@@ -686,6 +692,12 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
       let orbitalSpeed = INIT.ORBITAL.SPEED; // 궤도 회전 속도 (rad/s)
       let orbitalDamage = INIT.ORBITAL.DAMAGE; // 궤도 구슬 피해량
 
+      // 레이저 구슬 관련
+      let laserOrbs = []; // 레이저 구슬 배열
+      let laserOrbDamage = INIT.LASERORB.DAMAGE; // 레이저 피해량
+      let laserOrbCooldown = INIT.LASERORB.COOLDOWN; // 발사 간격(ms)
+      const laserBeams = []; // 레이저 이펙트 배열
+
       // 레벨업 임펄스 설정
       let levelUpImpulseDamage = INIT.LEVELUP.DAMAGE; // 레벨업 시 주변 적에게 줄 피해
       let levelUpImpulseRadius = INIT.LEVELUP.RADIUS; // 임펄스 범위 (px)
@@ -764,6 +776,16 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
                 orb.damage = orbitalDamage; // 궤도 구슬 피해량 갱신
               });
             }
+          },
+        },
+        {
+          id: "laserOrb",
+          title: "레이저 구슬",
+          icon: "🔮",
+          desc: "머리 위에 레이저 구슬이 추가되어 적에게 레이저를 발사합니다 \\n(구슬 +1)",
+          apply: () => {
+            if (laserOrbs.length >= INIT.LASERORB.LIMIT) return;
+            laserOrbs.push({ timer: 0 });
           },
         },
         {
@@ -1223,6 +1245,8 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
         enemies.length = 0;
         expOrbs.length = 0;
         orbitingOrbs.length = 0;
+        laserOrbs.length = 0;
+        laserBeams.length = 0;
         shootTimer = 0;
         spawnTimer = 0;
         currentWave = 0;
@@ -1246,6 +1270,8 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
         orbitalRadius = INIT.ORBITAL.RADIUS;
         orbitalSpeed = INIT.ORBITAL.SPEED;
         orbitalDamage = INIT.ORBITAL.DAMAGE;
+        laserOrbDamage = INIT.LASERORB.DAMAGE;
+        laserOrbCooldown = INIT.LASERORB.COOLDOWN;
         playerDefense = INIT.PLAYER.DEFENSE;
         playerHP = INIT.PLAYER.HP;
         hp = playerHP;
@@ -1948,10 +1974,12 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
         const levelupOverlay = document.getElementById("levelupOverlay");
         const upgradeGrid = document.getElementById("upgradeGrid");
 
-        // 궤도 구슬이 최대치에 도달하면 해당 업그레이드 제외
-        const availableUpgrades = orbitingOrbs.length >= INIT.ORBITAL.LIMIT
-          ? UPGRADES.filter(u => u.id !== "orbital")
-          : [...UPGRADES];
+        // 궤도 구슬이나 레이저 구슬이 최대치에 도달하면 해당 업그레이드 제외
+        let availableUpgrades = [...UPGRADES];
+        if (orbitingOrbs.length >= INIT.ORBITAL.LIMIT)
+          availableUpgrades = availableUpgrades.filter(u => u.id !== "orbital");
+        if (laserOrbs.length >= INIT.LASERORB.LIMIT)
+          availableUpgrades = availableUpgrades.filter(u => u.id !== "laserOrb");
 
         let selected;
         if (all) {
@@ -2032,6 +2060,12 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
         bombTimer += dt * 1000;
         spawnTimer += dt * 1000;
         iceFloorTimer += dt * 1000;
+        for (const orb of laserOrbs) orb.timer += dt * 1000;
+        for (let i = laserBeams.length - 1; i >= 0; i--) {
+          const l = laserBeams[i];
+          l.life -= dt * 1000;
+          if (l.life <= 0) laserBeams.splice(i, 1);
+        }
         if (bossSpawnTimer > 0) {
           bossSpawnTimer -= dt * 1000;
           if (bossSpawnTimer <= 0) {
@@ -2124,6 +2158,37 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
               radius: bombRadius,
             });
           }
+        }
+
+        // 레이저 구슬 공격
+        if (laserOrbs.length > 0 && enemies.length > 0) {
+          const count = laserOrbs.length;
+          const spacing = 24;
+          laserOrbs.forEach((orb, idx) => {
+            if (orb.timer >= laserOrbCooldown) {
+              const target = enemies[(Math.random() * enemies.length) | 0];
+              if (target) {
+                const ox =
+                  player.x + player.w / 2 + (idx - (count - 1) / 2) * spacing;
+                const oy = player.y - 20;
+                const tx = target.x + target.w / 2;
+                const ty = target.y + target.h / 2;
+                const raw = laserOrbDamage - (target.defense || 0);
+                const dmg = Math.min(Math.max(raw, 0), target.hp);
+                target.hp -= dmg;
+                spawnFloatText(tx, target.y - 12, -dmg, "#9ec4ff");
+                if (target.hp <= 0) {
+                  dropExpOrbs(target);
+                  const tIndex = enemies.indexOf(target);
+                  if (tIndex !== -1) enemies.splice(tIndex, 1);
+                  score += target.reward;
+                  target._killed = true;
+                }
+                laserBeams.push({ x1: ox, y1: oy, x2: tx, y2: ty, life: 100 });
+              }
+              orb.timer = 0;
+            }
+          });
         }
 
         // 얼음 바닥 생성
@@ -2800,6 +2865,23 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
           ctx.restore();
         });
 
+        // 레이저 구슬
+        const lcount = laserOrbs.length;
+        const lspacing = 24;
+        laserOrbs.forEach((orb, idx) => {
+          const ox =
+            player.x + player.w / 2 + (idx - (lcount - 1) / 2) * lspacing;
+          const oy = player.y - 20;
+          ctx.save();
+          ctx.fillStyle = "#9ec4ff";
+          ctx.shadowBlur = 8;
+          ctx.shadowColor = "#9ec4ff";
+          ctx.beginPath();
+          ctx.arc(ox, oy, 6, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.restore();
+        });
+
         // 적
         for (const e of enemies) {
           if (bossPreEffectActive(e)) {
@@ -2900,6 +2982,18 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
           const ex = e.x + (e.vx > 0 ? e.w - 8 : 2);
           ctx.fillRect(ex, e.y + 8, 6, 6);
         }
+
+        // 레이저 구슬 레이저
+        ctx.save();
+        ctx.strokeStyle = "#9ec4ff";
+        ctx.lineWidth = 2;
+        for (const l of laserBeams) {
+          ctx.beginPath();
+          ctx.moveTo(l.x1, l.y1);
+          ctx.lineTo(l.x2, l.y2);
+          ctx.stroke();
+        }
+        ctx.restore();
 
         // 레벨업 임펄스 이펙트
         for (const eff of impulseEffects) {
