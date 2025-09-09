@@ -1685,17 +1685,20 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
         }
       }
 
-      function spawnExpOrb(x, y) {
+      function spawnExpOrb(x, y, opts = {}) {
+        const size = opts.size || expOrbSize;
         expOrbs.push({
           x: x,
           y: y,
-          w: expOrbSize,
-          h: expOrbSize,
+          w: size,
+          h: size,
           vx: (Math.random() - 0.5) * 200,
           vy: -200 - Math.random() * 200,
           gravity: 400,
-          value: expOrbValue,
+          value: opts.value !== undefined ? opts.value : expOrbValue,
           life: 6000, // 6초 후 사라짐
+          color: opts.color,
+          upgrade: opts.upgrade || false,
         });
       }
 
@@ -1715,6 +1718,14 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
         }
         for (let i = 0; i < count; i++) {
           spawnExpOrb(x, y);
+        }
+        if (e.isBoss) {
+          spawnExpOrb(x, y, {
+            size: expOrbSize * 3,
+            color: "#3b82f6",
+            value: 0,
+            upgrade: true,
+          });
         }
       }
 
@@ -1932,7 +1943,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
         if (moveNext) moveFocus(1);
       }
 
-      function showLevelUpScreen(remainingLevels) {
+      function showLevelUpScreen(remainingLevels, all = false) {
         paused = true;
         const levelupOverlay = document.getElementById("levelupOverlay");
         const upgradeGrid = document.getElementById("upgradeGrid");
@@ -1942,9 +1953,13 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
           ? UPGRADES.filter(u => u.id !== "orbital")
           : [...UPGRADES];
 
-        // 3개의 랜덤 업그레이드 선택
-        const shuffled = [...availableUpgrades].sort(() => Math.random() - 0.5);
-        const selected = shuffled.slice(0, 3);
+        let selected;
+        if (all) {
+          selected = availableUpgrades;
+        } else {
+          const shuffled = [...availableUpgrades].sort(() => Math.random() - 0.5);
+          selected = shuffled.slice(0, 3);
+        }
 
         upgradeGrid.innerHTML = "";
         selected.forEach(upgrade => {
@@ -1964,7 +1979,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
             // 남은 레벨업이 있으면 다음 레벨업 화면 표시
             if (remainingLevels > 1) {
               setTimeout(() => {
-                showLevelUpScreen(remainingLevels - 1);
+                showLevelUpScreen(remainingLevels - 1, all);
               }, 100);
             } else {
               paused = false;
@@ -2261,9 +2276,14 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
 
           // 플레이어와 접촉 시 획득
           if (aabb(orb, player)) {
-            exp += orb.value;
-            expOrbs.splice(i, 1);
-            checkLevelUp();
+            if (orb.upgrade) {
+              expOrbs.splice(i, 1);
+              showLevelUpScreen(1, true);
+            } else {
+              exp += orb.value;
+              expOrbs.splice(i, 1);
+              checkLevelUp();
+            }
             continue;
           }
 
@@ -2740,9 +2760,9 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
           if (orb.life < 1000) {
             ctx.globalAlpha = Math.max(orb.life / 1000, 0);
           }
-          ctx.fillStyle = "#4ade80";
+          ctx.fillStyle = orb.color || "#4ade80";
           ctx.shadowBlur = 8;
-          ctx.shadowColor = "#4ade80";
+          ctx.shadowColor = orb.color || "#4ade80";
           ctx.beginPath();
           ctx.arc(
             orb.x + orb.w / 2,
