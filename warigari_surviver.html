@@ -555,7 +555,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
         LASERORB: {
           DAMAGE: 150, // 레이저 피해량
           COOLDOWN: 1500, // 레이저 발사 간격 (ms)
-          LIMIT: 5, // 최대 구슬 수
+          LIMIT: 6, // 최대 구슬 수
         },
         // 경험치 관련
         EXP: {
@@ -2162,15 +2162,13 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
 
         // 레이저 구슬 공격
         if (laserOrbs.length > 0 && enemies.length > 0) {
-          const count = laserOrbs.length;
           const spacing = 24;
           laserOrbs.forEach((orb, idx) => {
             if (orb.timer >= laserOrbCooldown) {
               const target = enemies[(Math.random() * enemies.length) | 0];
               if (target) {
-                const ox =
-                  player.x + player.w / 2 + (idx - (count - 1) / 2) * spacing;
-                const oy = player.y - 20;
+                const ox = player.x + player.w / 2;
+                const oy = player.y - 20 - idx * spacing;
                 const tx = target.x + target.w / 2;
                 const ty = target.y + target.h / 2;
                 const raw = laserOrbDamage - (target.defense || 0);
@@ -2866,18 +2864,16 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
         });
 
         // 레이저 구슬
-        const lcount = laserOrbs.length;
         const lspacing = 24;
         laserOrbs.forEach((orb, idx) => {
-          const ox =
-            player.x + player.w / 2 + (idx - (lcount - 1) / 2) * lspacing;
-          const oy = player.y - 20;
+          const ox = player.x + player.w / 2;
+          const oy = player.y - 20 - idx * lspacing;
           ctx.save();
           ctx.fillStyle = "#9ec4ff";
           ctx.shadowBlur = 8;
           ctx.shadowColor = "#9ec4ff";
           ctx.beginPath();
-          ctx.arc(ox, oy, 6, 0, Math.PI * 2);
+          ctx.arc(ox, oy, 4.5, 0, Math.PI * 2);
           ctx.fill();
           ctx.restore();
         });
