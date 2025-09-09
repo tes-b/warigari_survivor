@@ -507,6 +507,9 @@
       let currentWave = 0;
       let waveTimer = 0;
       const bossWaves = [3, 7, 11]; // 4,8,12 웨이브는 보스 스테이지
+      const BOSS_SPAWN_DELAY = 5000; // 보스 스폰 지연(ms)
+      let bossSpawnTimer = 0;
+      let bossSpawnPos = null;
       let enemyScale = 1; // 웨이브에 따른 적 체력/공격력 배율
       let infiniteMode = false; // 12웨이브 이후 무한 모드 여부
       let infiniteStartTime = 0; // 무한 모드 시작 시간
@@ -1670,8 +1673,18 @@
           );
         }
         if (isBossWave()) {
-          spawnBoss();
+          bossSpawnTimer = BOSS_SPAWN_DELAY;
+          const size = enemySize * 3;
+          bossSpawnPos = {
+            x: WORLD.w - size,
+            y: WORLD.groundY - size,
+            w: size,
+            h: size,
+          };
           currentSpawnInterval = Infinity;
+        } else {
+          bossSpawnTimer = 0;
+          bossSpawnPos = null;
         }
         spawnTimer = 0;
         updateWaveDisplay();
@@ -1838,6 +1851,14 @@
         bombTimer += dt * 1000;
         spawnTimer += dt * 1000;
         iceFloorTimer += dt * 1000;
+        if (bossSpawnTimer > 0) {
+          bossSpawnTimer -= dt * 1000;
+          if (bossSpawnTimer <= 0) {
+            bossSpawnTimer = 0;
+            bossSpawnPos = null;
+            spawnBoss();
+          }
+        }
         if (player.iframes > 0) player.iframes -= dt * 1000;
         if (player.hitFlash > 0) player.hitFlash -= dt * 1000;
 
@@ -2292,7 +2313,11 @@
           e.y = clamp(e.y, 0, WORLD.groundY - e.h);
         }
 
-        if (isBossWave() && !enemies.some((e) => e.isBoss)) {
+        if (
+          isBossWave() &&
+          bossSpawnTimer <= 0 &&
+          !enemies.some((e) => e.isBoss)
+        ) {
           skipWave();
         }
 
@@ -2341,6 +2366,25 @@
           ctx.globalAlpha = 0.2 * (2 - f.life / f.duration);
           ctx.fillStyle = "#7dd3fc";
           ctx.fillRect(f.x, f.y, f.w, f.h);
+          ctx.restore();
+        }
+
+        if (bossSpawnTimer > 0 && bossSpawnPos) {
+          const progress = 1 - bossSpawnTimer / BOSS_SPAWN_DELAY;
+          const radius = bossSpawnPos.w * (1 + 0.5 * progress);
+          ctx.save();
+          ctx.strokeStyle = "#ff6b9d";
+          ctx.lineWidth = 4;
+          ctx.globalAlpha = 0.5 + 0.5 * progress;
+          ctx.beginPath();
+          ctx.arc(
+            bossSpawnPos.x + bossSpawnPos.w / 2,
+            bossSpawnPos.y + bossSpawnPos.h / 2,
+            radius,
+            0,
+            Math.PI * 2,
+          );
+          ctx.stroke();
           ctx.restore();
         }
 
