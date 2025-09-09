@@ -1663,21 +1663,9 @@
         if (w < 10) return pick([0, 0, 5, 5]);
         if (w < 11) return pick([0, 0, 2, 5, 2]);
         if (w < 12) return pick([0, 0, 2, 5, 2]); // Boss 3
-        return pick([0, 0, 0, 5, 5]); // Infinite Mode
-
-        // if (!infiniteMode) {
-
-        // }
-
-        // const t = elapsed - infiniteStartTime;
-        // const timeBonus = Math.min(10, t / 40);
-        // return pick([
-        //   Math.max(0.5, 2 - timeBonus * 0.15),
-        //   Math.max(1, 3 - timeBonus * 0.25),
-        //   Math.max(2, 4 - timeBonus * 0.2),
-        //   3 + timeBonus * 0.4,
-        //   2 + timeBonus * 0.8,
-        // ]);
+        if (w < 13) return pick([0, 0, 0, 5, 5]); 
+        if (w < 14) return pick([0, 0, 0, 2, 8]); 
+        return pick([0, 0, 0, 0, 5]); // Infinite Mode
       }
 
       function applyWaveDifficulty() {
@@ -1688,7 +1676,7 @@
         } else {
           // 무한 모드에서는 경과 시간에 따라 난이도 상승
           const t = elapsed - infiniteStartTime; // 무한 모드 진행 시간
-          const timeBonus = t / 30; // 30초마다 1단계 상승
+          const timeBonus = t / 15; // 15초마다 1단계 상승
           enemyScale = 1 + timeBonus * 0.15;
           currentSpawnInterval = Math.max(
             minSpawnInterval,
