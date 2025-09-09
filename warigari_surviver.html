@@ -580,7 +580,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
         LASERORB: {
           COOLDOWN: 1500, // 레이저 발사 간격 (ms)
           DAMAGE: 120, // 레이저 피해량
-          SPEED: 700, // 레이저 속도 (px/s)
+          SPEED: 1400, // 레이저 속도 (px/s)
         },
       };
 
@@ -2149,13 +2149,20 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
             const tx = target.x + target.w / 2;
             const ty = target.y + target.h / 2;
             const ang = Math.atan2(ty - sy, tx - sx);
+            const cos = Math.cos(ang);
+            const sin = Math.sin(ang);
+            const len = 12;
+            const thick = 3;
             laserShots.push({
               x: sx,
               y: sy,
-              vx: Math.cos(ang) * laserOrbSpeed,
-              vy: Math.sin(ang) * laserOrbSpeed,
-              w: 4,
-              h: 4,
+              vx: cos * laserOrbSpeed,
+              vy: sin * laserOrbSpeed,
+              angle: ang,
+              len,
+              thick,
+              w: Math.abs(cos) * len + Math.abs(sin) * thick,
+              h: Math.abs(sin) * len + Math.abs(cos) * thick,
               damage: laserOrbDamage,
               life: 2000,
             });
@@ -2238,10 +2245,10 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
           l.life -= dt * 1000;
           if (
             l.life <= 0 ||
-            l.x < -40 ||
-            l.x > WORLD.w + 40 ||
-            l.y < -40 ||
-            l.y > WORLD.groundY + 40
+            l.x + l.w / 2 < -40 ||
+            l.x - l.w / 2 > WORLD.w + 40 ||
+            l.y + l.h / 2 < -40 ||
+            l.y - l.h / 2 > WORLD.groundY + 40
           ) {
             laserShots.splice(i, 1);
           }
@@ -2478,7 +2485,13 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
           // 레이저 구슬과 충돌
           for (let j = laserShots.length - 1; j >= 0; j--) {
             const l = laserShots[j];
-            if (aabb(e, l)) {
+            const hitbox = {
+              x: l.x - l.w / 2,
+              y: l.y - l.h / 2,
+              w: l.w,
+              h: l.h,
+            };
+            if (aabb(e, hitbox)) {
               const raw = l.damage - (e.defense || 0);
               const dmg = Math.min(Math.max(raw, 0), e.hp);
               e.hp -= dmg;
@@ -2821,7 +2834,13 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
 
         // 레이저 구슬 발사체
         ctx.fillStyle = "#7dd3fc";
-        for (const l of laserShots) ctx.fillRect(l.x, l.y, l.w, l.h);
+        for (const l of laserShots) {
+          ctx.save();
+          ctx.translate(l.x, l.y);
+          ctx.rotate(l.angle);
+          ctx.fillRect(-l.len / 2, -l.thick / 2, l.len, l.thick);
+          ctx.restore();
+        }
 
         // 보스 레이저
         ctx.save();
