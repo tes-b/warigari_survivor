@@ -576,6 +576,12 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
           DAMAGE: 20, // 초당 피해량
           DURATION: 3000, // 기본 지속 시간 (ms)
         },
+        // 레이저 구슬 관련
+        LASERORB: {
+          COOLDOWN: 1500, // 레이저 발사 간격 (ms)
+          DAMAGE: 120, // 레이저 피해량
+          SPEED: 700, // 레이저 속도 (px/s)
+        },
       };
 
       // 궤도 구슬 무지개 색상 배열 (빨주노초파남보)
@@ -822,6 +828,17 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
           },
         },
         {
+          id: "laserOrb",
+          title: "레이저 구슬",
+          icon: "🔷",
+          desc: "머리 위 구슬이 무작위 적에게 레이저를 발사합니다\n(발사 간격 -20%)",
+          apply: () => {
+            const level = acquiredUpgrades["laserOrb"] || 0;
+            if (level === 0) laserOrbEnabled = true;
+            laserOrbCooldown = Math.max(200, laserOrbCooldown * 0.8);
+          },
+        },
+        {
           id: "bomb",
           title: "폭탄",
           icon: "💣",
@@ -971,6 +988,14 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
 
       // --- 보스 레이저 ---
       const bossLasers = [];
+
+      // --- 레이저 구슬 ---
+      const laserShots = [];
+      let laserOrbTimer = 0;
+      let laserOrbCooldown = INIT.LASERORB.COOLDOWN;
+      let laserOrbDamage = INIT.LASERORB.DAMAGE;
+      let laserOrbSpeed = INIT.LASERORB.SPEED;
+      let laserOrbEnabled = false;
 
       // --- 폭탄 ---
       const bombs = [];
@@ -1254,6 +1279,13 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
         iceFloorEnabled = false;
         iceFloorDamage = INIT.ICEFLOOR.DAMAGE;
         iceFloorDuration = INIT.ICEFLOOR.DURATION;
+
+        laserShots.length = 0;
+        laserOrbTimer = 0;
+        laserOrbCooldown = INIT.LASERORB.COOLDOWN;
+        laserOrbDamage = INIT.LASERORB.DAMAGE;
+        laserOrbSpeed = INIT.LASERORB.SPEED;
+        laserOrbEnabled = false;
 
         bombs.length = 0;
         explosions.length = 0;
@@ -1744,6 +1776,12 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
         return nearest;
       }
 
+      function findRandomEnemy() {
+        if (enemies.length === 0) return null;
+        const idx = (Math.random() * enemies.length) | 0;
+        return enemies[idx];
+      }
+
       function explodeBomb(b) {
         explosions.push({
           x: b.x,
@@ -2030,6 +2068,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
         }
         shootTimer += dt * 1000;
         bombTimer += dt * 1000;
+        laserOrbTimer += dt * 1000;
         spawnTimer += dt * 1000;
         iceFloorTimer += dt * 1000;
         if (bossSpawnTimer > 0) {
@@ -2101,6 +2140,28 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
           });
         }
 
+        if (laserOrbEnabled && laserOrbTimer >= laserOrbCooldown) {
+          laserOrbTimer = 0;
+          const sx = player.x + player.w / 2;
+          const sy = player.y - 20;
+          const target = findRandomEnemy();
+          if (target) {
+            const tx = target.x + target.w / 2;
+            const ty = target.y + target.h / 2;
+            const ang = Math.atan2(ty - sy, tx - sx);
+            laserShots.push({
+              x: sx,
+              y: sy,
+              vx: Math.cos(ang) * laserOrbSpeed,
+              vy: Math.sin(ang) * laserOrbSpeed,
+              w: 4,
+              h: 4,
+              damage: laserOrbDamage,
+              life: 2000,
+            });
+          }
+        }
+
         if (bombEnabled && bombTimer >= bombCooldown) {
           bombTimer = 0;
           const sx = player.x + player.w / 2;
@@ -2166,6 +2227,23 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
           // 사정거리 또는 화면 밖 제거
           if (b.range <= 0 || b.x < -40 || b.x > WORLD.w + 40) {
             bullets.splice(i, 1);
+          }
+        }
+
+        // 레이저 구슬 발사체 업데이트
+        for (let i = laserShots.length - 1; i >= 0; i--) {
+          const l = laserShots[i];
+          l.x += l.vx * dt;
+          l.y += l.vy * dt;
+          l.life -= dt * 1000;
+          if (
+            l.life <= 0 ||
+            l.x < -40 ||
+            l.x > WORLD.w + 40 ||
+            l.y < -40 ||
+            l.y > WORLD.groundY + 40
+          ) {
+            laserShots.splice(i, 1);
           }
         }
 
@@ -2393,6 +2471,26 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
                 e._killed = true;
                 break;
               }
+            }
+          }
+          if (e._killed) continue;
+
+          // 레이저 구슬과 충돌
+          for (let j = laserShots.length - 1; j >= 0; j--) {
+            const l = laserShots[j];
+            if (aabb(e, l)) {
+              const raw = l.damage - (e.defense || 0);
+              const dmg = Math.min(Math.max(raw, 0), e.hp);
+              e.hp -= dmg;
+              spawnFloatText(e.x + e.w / 2, e.y - 12, -dmg, "#7dd3fc");
+              laserShots.splice(j, 1);
+              if (e.hp <= 0) {
+                dropExpOrbs(e);
+                enemies.splice(i, 1);
+                score += e.reward;
+                e._killed = true;
+              }
+              break;
             }
           }
           if (e._killed) continue;
@@ -2721,6 +2819,10 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
         ctx.fillStyle = "#fff";
         for (const b of bullets) ctx.fillRect(b.x, b.y, b.w, b.h);
 
+        // 레이저 구슬 발사체
+        ctx.fillStyle = "#7dd3fc";
+        for (const l of laserShots) ctx.fillRect(l.x, l.y, l.w, l.h);
+
         // 보스 레이저
         ctx.save();
         for (const l of bossLasers) {
@@ -2799,6 +2901,16 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
           ctx.fill();
           ctx.restore();
         });
+
+        // 레이저 구슬 본체
+        if (laserOrbEnabled) {
+          const orbX = player.x + player.w / 2;
+          const orbY = player.y - 20;
+          ctx.fillStyle = "#7dd3fc";
+          ctx.beginPath();
+          ctx.arc(orbX, orbY, 6, 0, Math.PI * 2);
+          ctx.fill();
+        }
 
         // 적
         for (const e of enemies) {
