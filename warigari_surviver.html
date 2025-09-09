@@ -156,11 +156,15 @@
       position: absolute;
       right: 12px;
       top: 10px;
-      z-index: 2;
+      z-index: 20;
       display: flex;
+      flex-wrap: wrap;
+      justify-content: flex-end;
       gap: 8px;
       font-weight: 700;
       text-shadow: 0 2px 6px #0009;
+      max-width: calc(100% - 24px);
+      pointer-events: none;
     }
 
     .upgrade-hud .upgrade-icon {
