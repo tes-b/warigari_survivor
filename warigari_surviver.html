@@ -361,10 +361,11 @@
       <canvas id="game" width="960" height="540"></canvas>
 
       <div class="hud" id="hud">
-        <div class="stat" id="hp">HP: 1000</div>
+        <div class="stat" id="hp">HP: 1000/1000</div>
         <div class="stat" id="score">KOs: 0</div>
         <div class="stat" id="time">Time: 0.0s</div>
         <div class="stat" id="level">Lv: 1</div>
+        <div class="stat" id="wave">Wave: 1</div>
       </div>
 
       <div class="exp-gauge-wrap">
@@ -777,6 +778,7 @@
         acquiredUpgrades[upgrade.id] =
           (acquiredUpgrades[upgrade.id] || 0) + 1;
         updateUpgradeHUD();
+        updateHUD();
       }
 
       // ========================================
@@ -1180,6 +1182,7 @@
       const scoreEl = document.getElementById("score");
       const timeEl = document.getElementById("time");
       const levelEl = document.getElementById("level");
+      const waveHudEl = document.getElementById("wave");
       const expEl = document.getElementById("exp");
       const waveEl = document.getElementById("waveDisplay");
       let waveDisplayTimeout;
@@ -1201,10 +1204,13 @@
         }, 1500);
       }
       function updateHUD() {
-        hpEl.textContent = `HP: ${Math.max(0, Math.round(hp))}`;
+        hpEl.textContent = `HP: ${Math.max(0, Math.round(hp))}/${Math.round(playerHP)}`;
         scoreEl.textContent = `KOs: ${score}`;
-        timeEl.textContent = `Time: ${Math.floor(elapsed / 60)}:${(elapsed % 60).toFixed(2).padStart(5, "0")}`;
+        timeEl.textContent = `Time: ${Math.floor(elapsed / 60)}:${(elapsed % 60)
+          .toFixed(2)
+          .padStart(5, "0")}`;
         levelEl.textContent = `Lv: ${level}`;
+        waveHudEl.textContent = `Wave: ${getWaveLabel()}`;
 
         // Update exp gauge
         const expGauge = document.getElementById("expGauge");
