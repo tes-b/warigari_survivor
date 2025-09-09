@@ -185,12 +185,24 @@
       position: absolute;
       top: 35%;
       left: 50%;
-      transform: translate(-50%, -50%);
+      transform: translate(-50%, -50%) scale(0.8);
       font-size: 48px;
       font-weight: 700;
       color: #fff;
       text-shadow: 0 0 10px #000;
       pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.5s, transform 0.5s;
+    }
+
+    .wave-display.show {
+      opacity: 1;
+      transform: translate(-50%, -50%) scale(1.2);
+    }
+
+    .wave-display.boss {
+      color: #ff6b9d;
+      text-shadow: 0 0 20px #ff6b9d;
     }
 
     .levelup-overlay {
@@ -1165,8 +1177,23 @@
         return bossWaves.includes(w);
       }
 
+      function showWaveMessage(text, opts = {}) {
+        const duration = opts.duration || 1000;
+        const className = opts.className || "";
+        waveEl.textContent = text;
+        waveEl.className = "wave-display";
+        if (className) waveEl.classList.add(className);
+        requestAnimationFrame(() => {
+          waveEl.classList.add("show");
+        });
+        setTimeout(() => {
+          waveEl.classList.remove("show");
+          if (className) waveEl.classList.remove(className);
+        }, duration);
+      }
+
       function updateWaveDisplay() {
-        waveEl.textContent = `Wave ${getWaveLabel()}`;
+        showWaveMessage(`Wave ${getWaveLabel()}`, { duration: 1500 });
       }
       function updateHUD() {
         hpEl.textContent = `HP: ${Math.max(0, Math.round(hp))}`;
@@ -1654,12 +1681,17 @@
             initialSpawnInterval - timeBonus * 100,
           );
         }
-        if (isBossWave()) {
-          spawnBoss();
-          currentSpawnInterval = Infinity;
-        }
         spawnTimer = 0;
         updateWaveDisplay();
+        if (isBossWave()) {
+          currentSpawnInterval = Infinity;
+          setTimeout(() => {
+            showWaveMessage("보스 등장!", { duration: 1500, className: "boss" });
+          }, 1500);
+          setTimeout(() => {
+            spawnBoss();
+          }, 3000);
+        }
       }
 
       function skipWave() {
