@@ -606,7 +606,7 @@
           desc: "주변을 도는 공격 구슬 추가",
           apply: () => {
             if (orbitingOrbs.length >= INIT.ORBITAL.LIMIT) return; // 최대 7개 제한
-            
+
             // 새 구슬 추가
             orbitingOrbs.push({
               angle: 0,
@@ -625,11 +625,21 @@
             });
 
             // 최대치에 도달하면 폭발적 강화
-            if (orbitingOrbs.length == INIT.ORBITAL.LIMIT - 1) {
-              orbitalDamage = 500 // 궤도 구슬 피해량
+            if (orbitingOrbs.length === INIT.ORBITAL.LIMIT) {
+              orbitalDamage = 500; // 궤도 구슬 피해량
               orbitalRadius = 90; // 궤도 반지름
               orbitalSpeed = 7; // 궤도 회전 속도 (rad/s)
-            } 
+              for (const orb of orbitingOrbs) {
+                orb.size *= 2;
+              }
+              orbitalMaxEffects.push({
+                x: player.x + player.w / 2,
+                y: player.y + player.h / 2,
+                radius: orbitalRadius + 40,
+                life: 0,
+                duration: 400,
+              });
+            }
           },
         },
         {
@@ -839,6 +849,7 @@
       // --- 폭탄 ---
       const bombs = [];
       const explosions = [];
+      const orbitalMaxEffects = [];
       let bombTimer = 0;
       let bombCooldown = INIT.BOMB.COOLDOWN; // ms
       let bombDamage = INIT.BOMB.DAMAGE;
@@ -1067,6 +1078,7 @@
 
         bombs.length = 0;
         explosions.length = 0;
+        orbitalMaxEffects.length = 0;
         bombTimer = 0;
         bombCooldown = INIT.BOMB.COOLDOWN;
         bombDamage = INIT.BOMB.DAMAGE;
@@ -1817,6 +1829,13 @@
           if (eff.life >= eff.duration) impulseEffects.splice(i, 1);
         }
 
+        // 궤도 강화 이펙트 업데이트
+        for (let i = orbitalMaxEffects.length - 1; i >= 0; i--) {
+          const eff = orbitalMaxEffects[i];
+          eff.life += dt * 1000;
+          if (eff.life >= eff.duration) orbitalMaxEffects.splice(i, 1);
+        }
+
         // 궤도 구슬 회전
         orbitalAngle += orbitalSpeed * dt;
 
@@ -2500,6 +2519,20 @@
             Math.PI * 2,
           );
           ctx.fill();
+          ctx.restore();
+        }
+
+        // 궤도 강화 이펙트
+        for (const eff of orbitalMaxEffects) {
+          ctx.save();
+          ctx.globalAlpha = 1 - eff.life / eff.duration;
+          ctx.strokeStyle = "#ffd54f";
+          ctx.lineWidth = 4;
+          ctx.shadowBlur = 20;
+          ctx.shadowColor = "#ffd54f";
+          ctx.beginPath();
+          ctx.arc(eff.x, eff.y, eff.radius, 0, Math.PI * 2);
+          ctx.stroke();
           ctx.restore();
         }
 
