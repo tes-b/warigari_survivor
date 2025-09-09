@@ -1522,7 +1522,7 @@
           vy: -200 - Math.random() * 200,
           gravity: 400,
           value: expOrbValue,
-          life: 5000, // 5초 후 사라짐
+          life: 6000, // 6초 후 사라짐
         });
       }
 
@@ -2573,6 +2573,9 @@
         // 경험치 구슬
         for (const orb of expOrbs) {
           ctx.save();
+          if (orb.life < 1000) {
+            ctx.globalAlpha = Math.max(orb.life / 1000, 0);
+          }
           ctx.fillStyle = "#4ade80";
           ctx.shadowBlur = 8;
           ctx.shadowColor = "#4ade80";
