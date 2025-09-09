@@ -396,6 +396,7 @@
         <div class="stat" id="level">Lv: 1</div>
         <div class="stat" id="wave">Wave: 1</div>
         <div class="stat" id="officeIcon" style="display:none">💼</div>
+        <div class="stat" id="invincibleIcon" style="display:none">🛡️</div>
       </div>
 
       <div class="exp-gauge-wrap">
@@ -997,7 +998,8 @@
           }
         } else if (e.code === "Digit1") {
           e.preventDefault();
-          cheatInvincible = true;
+          cheatInvincible = !cheatInvincible;
+          updateHUD();
         } else if (e.code === "Digit2") {
           e.preventDefault();
           if (running) skipWave();
@@ -1269,6 +1271,7 @@
       const expEl = document.getElementById("exp");
       const waveEl = document.getElementById("waveDisplay");
       const officeIconEl = document.getElementById("officeIcon");
+      const invincibleIconEl = document.getElementById("invincibleIcon");
       const officeOverlay = document.getElementById("officeOverlay");
       let officeMode = false;
       let officePaused = false;
@@ -1299,6 +1302,7 @@
         levelEl.textContent = `Lv: ${level}`;
         waveHudEl.textContent = `Wave: ${getWaveLabel()}`;
         officeIconEl.style.display = officeMode ? "block" : "none";
+        invincibleIconEl.style.display = cheatInvincible ? "block" : "none";
 
         // Update exp gauge
         const expGauge = document.getElementById("expGauge");
