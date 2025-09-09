@@ -1043,7 +1043,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
         } else if (e.code === "Escape") {
           if (officeMode) {
             e.preventDefault();
-            if (officeOverlay.style.display === "none") {
+            if (getComputedStyle(officeOverlay).display === "none") {
               showOfficeOverlay();
             } else {
               hideOfficeOverlay();
