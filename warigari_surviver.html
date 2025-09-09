@@ -1529,7 +1529,8 @@
       function dropExpOrbs(e) {
         const x = e.x + e.w / 2;
         const y = e.y + e.h / 2;
-        let count = 1;
+        // 기본 드랍량은 적의 등급(exp)에 비례시킨다
+        let count = (e.tier && e.tier.exp) ? e.tier.exp : 1;
         if (e.isBoss) {
           if (currentWave === 3) {
             count = 20;
