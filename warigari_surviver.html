@@ -431,8 +431,9 @@
         // 궤도 구슬 관련
         ORBITAL: {
           RADIUS: 75, // 궤도 반지름
-          SPEED: 6, // 궤도 회전 속도 (rad/s)
-          DAMAGE: 300, // 궤도 구슬 피해량
+          SPEED: 5, // 궤도 회전 속도 (rad/s)
+          DAMAGE: 100, // 궤도 구슬 피해량
+          LIMIT: 7 // 최대 업그레이드 수
         },
         // 경험치 관련
         EXP: {
@@ -604,8 +605,8 @@
           icon: "🌟",
           desc: "주변을 도는 공격 구슬 추가",
           apply: () => {
-            if (orbitingOrbs.length >= 6) return; // 최대 6개 제한
-
+            if (orbitingOrbs.length >= INIT.ORBITAL.LIMIT) return; // 최대 7개 제한
+            
             // 새 구슬 추가
             orbitingOrbs.push({
               angle: 0,
@@ -622,6 +623,13 @@
               orb.angle = idx * step;
               orb.lastAngle = (orb.angle + orbitalAngle) % (Math.PI * 2);
             });
+
+            // 최대치에 도달하면 폭발적 강화
+            if (orbitingOrbs.length == INIT.ORBITAL.LIMIT - 1) {
+              orbitalDamage = 500 // 궤도 구슬 피해량
+              orbitalRadius = 90; // 궤도 반지름
+              orbitalSpeed = 7; // 궤도 회전 속도 (rad/s)
+            } 
           },
         },
         {
@@ -1714,7 +1722,7 @@
         const upgradeGrid = document.getElementById("upgradeGrid");
 
         // 궤도 구슬이 최대치에 도달하면 해당 업그레이드 제외
-        const availableUpgrades = orbitingOrbs.length >= 6
+        const availableUpgrades = orbitingOrbs.length >= INIT.ORBITAL.LIMIT
           ? UPGRADES.filter(u => u.id !== "orbital")
           : [...UPGRADES];
 
