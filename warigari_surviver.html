@@ -519,11 +519,11 @@
 
       // 적 티어별 설정 (5단계로 확장, 체력 증가/속도 감소)
       let enemyTiers = [
-        { name: "Weak", speed: 35, color: "#4ade80", hp: 150 },    // 250에서 150으로
-        { name: "Basic", speed: 45, color: "#60a5fa", hp: 250 },   // 400에서 250으로
-        { name: "Medium", speed: 55, color: "#a78bfa", hp: 450 },  // 600에서 400으로
-        { name: "Strong", speed: 65, color: "#f59e0b", hp: 850 },  // 850에서 600으로
-        { name: "Elite", speed: 75, color: "#ef4444", hp: 1200 },   // 1200에서 800으로
+        { name: "Weak", speed: 35, color: "#4ade80", hp: 150, exp: 1 },    
+        { name: "Basic", speed: 45, color: "#60a5fa", hp: 250, exp: 2 },   
+        { name: "Medium", speed: 55, color: "#a78bfa", hp: 450, exp: 4 },  
+        { name: "Strong", speed: 65, color: "#f59e0b", hp: 850, exp: 8 },  
+        { name: "Elite", speed: 75, color: "#ef4444", hp: 1200, exp: 16 },   
       ];
 
       // 적 종류
