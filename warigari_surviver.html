@@ -185,12 +185,21 @@
       position: absolute;
       top: 35%;
       left: 50%;
-      transform: translate(-50%, -50%);
+      transform: translate(-50%, -50%) scale(0.5);
       font-size: 48px;
       font-weight: 700;
       color: #fff;
       text-shadow: 0 0 10px #000;
       pointer-events: none;
+      opacity: 0;
+      transition:
+        opacity 0.4s ease,
+        transform 0.4s ease;
+    }
+
+    .wave-display.show {
+      opacity: 1;
+      transform: translate(-50%, -50%) scale(1);
     }
 
     .levelup-overlay {
@@ -1156,6 +1165,7 @@
       const levelEl = document.getElementById("level");
       const expEl = document.getElementById("exp");
       const waveEl = document.getElementById("waveDisplay");
+      let waveDisplayTimeout;
 
       function getWaveLabel() {
         return currentWave + 1;
@@ -1167,6 +1177,11 @@
 
       function updateWaveDisplay() {
         waveEl.textContent = `Wave ${getWaveLabel()}`;
+        waveEl.classList.add("show");
+        clearTimeout(waveDisplayTimeout);
+        waveDisplayTimeout = setTimeout(() => {
+          waveEl.classList.remove("show");
+        }, 1500);
       }
       function updateHUD() {
         hpEl.textContent = `HP: ${Math.max(0, Math.round(hp))}`;
