@@ -798,6 +798,7 @@
       let holdTimeout = null;
       let holdGaugeRAF = null;
       const holdGaugeFill = document.getElementById("holdGaugeFill");
+      let spaceLocked = false;
 
       // 화면/맵
       function fitCanvas() {
@@ -913,11 +914,16 @@
         if (e.code === "Space") {
           e.preventDefault();
           if (levelupActive) {
-            if (spaceHoldStart === null) startHold();
-          } else if (!running) {
-            startGame();
-          } else if (!paused) {
-            toggleDirection();
+            if (spaceHoldStart === null) {
+              spaceLocked = true;
+              startHold();
+            }
+          } else if (!spaceLocked) {
+            if (!running) {
+              startGame();
+            } else if (!paused) {
+              toggleDirection();
+            }
           }
         } else if (e.code === "Escape" && running) {
           const lvlOverlay = document.getElementById("levelupOverlay");
@@ -941,9 +947,12 @@
         }
       });
       window.addEventListener("keyup", (e) => {
-        if (e.code === "Space" && levelupActive) {
-          e.preventDefault();
-          if (spaceHoldStart !== null) endHold(true);
+        if (e.code === "Space") {
+          if (levelupActive) {
+            e.preventDefault();
+            if (spaceHoldStart !== null) endHold(true);
+          }
+          spaceLocked = false;
         }
       });
 
