@@ -619,7 +619,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
       let bossSpawnPos = null;
       let enemyScale = 1; // 웨이브에 따른 적 체력/공격력 배율
       let infiniteMode = false; // 12웨이브 이후 무한 모드 여부
-      let infiniteStartTime = 0; // 무한 모드 시작 시간
+      let infiniteWaveCount = 0; // 무한 모드에서 경과한 웨이브 수
 
       // 치트
       let cheatInvincible = false;
@@ -1228,7 +1228,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
         currentWave = 0;
         waveTimer = 0;
         infiniteMode = false;
-        infiniteStartTime = 0;
+        infiniteWaveCount = 0;
         enemyScale = 1;
         cheatInvincible = false;
         applyWaveDifficulty();
@@ -1827,13 +1827,11 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
           enemyScale = 1;
           currentSpawnInterval = initialSpawnInterval;
         } else {
-          // 무한 모드에서는 경과 시간에 따라 난이도 상승
-          const t = elapsed - infiniteStartTime; // 무한 모드 진행 시간
-          const timeBonus = t / 15; // 15초마다 1단계 상승
-          enemyScale = 1 + timeBonus * 0.15;
+          // 무한 모드에서는 웨이브마다 난이도 상승
+          enemyScale = 2 ** infiniteWaveCount;
           currentSpawnInterval = Math.max(
             minSpawnInterval,
-            initialSpawnInterval - timeBonus * 100,
+            initialSpawnInterval - infiniteWaveCount * 100,
           );
         }
         if (isBossWave()) {
@@ -1859,7 +1857,9 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
         currentWave++;
         if (!infiniteMode && currentWave >= waveDurations.length) {
           infiniteMode = true;
-          infiniteStartTime = elapsed;
+          infiniteWaveCount = 0;
+        } else if (infiniteMode) {
+          infiniteWaveCount++;
         }
         applyWaveDifficulty();
       }
@@ -2006,7 +2006,9 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
             currentWave++;
             if (!infiniteMode && currentWave >= waveDurations.length) {
               infiniteMode = true;
-              infiniteStartTime = elapsed;
+              infiniteWaveCount = 0;
+            } else if (infiniteMode) {
+              infiniteWaveCount++;
             }
             applyWaveDifficulty();
           }
