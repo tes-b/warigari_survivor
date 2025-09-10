@@ -3063,19 +3063,21 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
           ctx.save();
           ctx.translate(s.x, s.y);
           ctx.scale(s.dir, 1);
-          ctx.globalAlpha = 1 - progress;
-          ctx.fillStyle = "#fde68a";
-          ctx.beginPath();
-          ctx.moveTo(0, 0);
-          ctx.arc(0, 0, s.range, -Math.PI / 2, Math.PI / 6);
-          ctx.closePath();
-          ctx.fill();
-          ctx.globalAlpha = 1;
           ctx.rotate(-Math.PI / 2 + (2 * Math.PI / 3) * progress);
           ctx.fillStyle = "#b45309";
           ctx.fillRect(handleStart, -3, handleLen, 6);
           ctx.fillStyle = "#e5e7eb";
           ctx.fillRect(handleStart + handleLen, -10, headLen, 20);
+          // hammer head flash effect
+          const hx = handleStart + handleLen + headLen / 2;
+          ctx.save();
+          ctx.translate(hx, 0);
+          ctx.globalAlpha = 1 - progress;
+          ctx.fillStyle = "#fde68a";
+          ctx.beginPath();
+          ctx.arc(0, 0, 8, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.restore();
           ctx.restore();
         }
         ctx.restore();
