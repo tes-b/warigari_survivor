@@ -717,7 +717,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
           id: "damage",
           title: "공격력 증가",
           icon: "🔥",
-          desc: "기본 발사의 공격력이 증가합니다.\n(+30%)",
+          desc: "기본 공격의 공격력이 증가합니다.\n(+30%)",
           apply: () => {
             bulletDamage *= 1.3;
           },
@@ -726,9 +726,36 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
           id: "attackSpeed",
           title: "공격 속도 증가",
           icon: "⚡",
-          desc: "기본 발사의 속도가 증가합니다.\n(+15%)",
+          desc: "기본 공격의 속도가 증가합니다.\n(+15%)",
           apply: () => {
             bulletCooldown = Math.max(80, bulletCooldown * 0.85);
+          },
+        },
+        {
+          id: "knockback",
+          title: "넉백 공격",
+          icon: "💥",
+          desc: "기본 공격이 적을 뒤로 밀어냅니다.\n(넉백거리 +40)",
+          apply: () => {
+            bulletKnockback += 40;
+          },
+        },
+        {
+          id: "penetration",
+          title: "관통 공격",
+          icon: "🎯",
+          desc: "기본 공격이 적을 관통합니다.\n(+1명)",
+          apply: () => {
+            bulletPenetration += 1;
+          },
+        },
+        {
+          id: "range",
+          title: "사거리 증가",
+          icon: "📏",
+          desc: "기본 공격의 사정거리가 증가합니다.\n(+20%)",
+          apply: () => {
+            bulletRange *= 1.2;
           },
         },
         {
@@ -786,34 +813,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
             }
           },
         },
-        {
-          id: "knockback",
-          title: "넉백 공격",
-          icon: "💥",
-          desc: "기본 발사가 적을 뒤로 밀어냅니다.\n(넉백거리 +40)",
-          apply: () => {
-            // 넉백 아이템을 여러 번 획득하면 효과가 누적되도록
-            bulletKnockback += 40;
-          },
-        },
-        {
-          id: "penetration",
-          title: "관통 공격",
-          icon: "🎯",
-          desc: "기본 공격이 적을 관통합니다.\n(+1명)",
-          apply: () => {
-            bulletPenetration += 1;
-          },
-        },
-        {
-          id: "range",
-          title: "사거리 증가",
-          icon: "📏",
-          desc: "기본공격의 사정거리가 증가합니다.\n(+20%)",
-          apply: () => {
-            bulletRange *= 1.2;
-          },
-        },
+
         {
           id: "lifesteal",
           title: "흡혈",
