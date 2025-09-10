@@ -585,12 +585,12 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
           LIMIT: 10,
           GAP: 100, // 연속 발사 간격 (ms)
         },
-        // 망치 관련
-        HAMMER: {
-          COOLDOWN: 1500, // 망치 공격 간격 (ms)
-          DAMAGE: 200, // 망치 피해량
-          RANGE: 120, // 망치 공격 범위 (px)
-          KNOCKBACK: 120, // 망치 넉백 거리 (px)
+        // 검 관련
+        SWORD: {
+          COOLDOWN: 1500, // 검 공격 간격 (ms)
+          DAMAGE: 200, // 검 피해량
+          RANGE: 120, // 검 공격 범위 (px)
+          KNOCKBACK: 120, // 검 넉백 거리 (px)
           LIMIT: 10,
         },
       };
@@ -842,18 +842,18 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
           },
         },
         {
-          id: "hammer",
-          title: "망치",
-          icon: "🔨",
-          desc: "앞으로 망치를 휘두릅니다..\n(피해 +50%)",
+          id: "sword",
+          title: "검",
+          icon: "🗡️",
+          desc: "앞으로 검을 휘두릅니다..\n(피해 +50%)",
           apply: () => {
-            const level = acquiredUpgrades["hammer"] || 0;
+            const level = acquiredUpgrades["sword"] || 0;
             if (level === 0) {
-              hammerEnabled = true;
-              hammerTimer = 0;
+              swordEnabled = true;
+              swordTimer = 0;
             } else {
-              hammerDamage *= 1.5;
-              //hammerKnockback += 20;
+              swordDamage *= 1.5;
+              //swordKnockback += 20;
             }
           },
         },
@@ -1030,14 +1030,14 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
       let laserOrbShots = 0;
       let laserOrbSeqTimer = 0;
 
-      // --- 망치 ---
-      const hammerSwings = [];
-      let hammerTimer = 0;
-      let hammerCooldown = INIT.HAMMER.COOLDOWN; // ms
-      let hammerDamage = INIT.HAMMER.DAMAGE;
-      let hammerRange = INIT.HAMMER.RANGE;
-      let hammerKnockback = INIT.HAMMER.KNOCKBACK;
-      let hammerEnabled = false;
+      // --- 검 ---
+      const swordSwings = [];
+      let swordTimer = 0;
+      let swordCooldown = INIT.SWORD.COOLDOWN; // ms
+      let swordDamage = INIT.SWORD.DAMAGE;
+      let swordRange = INIT.SWORD.RANGE;
+      let swordKnockback = INIT.SWORD.KNOCKBACK;
+      let swordEnabled = false;
 
       // --- 폭탄 ---
       const bombs = [];
@@ -1338,13 +1338,13 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
         iceFloorDamage = INIT.ICEFLOOR.DAMAGE;
         iceFloorDuration = INIT.ICEFLOOR.DURATION;
 
-        hammerSwings.length = 0;
-        hammerTimer = 0;
-        hammerCooldown = INIT.HAMMER.COOLDOWN;
-        hammerDamage = INIT.HAMMER.DAMAGE;
-        hammerRange = INIT.HAMMER.RANGE;
-        hammerKnockback = INIT.HAMMER.KNOCKBACK;
-        hammerEnabled = false;
+        swordSwings.length = 0;
+        swordTimer = 0;
+        swordCooldown = INIT.SWORD.COOLDOWN;
+        swordDamage = INIT.SWORD.DAMAGE;
+        swordRange = INIT.SWORD.RANGE;
+        swordKnockback = INIT.SWORD.KNOCKBACK;
+        swordEnabled = false;
 
         bombs.length = 0;
         explosions.length = 0;
@@ -1918,16 +1918,16 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
         }
       }
 
-      function swingHammer() {
+      function swingSword() {
         const px = player.x + player.w / 2;
         const py = player.y + player.h / 2;
-        hammerSwings.push({
+        swordSwings.push({
           x: px,
           y: py,
           dir: player.dir,
           life: 0,
           duration: 150,
-          range: hammerRange,
+          range: swordRange,
         });
         for (let i = enemies.length - 1; i >= 0; i--) {
           const e = enemies[i];
@@ -1936,10 +1936,10 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
           const dx = ex - px;
           const dy = ey - py;
           const dist = Math.hypot(dx, dy);
-          if (dist <= hammerRange) {
+          if (dist <= swordRange) {
             const ang = Math.atan2(dy, dx * player.dir);
             if (ang >= -Math.PI / 2 && ang <= Math.PI / 6) {
-              const raw = hammerDamage - (e.defense || 0);
+              const raw = swordDamage - (e.defense || 0);
               const dmg = Math.min(Math.max(raw, 0), e.hp);
               e.hp -= dmg;
               spawnFloatText(ex, e.y - 12, -dmg, "#ff6b6b");
@@ -1952,7 +1952,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
               if (!e.knockbackImmune) {
                 const nx = player.dir;
                 e.knockbackVx =
-                  (e.knockbackVx || 0) + nx * hammerKnockback * enemyKnockbackFriction;
+                  (e.knockbackVx || 0) + nx * swordKnockback * enemyKnockbackFriction;
                 e.vy = -enemyKnockbackLift;
               }
             }
@@ -2185,7 +2185,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
         bombTimer += dt * 1000;
         spawnTimer += dt * 1000;
         iceFloorTimer += dt * 1000;
-        if (hammerSwings.length === 0) hammerTimer += dt * 1000;
+        if (swordSwings.length === 0) swordTimer += dt * 1000;
         if (bossSpawnTimer > 0) {
           bossSpawnTimer -= dt * 1000;
           if (bossSpawnTimer <= 0) {
@@ -2212,11 +2212,11 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
           if (eff.life >= eff.duration) impulseEffects.splice(i, 1);
         }
 
-        // 망치 휘두름 이펙트 업데이트
-        for (let i = hammerSwings.length - 1; i >= 0; i--) {
-          const s = hammerSwings[i];
+        // 검 휘두름 이펙트 업데이트
+        for (let i = swordSwings.length - 1; i >= 0; i--) {
+          const s = swordSwings[i];
           s.life += dt * 1000;
-          if (s.life >= s.duration) hammerSwings.splice(i, 1);
+          if (s.life >= s.duration) swordSwings.splice(i, 1);
         }
 
         // 궤도 구슬 회전
@@ -2299,12 +2299,12 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
         }
 
         if (
-          hammerEnabled &&
-          hammerSwings.length === 0 &&
-          hammerTimer >= hammerCooldown
+          swordEnabled &&
+          swordSwings.length === 0 &&
+          swordTimer >= swordCooldown
         ) {
-          hammerTimer = 0;
-          swingHammer();
+          swordTimer = 0;
+          swingSword();
         }
 
         // 얼음 바닥 생성
@@ -2900,24 +2900,24 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
           );
         }
 
-        // 망치 (대기 상태)
-        if (hammerEnabled && hammerSwings.length === 0) {
+        // 검 (대기 상태)
+        if (swordEnabled && swordSwings.length === 0) {
           const cx = player.x + player.w / 2;
           const cy = player.y + player.h / 2;
-          const raiseProgress = Math.min(hammerTimer / hammerCooldown, 1);
+          const raiseProgress = Math.min(swordTimer / swordCooldown, 1);
           const angle = Math.PI / 6 - (2 * Math.PI / 3) * raiseProgress;
-          const headLen = 20;
-          const handleFull = hammerRange - headLen;
-          const handleLen = handleFull / 3;
-          const handleStart = handleFull - handleLen;
+          const handleLen = 20;
+          const bladeLen = swordRange - handleLen;
           ctx.save();
           ctx.translate(cx, cy);
           ctx.scale(player.dir, 1);
           ctx.rotate(angle);
           ctx.fillStyle = "#b45309";
-          ctx.fillRect(handleStart, -3, handleLen, 6);
+          ctx.fillRect(0, -3, handleLen, 6);
+          ctx.fillStyle = "#d1d5db";
+          ctx.fillRect(handleLen - 2, -8, 4, 16);
           ctx.fillStyle = "#e5e7eb";
-          ctx.fillRect(handleStart + handleLen, -10, headLen, 20);
+          ctx.fillRect(handleLen, -4, bladeLen, 8);
           ctx.restore();
         }
 
@@ -3027,26 +3027,26 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
           ctx.restore();
         }
 
-        // 망치 휘두름 이펙트 및 망치 그리기
+        // 검 휘두름 이펙트 및 검 그리기
         ctx.save();
-        for (const s of hammerSwings) {
+        for (const s of swordSwings) {
           const progress = s.life / s.duration;
-          const headLen = 20;
-          const handleFull = s.range - headLen;
-          const handleLen = handleFull / 3;
-          const handleStart = handleFull - handleLen;
+          const handleLen = 20;
+          const bladeLen = s.range - handleLen;
           ctx.save();
           ctx.translate(s.x, s.y);
           ctx.scale(s.dir, 1);
           ctx.rotate(-Math.PI / 2 + (2 * Math.PI / 3) * progress);
           ctx.fillStyle = "#b45309";
-          ctx.fillRect(handleStart, -3, handleLen, 6);
+          ctx.fillRect(0, -3, handleLen, 6);
+          ctx.fillStyle = "#d1d5db";
+          ctx.fillRect(handleLen - 2, -8, 4, 16);
           ctx.fillStyle = "#e5e7eb";
-          ctx.fillRect(handleStart + handleLen, -10, headLen, 20);
-          // hammer head flash effect
-          const hx = handleStart + handleLen + headLen / 2;
+          ctx.fillRect(handleLen, -4, bladeLen, 8);
+          // sword tip flash effect
+          const tx = handleLen + bladeLen;
           ctx.save();
-          ctx.translate(hx, 0);
+          ctx.translate(tx, 0);
           ctx.globalAlpha = 1 - progress;
           ctx.fillStyle = "#fde68a";
           ctx.beginPath();
