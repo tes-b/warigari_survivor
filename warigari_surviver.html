@@ -1940,8 +1940,8 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
           const dy = ey - py;
           const dist = Math.hypot(dx, dy);
           if (dist <= hammerRange) {
-            const dot = (dx * player.dir) / (dist || 1);
-            if (dot >= 0.5) {
+            const ang = Math.atan2(dy, dx * player.dir);
+            if (ang >= -Math.PI / 2 && ang <= Math.PI / 6) {
               const raw = hammerDamage - (e.defense || 0);
               const dmg = Math.min(Math.max(raw, 0), e.hp);
               e.hp -= dmg;
@@ -1954,7 +1954,8 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
               }
               if (!e.knockbackImmune) {
                 const nx = player.dir;
-                e.knockbackVx = (e.knockbackVx || 0) + nx * hammerKnockback * enemyKnockbackFriction;
+                e.knockbackVx =
+                  (e.knockbackVx || 0) + nx * hammerKnockback * enemyKnockbackFriction;
                 e.vy = -enemyKnockbackLift;
               }
             }
@@ -2914,6 +2915,21 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
           );
         }
 
+        // 망치 (대기 상태)
+        if (hammerEnabled && hammerSwings.length === 0) {
+          const cx = player.x + player.w / 2;
+          const cy = player.y + player.h / 2;
+          ctx.save();
+          ctx.translate(cx, cy);
+          ctx.scale(player.dir, 1);
+          ctx.rotate(-Math.PI / 2);
+          ctx.fillStyle = "#b45309";
+          ctx.fillRect(0, -3, 32, 6);
+          ctx.fillStyle = "#e5e7eb";
+          ctx.fillRect(32, -10, 20, 20);
+          ctx.restore();
+        }
+
         // 플레이어 체력 금 표시
         const playerDmgRatio = 1 - hp / playerHP;
         if (playerDmgRatio > 0) {
@@ -3018,18 +3034,27 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
           ctx.restore();
         }
 
-        // 망치 휘두름 이펙트
+        // 망치 휘두름 이펙트 및 망치 그리기
         ctx.save();
-        ctx.fillStyle = "#fde68a";
         for (const s of hammerSwings) {
-          ctx.globalAlpha = 1 - s.life / s.duration;
+          const progress = s.life / s.duration;
+          ctx.save();
+          ctx.translate(s.x, s.y);
+          ctx.scale(s.dir, 1);
+          ctx.globalAlpha = 1 - progress;
+          ctx.fillStyle = "#fde68a";
           ctx.beginPath();
-          ctx.moveTo(s.x, s.y);
-          const start = s.dir > 0 ? -Math.PI / 3 : Math.PI - Math.PI / 3;
-          const end = s.dir > 0 ? Math.PI / 3 : Math.PI + Math.PI / 3;
-          ctx.arc(s.x, s.y, hammerRange, start, end);
+          ctx.moveTo(0, 0);
+          ctx.arc(0, 0, hammerRange, -Math.PI / 2, Math.PI / 6);
           ctx.closePath();
           ctx.fill();
+          ctx.globalAlpha = 1;
+          ctx.rotate(-Math.PI / 2 + (2 * Math.PI / 3) * progress);
+          ctx.fillStyle = "#b45309";
+          ctx.fillRect(0, -3, 32, 6);
+          ctx.fillStyle = "#e5e7eb";
+          ctx.fillRect(32, -10, 20, 20);
+          ctx.restore();
         }
         ctx.restore();
 
