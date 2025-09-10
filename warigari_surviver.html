@@ -484,11 +484,11 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
       <div class="overlay" id="overlay">
         <div class="panel">
           <h1>와리가리 서바이버</h1>
-          <p>
-            클릭 또는 <span class="kbd">스페이스바</span>로 <b>방향 전환</b>
-          </p>
+          <p>클릭 또는 <span class="kbd">스페이스바</span>로 <b>방향 전환</b></p>
+          <p>기본 공격을 선택하세요</p>
           <div class="row">
-            <button id="btnStart">게임 시작 (SPACE)</button>
+            <button id="btnGun">총</button>
+            <button id="btnSword">검</button>
           </div>
         </div>
       </div>
@@ -536,7 +536,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
           PENETRATION: 0, // 총알 관통 수
           KNOCKBACK: 0, // 총알 넉백 거리 (px)
           RANGE: 250, // 총알 사정거리 (px)
-          LIFESTEAL: 0, // 총알 피해로 체력 회복 비율
+          LIFESTEAL: 0, // 기본 공격 피해로 체력 회복 비율
         },
         // 적 관련
         ENEMY: {
@@ -620,7 +620,9 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
       let bulletPenetration = INIT.BULLET.PENETRATION;
       let bulletKnockback = INIT.BULLET.KNOCKBACK;
       let bulletRange = INIT.BULLET.RANGE;
-      let bulletLifeSteal = INIT.BULLET.LIFESTEAL;
+      let lifeSteal = INIT.BULLET.LIFESTEAL;
+
+      let baseAttack = "gun";
 
       let enemyContactDamage = INIT.ENEMY.CONTACT_DAMAGE;
       let enemyReward = INIT.ENEMY.REWARD;
@@ -719,7 +721,11 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
           icon: "🔥",
           desc: "기본 공격의 공격력이 증가합니다.\n(+30%)",
           apply: () => {
-            bulletDamage *= 1.3;
+            if (baseAttack === "gun") {
+              bulletDamage *= 1.3;
+            } else {
+              swordDamage *= 1.3;
+            }
           },
         },
         {
@@ -728,7 +734,11 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
           icon: "⚡",
           desc: "기본 공격의 속도가 증가합니다.\n(+15%)",
           apply: () => {
-            bulletCooldown = Math.max(80, bulletCooldown * 0.85);
+            if (baseAttack === "gun") {
+              bulletCooldown = Math.max(80, bulletCooldown * 0.85);
+            } else {
+              swordCooldown = Math.max(300, swordCooldown * 0.85);
+            }
           },
         },
         {
@@ -737,7 +747,11 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
           icon: "💥",
           desc: "기본 공격이 적을 뒤로 밀어냅니다.\n(넉백거리 +40)",
           apply: () => {
-            bulletKnockback += 40;
+            if (baseAttack === "gun") {
+              bulletKnockback += 40;
+            } else {
+              swordKnockback += 40;
+            }
           },
         },
         {
@@ -746,7 +760,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
           icon: "🎯",
           desc: "기본 공격이 적을 관통합니다.\n(+1명)",
           apply: () => {
-            bulletPenetration += 1;
+            if (baseAttack === "gun") bulletPenetration += 1;
           },
         },
         {
@@ -755,7 +769,11 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
           icon: "📏",
           desc: "기본 공격의 사정거리가 증가합니다.\n(+20%)",
           apply: () => {
-            bulletRange *= 1.2;
+            if (baseAttack === "gun") {
+              bulletRange *= 1.2;
+            } else {
+              swordRange *= 1.2;
+            }
           },
         },
         {
@@ -820,7 +838,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
           icon: "🩸",
           desc: "기본 공격 피해의 3%를 체력으로 회복합니다.\n(+3%)",
           apply: () => {
-            bulletLifeSteal += 0.03;
+            lifeSteal += 0.03;
           },
         },
         {
@@ -839,22 +857,6 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
           desc: "경험치 획득량 30% 증가",
           apply: () => {
             expOrbValue *= 1.3;
-          },
-        },
-        {
-          id: "sword",
-          title: "검",
-          icon: "🗡️",
-          desc: "앞으로 검을 휘두릅니다..\n(피해 +50%)",
-          apply: () => {
-            const level = acquiredUpgrades["sword"] || 0;
-            if (level === 0) {
-              swordEnabled = true;
-              swordTimer = 0;
-            } else {
-              swordDamage *= 1.5;
-              //swordKnockback += 20;
-            }
           },
         },
         {
@@ -1097,7 +1099,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
           } else if (!spaceLocked) {
             spaceLocked = true;
             if (!running) {
-              startGame();
+              startGame(baseAttack);
             } else if (!paused) {
               toggleDirection();
             }
@@ -1216,8 +1218,10 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
 
       // --- 게임 제어 ---
       const overlay = document.getElementById("overlay");
-      const btnStart = document.getElementById("btnStart");
-      btnStart.addEventListener("click", startGame);
+      const btnGun = document.getElementById("btnGun");
+      const btnSword = document.getElementById("btnSword");
+      btnGun.addEventListener("click", () => startGame("gun"));
+      btnSword.addEventListener("click", () => startGame("sword"));
 
       const tipElem = document.getElementById("tip");
       const tips = [
@@ -1319,7 +1323,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
         bulletPenetration = INIT.BULLET.PENETRATION;
         bulletKnockback = INIT.BULLET.KNOCKBACK;
         bulletRange = INIT.BULLET.RANGE;
-        bulletLifeSteal = INIT.BULLET.LIFESTEAL;
+        lifeSteal = INIT.BULLET.LIFESTEAL;
         laserOrbCooldown = INIT.LASERORB.COOLDOWN;
         laserOrbDamage = INIT.LASERORB.DAMAGE;
         laserOrbSpeed = INIT.LASERORB.SPEED;
@@ -1344,7 +1348,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
         swordDamage = INIT.SWORD.DAMAGE;
         swordRange = INIT.SWORD.RANGE;
         swordKnockback = INIT.SWORD.KNOCKBACK;
-        swordEnabled = false;
+        swordEnabled = baseAttack === "sword";
 
         bombs.length = 0;
         explosions.length = 0;
@@ -1361,7 +1365,8 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
         updateHUD();
       }
 
-      function startGame() {
+      function startGame(attack = "gun") {
+        baseAttack = attack;
         reset();
         overlay.style.display = "none";
         running = true;
@@ -1404,12 +1409,14 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
           <p>생존 시간: <b>${Math.floor(elapsed / 60)}분 ${(elapsed % 60).toFixed(2).padStart(5, "0")}초</b></p>
           <p>처치 수: <b>${score}</b></p>
           <div class="row">
-            <button id="btnRestart">다시 시작 (SPACE)</button>
+            <button id="btnRestartGun">총으로 다시 시작</button>
+            <button id="btnRestartSword">검으로 다시 시작</button>
           </div>
         </div>`;
           overlay.innerHTML = panelHTML;
           overlay.style.display = "flex";
-          document.getElementById("btnRestart").onclick = startGame;
+          document.getElementById("btnRestartGun").onclick = () => startGame("gun");
+          document.getElementById("btnRestartSword").onclick = () => startGame("sword");
         }, 1000);
       }
 
@@ -1943,6 +1950,18 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
               const dmg = Math.min(Math.max(raw, 0), e.hp);
               e.hp -= dmg;
               spawnFloatText(ex, e.y - 12, -dmg, "#ff6b6b");
+              if (lifeSteal > 0) {
+                const heal = Math.min(dmg * lifeSteal, playerHP - hp);
+                if (heal > 0) {
+                  hp += heal;
+                  spawnFloatText(
+                    player.x + player.w / 2,
+                    player.y - 14,
+                    heal,
+                    "#6cff96",
+                  );
+                }
+              }
               if (e.hp <= 0) {
                 dropExpOrbs(e);
                 enemies.splice(i, 1);
@@ -2105,6 +2124,9 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
         if ((acquiredUpgrades["laserOrb"] || 0) >= INIT.LASERORB.LIMIT) {
           availableUpgrades = availableUpgrades.filter(u => u.id !== "laserOrb");
         }
+        if (baseAttack === "sword") {
+          availableUpgrades = availableUpgrades.filter(u => u.id !== "penetration");
+        }
 
         let selected;
         if (all) {
@@ -2245,7 +2267,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
         player.footSize = Math.abs(Math.sin(player.walkTime));
 
         // 자동 공격(전방으로 탄 발사)
-        if (shootTimer >= bulletCooldown) {
+        if (baseAttack === "gun" && shootTimer >= bulletCooldown) {
           shootTimer = 0;
           const bx =
             player.dir > 0 ? player.x + player.w : player.x - bulletSize;
@@ -2565,8 +2587,8 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
 
               spawnFloatText(e.x + e.w / 2, e.y - 12, -dmg, "#ff6b6b");
 
-              if (bulletLifeSteal > 0) {
-                const heal = Math.min(dmg * bulletLifeSteal, playerHP - hp);
+              if (lifeSteal > 0) {
+                const heal = Math.min(dmg * lifeSteal, playerHP - hp);
                 if (heal > 0) {
                   hp += heal;
                   spawnFloatText(
