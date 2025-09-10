@@ -841,22 +841,22 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
             expOrbValue *= 1.3;
           },
         },
-        {
-          id: "hammer",
-          title: "망치",
-          icon: "🔨",
-          desc: "앞으로 망치를 휘두릅니다..\n(피해 +50%)",
-          apply: () => {
-            const level = acquiredUpgrades["hammer"] || 0;
-            if (level === 0) {
-              hammerEnabled = true;
-              hammerTimer = 0;
-            } else {
-              hammerDamage *= 1.5;
-              //hammerKnockback += 20;
-            }
-          },
-        },
+        // {
+        //   id: "hammer",
+        //   title: "망치",
+        //   icon: "🔨",
+        //   desc: "앞으로 망치를 휘두릅니다..\n(피해 +50%)",
+        //   apply: () => {
+        //     const level = acquiredUpgrades["hammer"] || 0;
+        //     if (level === 0) {
+        //       hammerEnabled = true;
+        //       hammerTimer = 0;
+        //     } else {
+        //       hammerDamage *= 1.5;
+        //       //hammerKnockback += 20;
+        //     }
+        //   },
+        // },
         {
           id: "bomb",
           title: "폭탄",
