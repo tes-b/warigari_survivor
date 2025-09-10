@@ -3043,16 +3043,6 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
           ctx.fillRect(handleLen - 2, -8, 4, 16);
           ctx.fillStyle = "#e5e7eb";
           ctx.fillRect(handleLen, -4, bladeLen, 8);
-          // sword tip flash effect
-          const tx = handleLen + bladeLen;
-          ctx.save();
-          ctx.translate(tx, 0);
-          ctx.globalAlpha = 1 - progress;
-          ctx.fillStyle = "#fde68a";
-          ctx.beginPath();
-          ctx.arc(0, 0, 8, 0, Math.PI * 2);
-          ctx.fill();
-          ctx.restore();
           ctx.restore();
         }
         ctx.restore();
