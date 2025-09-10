@@ -1919,6 +1919,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
           life: 0,
           duration: 150, // swing time
           hold: 50,
+          holdLife: 0,
           range: swordRange,
         });
         for (let i = enemies.length - 1; i >= 0; i--) {
@@ -2277,8 +2278,13 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
         // 검 휘두름 이펙트 업데이트
         for (let i = swordSwings.length - 1; i >= 0; i--) {
           const s = swordSwings[i];
-          s.life += dt * 1000;
-          if (s.life >= s.duration + s.hold) swordSwings.splice(i, 1);
+          if (s.life < s.duration) {
+            s.life += dt * 1000;
+            if (s.life > s.duration) s.life = s.duration;
+          } else {
+            s.holdLife += dt * 1000;
+            if (s.holdLife >= s.hold) swordSwings.splice(i, 1);
+          }
         }
 
         // 궤도 구슬 회전
@@ -3094,7 +3100,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
         // 검 휘두름 이펙트 및 검 그리기
         ctx.save();
         for (const s of swordSwings) {
-          const progress = Math.min(s.life / s.duration, 1);
+          const progress = s.life / s.duration;
           const handleLen = 20;
           const bladeLen = s.range - handleLen * 2;
           ctx.save();
