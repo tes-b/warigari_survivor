@@ -847,13 +847,12 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
           id: "laserOrb",
           title: "레이저 구슬",
           icon: "🔶",
-          desc: "머리 위 구슬이 무작위 적에게 레이저를 발사합니다\\n(발사 간격 -0.2초)",
+          desc: "머리 위 구슬이 무작위 적에게 레이저를 발사합니다\\n(투사체 +1)",
           apply: () => {
             if (laserOrbs.length < INIT.LASERORB.LIMIT) {
-              laserOrbs.push({ timer: 0, offsetX: 0 });
+              laserOrbs.push({ offsetX: 0 });
               arrangeLaserOrbs();
             }
-            laserOrbCooldown = Math.max(200, laserOrbCooldown - 200);
           },
         },
         {
@@ -994,6 +993,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
       // --- 레이저 구슬 ---
       const lasers = [];
       let laserOrbs = [];
+      let laserOrbTimer = 0;
       let laserOrbCooldown = INIT.LASERORB.COOLDOWN; // ms
       let laserOrbDamage = INIT.LASERORB.DAMAGE;
       let laserOrbSpeed = INIT.LASERORB.SPEED;
@@ -1253,6 +1253,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
         bossLasers.length = 0;
         lasers.length = 0;
         laserOrbs.length = 0;
+        laserOrbTimer = 0;
         enemies.length = 0;
         expOrbs.length = 0;
         orbitingOrbs.length = 0;
@@ -1782,7 +1783,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
 
       function pickRandomEnemy() {
         if (enemies.length === 0) return null;
-        const idx = (Math.random() * enemies.length) | 0;
+        const idx = Math.floor(Math.random() * enemies.length);
         return enemies[idx];
       }
 
@@ -2157,31 +2158,30 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
         }
 
         // 레이저 구슬 발사
-        for (const orb of laserOrbs) {
-          orb.timer = (orb.timer || 0) + dt * 1000;
-          if (orb.timer >= laserOrbCooldown) {
-            orb.timer = 0;
+        laserOrbTimer += dt * 1000;
+        if (laserOrbTimer >= laserOrbCooldown) {
+          laserOrbTimer = 0;
+          for (const orb of laserOrbs) {
             const target = pickRandomEnemy();
-            if (target) {
-              const sx = player.x + player.w / 2 + orb.offsetX;
-              const sy = player.y - 16;
-              const tx = target.x + target.w / 2;
-              const ty = target.y + target.h / 2;
-              const angle = Math.atan2(ty - sy, tx - sx);
-              const vx = Math.cos(angle) * laserOrbSpeed;
-              const vy = Math.sin(angle) * laserOrbSpeed;
-              lasers.push({
-                x: sx,
-                y: sy,
-                vx,
-                vy,
-                angle,
-                len: 20,
-                thick: 4,
-                life: 1000,
-                dmg: laserOrbDamage,
-              });
-            }
+            if (!target) continue;
+            const sx = player.x + player.w / 2 + orb.offsetX;
+            const sy = player.y - 16;
+            const tx = target.x + target.w / 2;
+            const ty = target.y + target.h / 2;
+            const angle = Math.atan2(ty - sy, tx - sx);
+            const vx = Math.cos(angle) * laserOrbSpeed;
+            const vy = Math.sin(angle) * laserOrbSpeed;
+            lasers.push({
+              x: sx,
+              y: sy,
+              vx,
+              vy,
+              angle,
+              len: 20,
+              thick: 4,
+              life: 1000,
+              dmg: laserOrbDamage,
+            });
           }
         }
 
