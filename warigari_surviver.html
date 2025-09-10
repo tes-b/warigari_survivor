@@ -584,6 +584,14 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
           LIMIT: 10,
           GAP: 100, // 연속 발사 간격 (ms)
         },
+        // 망치 관련
+        HAMMER: {
+          COOLDOWN: 1500, // 망치 공격 간격 (ms)
+          DAMAGE: 200, // 망치 피해량
+          RANGE: 80, // 망치 공격 범위 (px)
+          KNOCKBACK: 120, // 망치 넉백 거리 (px)
+          LIMIT: 10,
+        },
       };
 
       // 궤도 구슬 무지개 색상 배열 (빨주노초파남보)
@@ -833,6 +841,21 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
           },
         },
         {
+          id: "hammer",
+          title: "망치",
+          icon: "🔨",
+          desc: "앞으로 망치를 휘둘러 적을 공격합니다. \n(피해 +50%, 넉백 +20)",
+          apply: () => {
+            const level = acquiredUpgrades["hammer"] || 0;
+            if (level === 0) {
+              hammerEnabled = true;
+            } else {
+              hammerDamage *= 1.5;
+              hammerKnockback += 20;
+            }
+          },
+        },
+        {
           id: "bomb",
           title: "폭탄",
           icon: "💣",
@@ -1004,6 +1027,15 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
       let laserOrbGap = INIT.LASERORB.GAP;
       let laserOrbShots = 0;
       let laserOrbSeqTimer = 0;
+
+      // --- 망치 ---
+      const hammerSwings = [];
+      let hammerTimer = 0;
+      let hammerCooldown = INIT.HAMMER.COOLDOWN; // ms
+      let hammerDamage = INIT.HAMMER.DAMAGE;
+      let hammerRange = INIT.HAMMER.RANGE;
+      let hammerKnockback = INIT.HAMMER.KNOCKBACK;
+      let hammerEnabled = false;
 
       // --- 폭탄 ---
       const bombs = [];
@@ -1301,6 +1333,14 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
         iceFloorEnabled = false;
         iceFloorDamage = INIT.ICEFLOOR.DAMAGE;
         iceFloorDuration = INIT.ICEFLOOR.DURATION;
+
+        hammerSwings.length = 0;
+        hammerTimer = 0;
+        hammerCooldown = INIT.HAMMER.COOLDOWN;
+        hammerDamage = INIT.HAMMER.DAMAGE;
+        hammerRange = INIT.HAMMER.RANGE;
+        hammerKnockback = INIT.HAMMER.KNOCKBACK;
+        hammerEnabled = false;
 
         bombs.length = 0;
         explosions.length = 0;
@@ -1888,6 +1928,40 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
         }
       }
 
+      function swingHammer() {
+        const px = player.x + player.w / 2;
+        const py = player.y + player.h / 2;
+        hammerSwings.push({ x: px, y: py, dir: player.dir, life: 0, duration: 150 });
+        for (let i = enemies.length - 1; i >= 0; i--) {
+          const e = enemies[i];
+          const ex = e.x + e.w / 2;
+          const ey = e.y + e.h / 2;
+          const dx = ex - px;
+          const dy = ey - py;
+          const dist = Math.hypot(dx, dy);
+          if (dist <= hammerRange) {
+            const dot = (dx * player.dir) / (dist || 1);
+            if (dot >= 0.5) {
+              const raw = hammerDamage - (e.defense || 0);
+              const dmg = Math.min(Math.max(raw, 0), e.hp);
+              e.hp -= dmg;
+              spawnFloatText(ex, e.y - 12, -dmg, "#ff6b6b");
+              if (e.hp <= 0) {
+                dropExpOrbs(e);
+                enemies.splice(i, 1);
+                score += e.reward;
+                continue;
+              }
+              if (!e.knockbackImmune) {
+                const nx = player.dir;
+                e.knockbackVx = (e.knockbackVx || 0) + nx * hammerKnockback * enemyKnockbackFriction;
+                e.vy = -enemyKnockbackLift;
+              }
+            }
+          }
+        }
+      }
+
       function weightedTier() {
         const pick = (weights) => enemyTiers[pickWeightedIndex(weights)];
 
@@ -2113,6 +2187,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
         bombTimer += dt * 1000;
         spawnTimer += dt * 1000;
         iceFloorTimer += dt * 1000;
+        hammerTimer += dt * 1000;
         if (bossSpawnTimer > 0) {
           bossSpawnTimer -= dt * 1000;
           if (bossSpawnTimer <= 0) {
@@ -2137,6 +2212,13 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
           const eff = impulseEffects[i];
           eff.life += dt * 1000;
           if (eff.life >= eff.duration) impulseEffects.splice(i, 1);
+        }
+
+        // 망치 휘두름 이펙트 업데이트
+        for (let i = hammerSwings.length - 1; i >= 0; i--) {
+          const s = hammerSwings[i];
+          s.life += dt * 1000;
+          if (s.life >= s.duration) hammerSwings.splice(i, 1);
         }
 
         // 궤도 구슬 회전
@@ -2229,6 +2311,11 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
               radius: bombRadius,
             });
           }
+        }
+
+        if (hammerEnabled && hammerTimer >= hammerCooldown) {
+          hammerTimer = 0;
+          swingHammer();
         }
 
         // 얼음 바닥 생성
@@ -2930,6 +3017,21 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
           ctx.fill();
           ctx.restore();
         }
+
+        // 망치 휘두름 이펙트
+        ctx.save();
+        ctx.fillStyle = "#fde68a";
+        for (const s of hammerSwings) {
+          ctx.globalAlpha = 1 - s.life / s.duration;
+          ctx.beginPath();
+          ctx.moveTo(s.x, s.y);
+          const start = s.dir > 0 ? -Math.PI / 3 : Math.PI - Math.PI / 3;
+          const end = s.dir > 0 ? Math.PI / 3 : Math.PI + Math.PI / 3;
+          ctx.arc(s.x, s.y, hammerRange, start, end);
+          ctx.closePath();
+          ctx.fill();
+        }
+        ctx.restore();
 
         // 경험치 구슬
         for (const orb of expOrbs) {
