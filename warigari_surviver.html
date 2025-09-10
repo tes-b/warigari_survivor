@@ -751,6 +751,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
         },
         {
           id: "penetration",
+          weapon: "gun",
           title: "관통 공격",
           icon: "🎯",
           desc: "기본 공격이 적을 관통합니다.\n(+1명)",
@@ -2103,9 +2104,9 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
         if ((acquiredUpgrades["laserOrb"] || 0) >= INIT.LASERORB.LIMIT) {
           availableUpgrades = availableUpgrades.filter(u => u.id !== "laserOrb");
         }
-        if (baseAttack === "sword") {
-          availableUpgrades = availableUpgrades.filter(u => u.id !== "penetration");
-        }
+        availableUpgrades = availableUpgrades.filter(
+          u => !u.weapon || u.weapon === baseAttack,
+        );
 
         let selected;
         if (all) {
