@@ -1093,6 +1093,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
               startHold();
             }
           } else if (!spaceLocked) {
+            spaceLocked = true;
             if (!running) {
               startGame();
             } else if (!paused) {
