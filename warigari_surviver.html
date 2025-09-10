@@ -544,7 +544,6 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
           RADIUS: 75, // 궤도 반지름
           SPEED: 5, // 궤도 회전 속도 (rad/s)
           DAMAGE: 100, // 궤도 구슬 피해량
-          LIMIT: 7 // 최대 업그레이드 수
         },
         // 경험치 관련
         EXP: {
@@ -577,7 +576,6 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
           COOLDOWN: 1000, // 레이저 발사 간격 (ms)
           DAMAGE: 120, // 레이저 피해량
           SPEED: 700, // 레이저 속도 (px/s)
-          LIMIT: 10,
           GAP: 100, // 연속 발사 간격 (ms)
         },
         // 검 관련
@@ -711,6 +709,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
       const UPGRADES = [
         {
           id: "damage",
+          limit: 10,
           title: "공격력 증가",
           icon: "🔥",
           desc: "기본 공격의 공격력이 증가합니다.\n(+30%)",
@@ -724,6 +723,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
         },
         {
           id: "attackSpeed",
+          limit: 6,
           title: "공격 속도 증가",
           icon: "⚡",
           desc: "기본 공격의 속도가 증가합니다.\n(+15%)",
@@ -737,6 +737,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
         },
         {
           id: "knockback",
+          limit: 6,
           title: "넉백 공격",
           icon: "💥",
           desc: "기본 공격이 적을 뒤로 밀어냅니다.\n(넉백거리 +40)",
@@ -750,6 +751,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
         },
         {
           id: "penetration",
+          limit: 10,
           weapon: "gun",
           title: "관통 공격",
           icon: "🎯",
@@ -760,6 +762,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
         },
         {
           id: "range",
+          limit: 5,
           title: "사거리 증가",
           icon: "📏",
           desc: "기본 공격의 사정거리가 증가합니다.\n(+20%)",
@@ -773,6 +776,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
         },
         {
           id: "health",
+          limit: 10,
           title: "체력 증가",
           icon: "❤️",
           desc: "최대 체력이 증가하고 체력을 모두 회복합니다.\n(+500)",
@@ -791,12 +795,13 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
         },
         {
           id: "orbital",
+          limit: 7,
           title: "궤도 구슬",
           icon: "🌟",
           desc: "주변을 도는 구슬이 생성됩니다.\n(구슬 +1개)",
-          apply: () => {
-            if (orbitingOrbs.length >= INIT.ORBITAL.LIMIT) return; // 최대 7개 제한
-            
+          apply() {
+            if (orbitingOrbs.length >= this.limit) return;
+
             // 새 구슬 추가
             orbitingOrbs.push({
               angle: 0,
@@ -815,7 +820,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
             });
 
             // 최대치에 도달하면 폭발적 강화
-            if (orbitingOrbs.length === INIT.ORBITAL.LIMIT) {
+            if (count === this.limit) {
               orbitalDamage = 500; // 궤도 구슬 피해량
               orbitalRadius = 90; // 궤도 반지름
               orbitalSpeed = 7; // 궤도 회전 속도 (rad/s)
@@ -829,6 +834,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
 
         {
           id: "lifesteal",
+          limit: 10,
           title: "흡혈",
           icon: "🩸",
           desc: "기본 공격 피해의 3%를 체력으로 회복합니다.\n(+3%)",
@@ -838,6 +844,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
         },
         {
           id: "magnet",
+          limit: 5,
           title: "자석",
           icon: "🧲",
           desc: "경험치 구슬을 끌어당깁니다 \n(범위 +60)",
@@ -847,6 +854,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
         },
         {
           id: "expBoost",
+          limit: 5,
           title: "경험치 증가",
           icon: "📘",
           desc: "경험치 획득량 30% 증가",
@@ -856,6 +864,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
         },
         {
           id: "bomb",
+          limit: 6,
           title: "폭탄",
           icon: "💣",
           desc: "2초마다 폭탄을 설치합니다.\n(피해 +50%, 범위 +20%)",
@@ -871,6 +880,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
         },
         {
           id: "laserOrb",
+          limit: 10,
           title: "레이저 구슬",
           icon: "🔶",
           desc: "구슬이 무작위 적에게 레이저를 발사합니다.\n(투사체 +1)",
@@ -883,6 +893,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
         },
         {
           id: "iceFloor",
+          limit: 6,
           title: "얼음 바닥",
           icon: "❄️",
           desc: "바닥에 얼음을 생성해 적을 둔화시킵니다.\n(지속 시간 +1초, 피해 +10)",
@@ -895,6 +906,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
         },
         {
           id: "defense",
+          limit: 10,
           title: "방어력 증가",
           icon: "🛡️",
           desc: "방어력 +20",
@@ -903,6 +915,10 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
           },
         },
       ];
+
+      const UPGRADE_LIMITS = Object.fromEntries(
+        UPGRADES.map((u) => [u.id, u.limit])
+      );
 
       const acquiredUpgrades = {};
 
@@ -2098,16 +2114,11 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
         const levelupOverlay = document.getElementById("levelupOverlay");
         const upgradeGrid = document.getElementById("upgradeGrid");
 
-        // 특정 업그레이드가 최대치에 도달하면 제외
-        let availableUpgrades = [...UPGRADES];
-        if (orbitingOrbs.length >= INIT.ORBITAL.LIMIT) {
-          availableUpgrades = availableUpgrades.filter(u => u.id !== "orbital");
-        }
-        if ((acquiredUpgrades["laserOrb"] || 0) >= INIT.LASERORB.LIMIT) {
-          availableUpgrades = availableUpgrades.filter(u => u.id !== "laserOrb");
-        }
-        availableUpgrades = availableUpgrades.filter(
-          u => !u.weapon || u.weapon === baseAttack,
+        // 한계 수량에 도달한 업그레이드를 제외
+        const availableUpgrades = UPGRADES.filter(
+          u =>
+            (!u.weapon || u.weapon === baseAttack) &&
+            (acquiredUpgrades[u.id] || 0) < u.limit,
         );
 
         let selected;
@@ -3150,7 +3161,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
 
           ctx.save();
           const color =
-            orbitingOrbs.length >= INIT.ORBITAL.LIMIT
+            orbitingOrbs.length >= UPGRADE_LIMITS.orbital
               ? RAINBOW_COLORS[idx % RAINBOW_COLORS.length]
               : "#ff6b9d";
           ctx.fillStyle = color;
