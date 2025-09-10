@@ -567,10 +567,10 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
         },
         // 폭탄 관련
         BOMB: {
-          COOLDOWN: 2500, // 폭탄 설치 간격 (ms)
+          COOLDOWN: 2000, // 폭탄 설치 간격 (ms)
           DAMAGE: 150, // 폭탄 피해량
           RADIUS: 100, // 폭탄 폭발 범위 (px)
-          FUSE: 1500, // 폭탄이 터지기까지 시간 (ms)
+          FUSE: 2000, // 폭탄이 터지기까지 시간 (ms)
         },
         // 얼음 바닥 관련
         ICEFLOOR: {
@@ -647,10 +647,10 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
       // 적 티어별 설정 (5단계로 확장, 체력 증가/속도 감소)
       let enemyTiers = [
         { name: "Weak", speed: 35, color: "#4ade80", hp: 150, exp: 1 },    
-        { name: "Basic", speed: 45, color: "#60a5fa", hp: 250, exp: 2 },   
-        { name: "Medium", speed: 55, color: "#a78bfa", hp: 450, exp: 4 },  
-        { name: "Strong", speed: 65, color: "#f59e0b", hp: 850, exp: 8 },  
-        { name: "Elite", speed: 75, color: "#ef4444", hp: 1200, exp: 16 },   
+        { name: "Basic", speed: 45, color: "#60a5fa", hp: 300, exp: 2 },   
+        { name: "Medium", speed: 55, color: "#a78bfa", hp: 500, exp: 4 },  
+        { name: "Strong", speed: 65, color: "#f59e0b", hp: 1000, exp: 8 },  
+        { name: "Elite", speed: 75, color: "#ef4444", hp: 1400, exp: 16 },   
       ];
 
       // 적 종류
@@ -717,7 +717,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
           id: "damage",
           title: "공격력 증가",
           icon: "🔥",
-          desc: "기본 발사의 공격력 30% 증가",
+          desc: "기본 발사의 공격력이 증가합니다.\n(+30%)",
           apply: () => {
             bulletDamage *= 1.3;
           },
@@ -726,7 +726,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
           id: "attackSpeed",
           title: "공격 속도 증가",
           icon: "⚡",
-          desc: "기본 발사 속도 +15% 향상",
+          desc: "기본 발사의 속도가 증가합니다.\n(+15%)",
           apply: () => {
             bulletCooldown = Math.max(80, bulletCooldown * 0.85);
           },
@@ -735,7 +735,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
           id: "health",
           title: "체력 증가",
           icon: "❤️",
-          desc: "최대 체력 +500, 체력 모두 회복",
+          desc: "최대 체력이 증가하고 체력을 모두 회복합니다.\n(+500)",
           apply: () => {
             playerHP += 500;
             const healed = playerHP - hp;
@@ -753,7 +753,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
           id: "orbital",
           title: "궤도 구슬",
           icon: "🌟",
-          desc: "주변을 도는 공격 구슬 추가",
+          desc: "주변을 도는 구슬이 생성됩니다.\n(구슬 +1개)",
           apply: () => {
             if (orbitingOrbs.length >= INIT.ORBITAL.LIMIT) return; // 최대 7개 제한
             
@@ -790,7 +790,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
           id: "knockback",
           title: "넉백 공격",
           icon: "💥",
-          desc: "기본 발사가 적을 뒤로 밀어냅니다. \n(넉백 +40)",
+          desc: "기본 발사가 적을 뒤로 밀어냅니다.\n(넉백거리 +40)",
           apply: () => {
             // 넉백 아이템을 여러 번 획득하면 효과가 누적되도록
             bulletKnockback += 40;
@@ -800,7 +800,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
           id: "penetration",
           title: "관통 공격",
           icon: "🎯",
-          desc: "한명의 적을 추가로 관통합니다.",
+          desc: "기본 공격이 적을 관통합니다.\n(+1명)",
           apply: () => {
             bulletPenetration += 1;
           },
@@ -809,7 +809,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
           id: "range",
           title: "사거리 증가",
           icon: "📏",
-          desc: "총알 사정거리 +20%",
+          desc: "기본공격의 사정거리가 증가합니다.\n(+20%)",
           apply: () => {
             bulletRange *= 1.2;
           },
@@ -818,7 +818,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
           id: "lifesteal",
           title: "흡혈",
           icon: "🩸",
-          desc: "총알로 준 피해의 3%를 체력으로 회복",
+          desc: "기본 공격 피해의 3%를 체력으로 회복합니다.\n(+3%)",
           apply: () => {
             bulletLifeSteal += 0.03;
           },
@@ -827,7 +827,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
           id: "magnet",
           title: "자석",
           icon: "🧲",
-          desc: "주변의 경험치 구슬을 끌어당깁니다 \n(범위 +60)",
+          desc: "경험치 구슬을 끌어당깁니다 \n(범위 +60)",
           apply: () => {
             magnetRadius += 60;
           },
@@ -845,7 +845,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
           id: "hammer",
           title: "망치",
           icon: "🔨",
-          desc: "앞으로 망치를 휘둘러 적을 공격합니다. \n(피해 +50%)",
+          desc: "앞으로 망치를 휘두릅니다..\n(피해 +50%)",
           apply: () => {
             const level = acquiredUpgrades["hammer"] || 0;
             if (level === 0) {
@@ -861,7 +861,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
           id: "bomb",
           title: "폭탄",
           icon: "💣",
-          desc: "2.5초마다 현재 위치에 폭탄을 설치합니다.\n폭탄은 1.5초 후 폭발하여 주변에 피해를 줍니다.\n(피해 +50%, 범위 +20%)",
+          desc: "2초마다 폭탄을 설치합니다.\n(피해 +50%, 범위 +20%)",
           apply: () => {
             const level = acquiredUpgrades["bomb"] || 0;
             if (level === 0) {
@@ -876,7 +876,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
           id: "laserOrb",
           title: "레이저 구슬",
           icon: "🔶",
-          desc: "구슬이 무작위 적에게 레이저를 발사합니다. \n(투사체 +1)",
+          desc: "구슬이 무작위 적에게 레이저를 발사합니다.\n(투사체 +1)",
           apply: () => {
             const level = acquiredUpgrades["laserOrb"] || 0;
             if (level === 0) {
@@ -888,7 +888,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
           id: "iceFloor",
           title: "얼음 바닥",
           icon: "❄️",
-          desc: "바닥에 얼음을 생성해 적을 둔화시킵니다. \n(지속 시간 +1초, 피해 +10)",
+          desc: "바닥에 얼음을 생성해 적을 둔화시킵니다.\n(지속 시간 +1초, 피해 +10)",
           apply: () => {
             const level = acquiredUpgrades["iceFloor"] || 0;
             if (level === 0) iceFloorEnabled = true;
