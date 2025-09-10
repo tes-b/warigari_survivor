@@ -2934,15 +2934,17 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
           const raiseProgress = Math.min(hammerTimer / hammerCooldown, 1);
           const angle = Math.PI / 6 - (2 * Math.PI / 3) * raiseProgress;
           const headLen = 20;
-          const handleLen = hammerRange - headLen;
+          const handleFull = hammerRange - headLen;
+          const handleLen = handleFull / 3;
+          const handleStart = handleFull - handleLen;
           ctx.save();
           ctx.translate(cx, cy);
           ctx.scale(player.dir, 1);
           ctx.rotate(angle);
           ctx.fillStyle = "#b45309";
-          ctx.fillRect(0, -3, handleLen, 6);
+          ctx.fillRect(handleStart, -3, handleLen, 6);
           ctx.fillStyle = "#e5e7eb";
-          ctx.fillRect(handleLen, -10, headLen, 20);
+          ctx.fillRect(handleStart + handleLen, -10, headLen, 20);
           ctx.restore();
         }
 
@@ -3055,7 +3057,9 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
         for (const s of hammerSwings) {
           const progress = s.life / s.duration;
           const headLen = 20;
-          const handleLen = s.range - headLen;
+          const handleFull = s.range - headLen;
+          const handleLen = handleFull / 3;
+          const handleStart = handleFull - handleLen;
           ctx.save();
           ctx.translate(s.x, s.y);
           ctx.scale(s.dir, 1);
@@ -3069,9 +3073,9 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
           ctx.globalAlpha = 1;
           ctx.rotate(-Math.PI / 2 + (2 * Math.PI / 3) * progress);
           ctx.fillStyle = "#b45309";
-          ctx.fillRect(0, -3, handleLen, 6);
+          ctx.fillRect(handleStart, -3, handleLen, 6);
           ctx.fillStyle = "#e5e7eb";
-          ctx.fillRect(handleLen, -10, headLen, 20);
+          ctx.fillRect(handleStart + handleLen, -10, headLen, 20);
           ctx.restore();
         }
         ctx.restore();
