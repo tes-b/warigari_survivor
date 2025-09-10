@@ -1911,6 +1911,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
       function swingSword() {
         const px = player.x + player.w / 2;
         const py = player.y + player.h / 2;
+        const handleLen = 20;
         swordSwings.push({
           x: px,
           y: py,
@@ -1925,10 +1926,10 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
           const ey = e.y + e.h / 2;
           const dx = ex - px;
           const dy = ey - py;
-          const dist = Math.hypot(dx, dy);
-          if (dist <= swordRange) {
+          const dist = Math.hypot(dx, dy) - Math.max(e.w, e.h) / 2;
+          if (dist <= swordRange - handleLen) {
             const ang = Math.atan2(dy, dx * player.dir);
-            if (ang >= -Math.PI / 2 && ang <= Math.PI / 6) {
+            if (ang >= -11 * Math.PI / 18 && ang <= Math.PI / 6) {
               const raw = swordDamage - (e.defense || 0);
               const dmg = Math.min(Math.max(raw, 0), e.hp);
               e.hp -= dmg;
@@ -2965,7 +2966,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
           const cx = player.x + player.w / 2;
           const cy = player.y + player.h / 2;
           const raiseProgress = Math.min(swordTimer / swordCooldown, 1);
-          const angle = Math.PI / 6 - (2 * Math.PI / 3) * raiseProgress;
+          const angle = Math.PI / 6 - (7 * Math.PI / 9) * raiseProgress;
           const handleLen = 20;
           const bladeLen = swordRange - handleLen;
           ctx.save();
@@ -3096,7 +3097,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
           ctx.save();
           ctx.translate(s.x, s.y);
           ctx.scale(s.dir, 1);
-          ctx.rotate(-Math.PI / 2 + (2 * Math.PI / 3) * progress);
+          ctx.rotate(-11 * Math.PI / 18 + (7 * Math.PI / 9) * progress);
           ctx.fillStyle = "#b45309";
           ctx.fillRect(0, -3, handleLen, 6);
           ctx.fillStyle = "#d1d5db";
