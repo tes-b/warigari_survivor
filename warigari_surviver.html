@@ -576,6 +576,14 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
           DAMAGE: 20, // 초당 피해량
           DURATION: 3000, // 기본 지속 시간 (ms)
         },
+        // 레이저 구슬 관련
+        LASERORB: {
+          COOLDOWN: 1000, // 레이저 발사 간격 (ms)
+          DAMAGE: 120, // 레이저 피해량
+          SPEED: 700, // 레이저 속도 (px/s)
+          LIMIT: 6,
+          GAP: 100, // 연속 발사 간격 (ms)
+        },
       };
 
       // 궤도 구슬 무지개 색상 배열 (빨주노초파남보)
@@ -837,6 +845,18 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
           },
         },
         {
+          id: "laserOrb",
+          title: "레이저 구슬",
+          icon: "🔶",
+          desc: "머리 위 구슬이 무작위 적에게 레이저를 발사합니다\\n(연속 발사 +1)",
+          apply: () => {
+            const level = acquiredUpgrades["laserOrb"] || 0;
+            if (level === 0) {
+              laserOrbs.push({ offsetX: 0 });
+            }
+          },
+        },
+        {
           id: "iceFloor",
           title: "얼음 바닥",
           icon: "❄️",
@@ -971,6 +991,16 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
 
       // --- 보스 레이저 ---
       const bossLasers = [];
+      // --- 레이저 구슬 ---
+      const lasers = [];
+      let laserOrbs = [];
+      let laserOrbTimer = 0;
+      let laserOrbCooldown = INIT.LASERORB.COOLDOWN; // ms
+      let laserOrbDamage = INIT.LASERORB.DAMAGE;
+      let laserOrbSpeed = INIT.LASERORB.SPEED;
+      let laserOrbGap = INIT.LASERORB.GAP;
+      let laserOrbShots = 0;
+      let laserOrbSeqTimer = 0;
 
       // --- 폭탄 ---
       const bombs = [];
@@ -1225,6 +1255,11 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
         player.deathAnim.rotation = 0;
         bullets.length = 0;
         bossLasers.length = 0;
+        lasers.length = 0;
+        laserOrbs.length = 0;
+        laserOrbTimer = 0;
+        laserOrbShots = 0;
+        laserOrbSeqTimer = 0;
         enemies.length = 0;
         expOrbs.length = 0;
         orbitingOrbs.length = 0;
@@ -1246,6 +1281,10 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
         bulletKnockback = INIT.BULLET.KNOCKBACK;
         bulletRange = INIT.BULLET.RANGE;
         bulletLifeSteal = INIT.BULLET.LIFESTEAL;
+        laserOrbCooldown = INIT.LASERORB.COOLDOWN;
+        laserOrbDamage = INIT.LASERORB.DAMAGE;
+        laserOrbSpeed = INIT.LASERORB.SPEED;
+        laserOrbGap = INIT.LASERORB.GAP;
         magnetRadius = 0;
         expOrbValue = INIT.EXP.ORB_VALUE;
         orbitalRadius = INIT.ORBITAL.RADIUS;
@@ -1749,6 +1788,35 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
         return nearest;
       }
 
+      function pickRandomEnemy() {
+        if (enemies.length === 0) return null;
+        const idx = Math.floor(Math.random() * enemies.length);
+        return enemies[idx];
+      }
+
+      function spawnLaserFromOrb(orb) {
+        const target = pickRandomEnemy();
+        if (!target) return;
+        const sx = player.x + player.w / 2 + orb.offsetX;
+        const sy = player.y - 16;
+        const tx = target.x + target.w / 2;
+        const ty = target.y + target.h / 2;
+        const angle = Math.atan2(ty - sy, tx - sx);
+        const vx = Math.cos(angle) * laserOrbSpeed;
+        const vy = Math.sin(angle) * laserOrbSpeed;
+        lasers.push({
+          x: sx,
+          y: sy,
+          vx,
+          vy,
+          angle,
+          len: 20,
+          thick: 4,
+          life: 1000,
+          dmg: laserOrbDamage,
+        });
+      }
+
       function explodeBomb(b) {
         explosions.push({
           x: b.x,
@@ -1953,10 +2021,14 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
         const levelupOverlay = document.getElementById("levelupOverlay");
         const upgradeGrid = document.getElementById("upgradeGrid");
 
-        // 궤도 구슬이 최대치에 도달하면 해당 업그레이드 제외
-        const availableUpgrades = orbitingOrbs.length >= INIT.ORBITAL.LIMIT
-          ? UPGRADES.filter(u => u.id !== "orbital")
-          : [...UPGRADES];
+        // 특정 업그레이드가 최대치에 도달하면 제외
+        let availableUpgrades = [...UPGRADES];
+        if (orbitingOrbs.length >= INIT.ORBITAL.LIMIT) {
+          availableUpgrades = availableUpgrades.filter(u => u.id !== "orbital");
+        }
+        if ((acquiredUpgrades["laserOrb"] || 0) >= INIT.LASERORB.LIMIT) {
+          availableUpgrades = availableUpgrades.filter(u => u.id !== "laserOrb");
+        }
 
         let selected;
         if (all) {
@@ -2106,6 +2178,30 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
           });
         }
 
+        // 레이저 구슬 발사
+        if (laserOrbs.length) {
+          if (laserOrbShots > 0) {
+            laserOrbSeqTimer += dt * 1000;
+            if (laserOrbSeqTimer >= laserOrbGap) {
+              laserOrbSeqTimer = 0;
+              spawnLaserFromOrb(laserOrbs[0]);
+              laserOrbShots--;
+            }
+          } else {
+            laserOrbTimer += dt * 1000;
+            if (
+              laserOrbTimer >= laserOrbCooldown &&
+              (acquiredUpgrades["laserOrb"] || 0) > 0
+            ) {
+              laserOrbTimer = 0;
+              laserOrbShots = acquiredUpgrades["laserOrb"] || 0;
+              spawnLaserFromOrb(laserOrbs[0]);
+              laserOrbShots--;
+              laserOrbSeqTimer = 0;
+            }
+          }
+        }
+
         if (bombEnabled && bombTimer >= bombCooldown) {
           bombTimer = 0;
           const sx = player.x + player.w / 2;
@@ -2194,27 +2290,45 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
             const bossLeft = l.owner.x + l.owner.w / 2 < player.x + player.w / 2;
             const facingBoss = bossLeft ? player.dir < 0 : player.dir > 0;
             const hitCondition = l.hitWhenFacing ? facingBoss : !facingBoss;
-            if ((l.ignoreFacing || hitCondition) && player.iframes <= 0 && !cheatInvincible) {
-              const raw = l.owner.damage - playerDefense;
-              const dmg = Math.min(Math.max(raw, 0), hp);
-              hp -= dmg;
-              spawnFloatText(
-                player.x + player.w / 2,
-                player.y - 14,
-                -dmg,
-                "#ff6b6b",
-              );
-              player.iframes = playerIframeDuration;
-              player.hitFlash = playerHitFlashDuration;
-              if (hp <= 0) {
-                hp = 0;
-                gameOver();
-                return;
-              }
-              if (!l.persistent) l.hit = true;
+          if ((l.ignoreFacing || hitCondition) && player.iframes <= 0 && !cheatInvincible) {
+            const raw = l.owner.damage - playerDefense;
+            const dmg = Math.min(Math.max(raw, 0), hp);
+            hp -= dmg;
+            spawnFloatText(
+              player.x + player.w / 2,
+              player.y - 14,
+              -dmg,
+              "#ff6b6b",
+            );
+            player.iframes = playerIframeDuration;
+            player.hitFlash = playerHitFlashDuration;
+            if (hp <= 0) {
+              hp = 0;
+              gameOver();
+              return;
             }
+            if (!l.persistent) l.hit = true;
           }
         }
+        }
+
+        // 레이저 업데이트
+        for (let i = lasers.length - 1; i >= 0; i--) {
+          const l = lasers[i];
+          l.x += l.vx * dt;
+          l.y += l.vy * dt;
+          l.life -= dt * 1000;
+          if (
+            l.life <= 0 ||
+            l.x < -40 ||
+            l.x > WORLD.w + 40 ||
+            l.y < -40 ||
+            l.y > WORLD.h + 40
+          ) {
+            lasers.splice(i, 1);
+          }
+        }
+
         // 폭탄 업데이트
         for (let i = bombs.length - 1; i >= 0; i--) {
           const b = bombs[i];
@@ -2392,6 +2506,29 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
 
               if (e.hp <= 0) {
                 // 경험치 구슬 드롭
+                dropExpOrbs(e);
+                enemies.splice(i, 1);
+                score += e.reward;
+                e._killed = true;
+                break;
+              }
+            }
+          }
+          // 레이저와 충돌
+          for (let j = lasers.length - 1; j >= 0; j--) {
+            const l = lasers[j];
+            const cos = Math.cos(l.angle);
+            const sin = Math.sin(l.angle);
+            const w = Math.abs(cos * l.len) + Math.abs(sin * l.thick);
+            const h = Math.abs(sin * l.len) + Math.abs(cos * l.thick);
+            const rect = { x: l.x - w / 2, y: l.y - h / 2, w, h };
+            if (aabb(e, rect)) {
+              const raw = l.dmg - (e.defense || 0);
+              const dmg = Math.min(Math.max(raw, 0), e.hp);
+              e.hp -= dmg;
+              spawnFloatText(e.x + e.w / 2, e.y - 12, -dmg, "#ff6b6b");
+              lasers.splice(j, 1);
+              if (e.hp <= 0) {
                 dropExpOrbs(e);
                 enemies.splice(i, 1);
                 score += e.reward;
@@ -2726,6 +2863,18 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
         ctx.fillStyle = "#fff";
         for (const b of bullets) ctx.fillRect(b.x, b.y, b.w, b.h);
 
+        // 레이저 탄
+        ctx.save();
+        ctx.fillStyle = "#facc15";
+        for (const l of lasers) {
+          ctx.save();
+          ctx.translate(l.x, l.y);
+          ctx.rotate(l.angle);
+          ctx.fillRect(-l.len / 2, -l.thick / 2, l.len, l.thick);
+          ctx.restore();
+        }
+        ctx.restore();
+
         // 보스 레이저
         ctx.save();
         for (const l of bossLasers) {
@@ -2804,6 +2953,16 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
           ctx.fill();
           ctx.restore();
         });
+
+        // 레이저 구슬
+        for (const orb of laserOrbs) {
+          const x = player.x + player.w / 2 + orb.offsetX;
+          const y = player.y - 16;
+          ctx.fillStyle = "#facc15";
+          ctx.beginPath();
+          ctx.arc(x, y, 6, 0, Math.PI * 2);
+          ctx.fill();
+        }
 
         // 적
         for (const e of enemies) {
