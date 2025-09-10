@@ -569,7 +569,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
         BOMB: {
           COOLDOWN: 2500, // 폭탄 설치 간격 (ms)
           DAMAGE: 150, // 폭탄 피해량
-          RADIUS: 80, // 폭탄 폭발 범위 (px)
+          RADIUS: 100, // 폭탄 폭발 범위 (px)
           FUSE: 1500, // 폭탄이 터지기까지 시간 (ms)
         },
         // 얼음 바닥 관련
@@ -3012,7 +3012,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
           const light = 40 + 40 * t;
           ctx.fillStyle = `hsl(0, 80%, ${light}%)`;
           ctx.beginPath();
-          ctx.arc(b.x, b.y, 6, 0, Math.PI * 2);
+          ctx.arc(b.x, b.y, 7.5, 0, Math.PI * 2);
           ctx.fill();
         }
 
