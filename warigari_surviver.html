@@ -578,10 +578,11 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
         },
         // 레이저 구슬 관련
         LASERORB: {
-          COOLDOWN: 1500, // 레이저 발사 간격 (ms)
+          COOLDOWN: 1000, // 레이저 발사 간격 (ms)
           DAMAGE: 120, // 레이저 피해량
           SPEED: 700, // 레이저 속도 (px/s)
           LIMIT: 6,
+          GAP: 100, // 연속 발사 간격 (ms)
         },
       };
 
@@ -847,11 +848,11 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
           id: "laserOrb",
           title: "레이저 구슬",
           icon: "🔶",
-          desc: "머리 위 구슬이 무작위 적에게 레이저를 발사합니다\\n(투사체 +1)",
+          desc: "머리 위 구슬이 무작위 적에게 레이저를 발사합니다\\n(연속 발사 +1)",
           apply: () => {
-            if (laserOrbs.length < INIT.LASERORB.LIMIT) {
+            const level = acquiredUpgrades["laserOrb"] || 0;
+            if (level === 0) {
               laserOrbs.push({ offsetX: 0 });
-              arrangeLaserOrbs();
             }
           },
         },
@@ -997,6 +998,9 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
       let laserOrbCooldown = INIT.LASERORB.COOLDOWN; // ms
       let laserOrbDamage = INIT.LASERORB.DAMAGE;
       let laserOrbSpeed = INIT.LASERORB.SPEED;
+      let laserOrbGap = INIT.LASERORB.GAP;
+      let laserOrbShots = 0;
+      let laserOrbSeqTimer = 0;
 
       // --- 폭탄 ---
       const bombs = [];
@@ -1254,6 +1258,8 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
         lasers.length = 0;
         laserOrbs.length = 0;
         laserOrbTimer = 0;
+        laserOrbShots = 0;
+        laserOrbSeqTimer = 0;
         enemies.length = 0;
         expOrbs.length = 0;
         orbitingOrbs.length = 0;
@@ -1278,6 +1284,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
         laserOrbCooldown = INIT.LASERORB.COOLDOWN;
         laserOrbDamage = INIT.LASERORB.DAMAGE;
         laserOrbSpeed = INIT.LASERORB.SPEED;
+        laserOrbGap = INIT.LASERORB.GAP;
         magnetRadius = 0;
         expOrbValue = INIT.EXP.ORB_VALUE;
         orbitalRadius = INIT.ORBITAL.RADIUS;
@@ -1787,12 +1794,26 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
         return enemies[idx];
       }
 
-      function arrangeLaserOrbs() {
-        const count = laserOrbs.length;
-        const spacing = 20;
-        const total = spacing * (count - 1);
-        laserOrbs.forEach((orb, idx) => {
-          orb.offsetX = -total / 2 + idx * spacing;
+      function spawnLaserFromOrb(orb) {
+        const target = pickRandomEnemy();
+        if (!target) return;
+        const sx = player.x + player.w / 2 + orb.offsetX;
+        const sy = player.y - 16;
+        const tx = target.x + target.w / 2;
+        const ty = target.y + target.h / 2;
+        const angle = Math.atan2(ty - sy, tx - sx);
+        const vx = Math.cos(angle) * laserOrbSpeed;
+        const vy = Math.sin(angle) * laserOrbSpeed;
+        lasers.push({
+          x: sx,
+          y: sy,
+          vx,
+          vy,
+          angle,
+          len: 20,
+          thick: 4,
+          life: 1000,
+          dmg: laserOrbDamage,
         });
       }
 
@@ -2005,7 +2026,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
         if (orbitingOrbs.length >= INIT.ORBITAL.LIMIT) {
           availableUpgrades = availableUpgrades.filter(u => u.id !== "orbital");
         }
-        if (laserOrbs.length >= INIT.LASERORB.LIMIT) {
+        if ((acquiredUpgrades["laserOrb"] || 0) >= INIT.LASERORB.LIMIT) {
           availableUpgrades = availableUpgrades.filter(u => u.id !== "laserOrb");
         }
 
@@ -2158,30 +2179,26 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
         }
 
         // 레이저 구슬 발사
-        laserOrbTimer += dt * 1000;
-        if (laserOrbTimer >= laserOrbCooldown) {
-          laserOrbTimer = 0;
-          for (const orb of laserOrbs) {
-            const target = pickRandomEnemy();
-            if (!target) continue;
-            const sx = player.x + player.w / 2 + orb.offsetX;
-            const sy = player.y - 16;
-            const tx = target.x + target.w / 2;
-            const ty = target.y + target.h / 2;
-            const angle = Math.atan2(ty - sy, tx - sx);
-            const vx = Math.cos(angle) * laserOrbSpeed;
-            const vy = Math.sin(angle) * laserOrbSpeed;
-            lasers.push({
-              x: sx,
-              y: sy,
-              vx,
-              vy,
-              angle,
-              len: 20,
-              thick: 4,
-              life: 1000,
-              dmg: laserOrbDamage,
-            });
+        if (laserOrbs.length) {
+          if (laserOrbShots > 0) {
+            laserOrbSeqTimer += dt * 1000;
+            if (laserOrbSeqTimer >= laserOrbGap) {
+              laserOrbSeqTimer = 0;
+              spawnLaserFromOrb(laserOrbs[0]);
+              laserOrbShots--;
+            }
+          } else {
+            laserOrbTimer += dt * 1000;
+            if (
+              laserOrbTimer >= laserOrbCooldown &&
+              (acquiredUpgrades["laserOrb"] || 0) > 0
+            ) {
+              laserOrbTimer = 0;
+              laserOrbShots = acquiredUpgrades["laserOrb"] || 0;
+              spawnLaserFromOrb(laserOrbs[0]);
+              laserOrbShots--;
+              laserOrbSeqTimer = 0;
+            }
           }
         }
 
