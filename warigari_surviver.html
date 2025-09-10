@@ -581,7 +581,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
           COOLDOWN: 1000, // 레이저 발사 간격 (ms)
           DAMAGE: 120, // 레이저 피해량
           SPEED: 700, // 레이저 속도 (px/s)
-          LIMIT: 6,
+          LIMIT: 10,
           GAP: 100, // 연속 발사 간격 (ms)
         },
       };
@@ -848,7 +848,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
           id: "laserOrb",
           title: "레이저 구슬",
           icon: "🔶",
-          desc: "머리 위 구슬이 무작위 적에게 레이저를 발사합니다\\n(연속 발사 +1)",
+          desc: "구슬이 무작위 적에게 레이저를 발사합니다. \n(투사체 +1)",
           apply: () => {
             const level = acquiredUpgrades["laserOrb"] || 0;
             if (level === 0) {
