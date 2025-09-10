@@ -1917,7 +1917,8 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
           y: py,
           dir: player.dir,
           life: 0,
-          duration: 150,
+          duration: 150, // swing time
+          hold: 50,
           range: swordRange,
         });
         for (let i = enemies.length - 1; i >= 0; i--) {
@@ -2277,7 +2278,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
         for (let i = swordSwings.length - 1; i >= 0; i--) {
           const s = swordSwings[i];
           s.life += dt * 1000;
-          if (s.life >= s.duration) swordSwings.splice(i, 1);
+          if (s.life >= s.duration + s.hold) swordSwings.splice(i, 1);
         }
 
         // 궤도 구슬 회전
@@ -2972,13 +2973,13 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
           ctx.translate(cx, cy);
           ctx.scale(player.dir, 1);
           ctx.rotate(-11 * Math.PI / 18);
-          ctx.shadowColor = `rgba(255, 255, 0, ${0.5 * glow})`;
+          ctx.shadowColor = `rgba(147, 197, 253, ${0.5 * glow})`;
           ctx.shadowBlur = 10 * glow;
           ctx.fillStyle = "#b45309";
           ctx.fillRect(0, -3, handleLen, 6);
           ctx.fillStyle = "#d1d5db";
           ctx.fillRect(handleLen - 2, -8, 4, 16);
-          ctx.fillStyle = `hsl(50, 100%, ${85 + 10 * glow}%)`;
+          ctx.fillStyle = `hsl(210, 100%, ${65 + 10 * glow}%)`;
           ctx.fillRect(handleLen, -4, bladeLen, 8);
           ctx.restore();
         }
@@ -3092,7 +3093,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
         // 검 휘두름 이펙트 및 검 그리기
         ctx.save();
         for (const s of swordSwings) {
-          const progress = s.life / s.duration;
+          const progress = Math.min(s.life / s.duration, 1);
           const handleLen = 20;
           const bladeLen = s.range - handleLen * 2;
           ctx.save();
@@ -3103,7 +3104,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
           ctx.fillRect(0, -3, handleLen, 6);
           ctx.fillStyle = "#d1d5db";
           ctx.fillRect(handleLen - 2, -8, 4, 16);
-          ctx.fillStyle = "#e5e7eb";
+          ctx.fillStyle = "#93c5fd";
           ctx.fillRect(handleLen, -4, bladeLen, 8);
           ctx.restore();
         }
