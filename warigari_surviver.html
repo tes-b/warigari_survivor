@@ -567,9 +567,10 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
         },
         // 폭탄 관련
         BOMB: {
-          COOLDOWN: 2500, // 폭탄 던지기 쿨다운 (ms)
+          COOLDOWN: 2500, // 폭탄 설치 간격 (ms)
           DAMAGE: 150, // 폭탄 피해량
-          RADIUS: 80, // 폭탄 폭발 범위 (px)
+          RADIUS: 100, // 폭탄 폭발 범위 (px)
+          FUSE: 1500, // 폭탄이 터지기까지 시간 (ms)
         },
         // 얼음 바닥 관련
         ICEFLOOR: {
@@ -860,7 +861,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
           id: "bomb",
           title: "폭탄",
           icon: "💣",
-          desc: "가장 가까운 적에게 폭탄을 던집니다. \n(피해 +50%, 범위 +20%)",
+          desc: "2.5초마다 현재 위치에 폭탄을 설치합니다.\n폭탄은 1.5초 후 폭발하여 주변에 피해를 줍니다.\n(피해 +50%, 범위 +20%)",
           apply: () => {
             const level = acquiredUpgrades["bomb"] || 0;
             if (level === 0) {
@@ -1045,6 +1046,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
       let bombCooldown = INIT.BOMB.COOLDOWN; // ms
       let bombDamage = INIT.BOMB.DAMAGE;
       let bombRadius = INIT.BOMB.RADIUS;
+      let bombFuse = INIT.BOMB.FUSE; // ms
       let bombEnabled = false;
 
       // --- 얼음 바닥 ---
@@ -1350,6 +1352,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
         bombCooldown = INIT.BOMB.COOLDOWN;
         bombDamage = INIT.BOMB.DAMAGE;
         bombRadius = INIT.BOMB.RADIUS;
+        bombFuse = INIT.BOMB.FUSE;
         bombEnabled = false;
 
         for (const id in acquiredUpgrades) delete acquiredUpgrades[id];
@@ -1819,21 +1822,6 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
         }
       }
 
-      function findNearestEnemy(px, py) {
-        let nearest = null;
-        let best = Infinity;
-        for (const e of enemies) {
-          const ex = e.x + e.w / 2;
-          const ey = e.y + e.h / 2;
-          const dist = Math.hypot(ex - px, ey - py);
-          if (dist < best) {
-            best = dist;
-            nearest = e;
-          }
-        }
-        return nearest;
-      }
-
       function pickRandomEnemy() {
         if (enemies.length === 0) return null;
         const idx = Math.floor(Math.random() * enemies.length);
@@ -2300,27 +2288,14 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
 
         if (bombEnabled && bombTimer >= bombCooldown) {
           bombTimer = 0;
-          const sx = player.x + player.w / 2;
-          const sy = player.y;
-          const target = findNearestEnemy(sx, sy);
-          if (target) {
-            const tx = target.x + target.w / 2;
-            const ty = target.y;
-            const flight = 0.7;
-            const g = 1200;
-            const vx = (tx - sx) / flight;
-            const vy = (ty - sy - 0.5 * g * flight * flight) / flight;
-            bombs.push({
-              x: sx,
-              y: sy,
-              vx,
-              vy,
-              g,
-              life: flight,
-              damage: bombDamage,
-              radius: bombRadius,
-            });
-          }
+          bombs.push({
+            x: player.x + player.w / 2,
+            y: WORLD.groundY - 6,
+            life: bombFuse,
+            duration: bombFuse,
+            damage: bombDamage,
+            radius: bombRadius,
+          });
         }
 
         if (
@@ -2437,11 +2412,8 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
         // 폭탄 업데이트
         for (let i = bombs.length - 1; i >= 0; i--) {
           const b = bombs[i];
-          b.vy += b.g * dt;
-          b.x += b.vx * dt;
-          b.y += b.vy * dt;
-          b.life -= dt;
-          if (b.life <= 0 || b.y > WORLD.groundY) {
+          b.life -= dt * 1000;
+          if (b.life <= 0) {
             explodeBomb(b);
             bombs.splice(i, 1);
           }
@@ -3035,10 +3007,12 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
         ctx.restore();
 
         // 폭탄
-        ctx.fillStyle = "#f87171";
         for (const b of bombs) {
+          const t = 1 - b.life / b.duration;
+          const light = 40 + 40 * t;
+          ctx.fillStyle = `hsl(0, 80%, ${light}%)`;
           ctx.beginPath();
-          ctx.arc(b.x, b.y, 6, 0, Math.PI * 2);
+          ctx.arc(b.x, b.y, 7.5, 0, Math.PI * 2);
           ctx.fill();
         }
 
