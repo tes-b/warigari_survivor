@@ -480,17 +480,12 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
         </pre>
       </div>
 
-      <!-- 시작/재시작 오버레이 -->
-      <div class="overlay" id="overlay">
-        <div class="panel">
-          <h1>와리가리 서바이버</h1>
-          <p>클릭 또는 <span class="kbd">스페이스바</span>로 <b>방향 전환</b></p>
-          <p>기본 공격을 선택하세요</p>
-          <div class="row">
-            <button id="btnGun">총</button>
-            <button id="btnSword">검</button>
-          </div>
-        </div>
+      <!-- 일시정지/기타 오버레이 -->
+      <div class="overlay" id="overlay" style="display:none"></div>
+
+      <!-- 무기 선택 오버레이 -->
+      <div class="levelup-overlay" id="weaponOverlay">
+        <div class="levelup-panel" id="weaponPanel"></div>
       </div>
 
       <div class="bottom-tip" id="tip">TIP: 팁을 보려면 팁을 내세요.</div>
@@ -951,11 +946,12 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
 
       const HOLD_DURATION = 800;
       let levelupActive = false;
-      let focusedUpgradeIndex = 0;
+      let focusedOptionIndex = 0;
       let spaceHoldStart = null;
       let holdTimeout = null;
       let holdGaugeRAF = null;
-      const holdGaugeFill = document.getElementById("holdGaugeFill");
+      let holdGaugeFill = null;
+      let selectionButtons = [];
       let spaceLocked = false;
 
       // 화면/맵
@@ -1218,10 +1214,6 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
 
       // --- 게임 제어 ---
       const overlay = document.getElementById("overlay");
-      const btnGun = document.getElementById("btnGun");
-      const btnSword = document.getElementById("btnSword");
-      btnGun.addEventListener("click", () => startGame("gun"));
-      btnSword.addEventListener("click", () => startGame("sword"));
 
       const tipElem = document.getElementById("tip");
       const tips = [
@@ -1402,21 +1394,11 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
         // 1초 후에 게임오버 화면 표시
         setTimeout(() => {
           running = false;
-          const panelHTML = `
-        <div class="panel">
-          <h1>게임 오버</h1>
-          <p>웨이브: <b>${getWaveLabel()}</b></p>
-          <p>생존 시간: <b>${Math.floor(elapsed / 60)}분 ${(elapsed % 60).toFixed(2).padStart(5, "0")}초</b></p>
-          <p>처치 수: <b>${score}</b></p>
-          <div class="row">
-            <button id="btnRestartGun">총으로 다시 시작</button>
-            <button id="btnRestartSword">검으로 다시 시작</button>
-          </div>
-        </div>`;
-          overlay.innerHTML = panelHTML;
-          overlay.style.display = "flex";
-          document.getElementById("btnRestartGun").onclick = () => startGame("gun");
-          document.getElementById("btnRestartSword").onclick = () => startGame("sword");
+          showWeaponSelectScreen({
+            wave: getWaveLabel(),
+            time: `${Math.floor(elapsed / 60)}분 ${(elapsed % 60).toFixed(2).padStart(5, "0")}초`,
+            score,
+          });
         }, 1000);
       }
 
@@ -2058,25 +2040,22 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
         }
       }
 
-      function highlightFocusedUpgrade() {
-        const buttons = document.querySelectorAll("#upgradeGrid .upgrade-btn");
-        buttons.forEach((btn, idx) => {
-          btn.classList.toggle("focused", idx === focusedUpgradeIndex);
+      function highlightFocusedOption() {
+        selectionButtons.forEach((btn, idx) => {
+          btn.classList.toggle("focused", idx === focusedOptionIndex);
         });
       }
 
       function moveFocus(delta) {
-        const buttons = document.querySelectorAll("#upgradeGrid .upgrade-btn");
-        if (!buttons.length) return;
-        focusedUpgradeIndex =
-          (focusedUpgradeIndex + delta + buttons.length) % buttons.length;
-        highlightFocusedUpgrade();
+        if (!selectionButtons.length) return;
+        focusedOptionIndex =
+          (focusedOptionIndex + delta + selectionButtons.length) % selectionButtons.length;
+        highlightFocusedOption();
       }
 
-      function selectCurrentUpgrade() {
-        const buttons = document.querySelectorAll("#upgradeGrid .upgrade-btn");
-        if (buttons[focusedUpgradeIndex]) {
-          buttons[focusedUpgradeIndex].click();
+      function selectCurrentOption() {
+        if (selectionButtons[focusedOptionIndex]) {
+          selectionButtons[focusedOptionIndex].click();
         }
       }
 
@@ -2097,7 +2076,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
         updateHoldGauge();
         holdTimeout = setTimeout(() => {
           endHold(false);
-          selectCurrentUpgrade();
+          selectCurrentOption();
         }, HOLD_DURATION);
       }
 
@@ -2166,8 +2145,66 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
         });
 
         levelupOverlay.style.display = "flex";
-        focusedUpgradeIndex = 0;
-        highlightFocusedUpgrade();
+        selectionButtons = document.querySelectorAll("#upgradeGrid .upgrade-btn");
+        focusedOptionIndex = 0;
+        holdGaugeFill = document.getElementById("holdGaugeFill");
+        highlightFocusedOption();
+        holdGaugeFill.style.width = "0%";
+        levelupActive = true;
+      }
+
+      function showWeaponSelectScreen(stats = null) {
+        const weaponOverlay = document.getElementById("weaponOverlay");
+        const weaponPanel = document.getElementById("weaponPanel");
+        let header = "";
+        if (stats) {
+          header = `
+          <h1>게임 오버</h1>
+          <p>웨이브: <b>${stats.wave}</b></p>
+          <p>생존 시간: <b>${stats.time}</b></p>
+          <p>처치 수: <b>${stats.score}</b></p>
+          <p>기본 공격을 선택하세요</p>
+          <p><span class="kbd">스페이스바</span> <b>짧게 누르기</b> : 무기 변경 / <b>길게 누르기</b> : 선택 하기</p>
+        `;
+        } else {
+          header = `
+          <h1>와리가리 서바이버</h1>
+          <p>클릭 또는 <span class="kbd">스페이스바</span>로 <b>방향 전환</b></p>
+          <p>기본 공격을 선택하세요</p>
+          <p><span class="kbd">스페이스바</span> <b>짧게 누르기</b> : 무기 변경 / <b>길게 누르기</b> : 선택 하기</p>
+        `;
+        }
+        weaponPanel.innerHTML = `
+        ${header}
+        <div class="upgrade-grid" id="weaponGrid"></div>
+        <div class="hold-gauge"><div class="fill" id="weaponHoldGaugeFill"></div></div>
+      `;
+        const weaponGrid = document.getElementById("weaponGrid");
+        const weapons = [
+          { id: "gun", icon: "🔫", title: "총", desc: "적에게 자동으로 총알을 발사합니다." },
+          { id: "sword", icon: "🗡️", title: "검", desc: "전방에 검을 휘둘러 적을 베는 근접 공격입니다." },
+        ];
+        weaponGrid.innerHTML = "";
+        weapons.forEach(w => {
+          const btn = document.createElement("div");
+          btn.className = "upgrade-btn";
+          btn.innerHTML = `
+            <div class="upgrade-title">${w.icon} ${w.title}</div>
+            <div class="upgrade-desc">${w.desc}</div>
+        `;
+          btn.onclick = () => {
+            endHold(false);
+            weaponOverlay.style.display = "none";
+            levelupActive = false;
+            startGame(w.id);
+          };
+          weaponGrid.appendChild(btn);
+        });
+        weaponOverlay.style.display = "flex";
+        selectionButtons = document.querySelectorAll("#weaponGrid .upgrade-btn");
+        focusedOptionIndex = 0;
+        holdGaugeFill = document.getElementById("weaponHoldGaugeFill");
+        highlightFocusedOption();
         holdGaugeFill.style.width = "0%";
         levelupActive = true;
       }
@@ -3267,6 +3304,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
 
       // 초기화
       reset();
+      showWeaponSelectScreen();
     })();
   </script>
 </body>
