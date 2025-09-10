@@ -618,6 +618,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
       let enemySize = INIT.ENEMY.SIZE;
       const enemyGravity = 2500; // 적 중력
       const enemyKnockbackLift = 300; // 넉백 시 위로 튀어오르는 초기 속도
+      const enemyKnockbackFriction = 10; // 수평 넉백 감속 비율 (1/s)
 
       // 웨이브 관련
       const waveDurations = [30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30]; // 각 웨이브 진행 시간(초)
@@ -1878,10 +1879,10 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
             }
             if (!e.knockbackImmune) {
               const nx = dx / (dist || 1);
-              e.x += nx * levelUpImpulseKnockback;
+              e.knockbackVx =
+                (e.knockbackVx || 0) +
+                nx * levelUpImpulseKnockback * enemyKnockbackFriction;
               e.vy = -enemyKnockbackLift;
-              // Keep bosses and enemies within the screen after knockback
-              e.x = clamp(e.x, 0, WORLD.w - e.w);
             }
           }
         }
@@ -2459,6 +2460,11 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
               Math.sign(pCenter - eCenter) || (Math.random() < 0.5 ? -1 : 1);
             const baseSpeed = e.tier.speed * (e.speedMul || 1) * slowMul;
             e.vx = dir * baseSpeed;
+            if (e.knockbackVx === undefined) e.knockbackVx = 0;
+            if (e.knockbackVx !== 0) {
+              e.vx += e.knockbackVx;
+              e.knockbackVx -= e.knockbackVx * enemyKnockbackFriction * dt;
+            }
 
             // 플레이어와 겹침 방지: 이동 전에 미래 위치 계산
             let nextX = e.x + e.vx * dt;
@@ -2502,10 +2508,10 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
               // 넉백 적용 (업그레이드가 누적된 값을 사용)
               if (bulletKnockback > 0 && !e.knockbackImmune) {
                 const knockDir = Math.sign(b.vx);
-                e.x += knockDir * bulletKnockback;
+                e.knockbackVx =
+                  (e.knockbackVx || 0) +
+                  knockDir * bulletKnockback * enemyKnockbackFriction;
                 e.vy = -enemyKnockbackLift;
-                // Prevent knockback from pushing enemies off-screen
-                e.x = clamp(e.x, 0, WORLD.w - e.w);
               }
 
               b.hitSet.add(e.id);
@@ -2650,6 +2656,12 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
           // Keep entities within the stage boundaries
           e.x = clamp(e.x, 0, WORLD.w - e.w);
           e.y = clamp(e.y, 0, WORLD.groundY - e.h);
+          if (
+            (e.x === 0 && e.knockbackVx < 0) ||
+            (e.x === WORLD.w - e.w && e.knockbackVx > 0)
+          ) {
+            e.knockbackVx = 0;
+          }
         }
 
         if (
