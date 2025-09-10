@@ -2965,19 +2965,20 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
         if (swordEnabled && swordSwings.length === 0) {
           const cx = player.x + player.w / 2;
           const cy = player.y + player.h / 2;
-          const raiseProgress = Math.min(swordTimer / swordCooldown, 1);
-          const angle = Math.PI / 6 - (7 * Math.PI / 9) * raiseProgress;
           const handleLen = 20;
           const bladeLen = swordRange - handleLen * 2;
+          const glow = Math.min(swordTimer / swordCooldown, 1);
           ctx.save();
           ctx.translate(cx, cy);
           ctx.scale(player.dir, 1);
-          ctx.rotate(angle);
+          ctx.rotate(-11 * Math.PI / 18);
+          ctx.shadowColor = `rgba(255, 255, 0, ${0.5 * glow})`;
+          ctx.shadowBlur = 10 * glow;
           ctx.fillStyle = "#b45309";
           ctx.fillRect(0, -3, handleLen, 6);
           ctx.fillStyle = "#d1d5db";
           ctx.fillRect(handleLen - 2, -8, 4, 16);
-          ctx.fillStyle = "#e5e7eb";
+          ctx.fillStyle = `hsl(50, 100%, ${85 + 10 * glow}%)`;
           ctx.fillRect(handleLen, -4, bladeLen, 8);
           ctx.restore();
         }
