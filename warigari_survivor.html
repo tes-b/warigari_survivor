@@ -3068,6 +3068,16 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
           ctx.restore();
         }
 
+        // 요요 줄 (플레이어 뒤에 그리기)
+        for (const y of yoyos) {
+          ctx.strokeStyle = "#ddd";
+          ctx.lineWidth = 2;
+          ctx.beginPath();
+          ctx.moveTo(player.x + player.w / 2, player.y + player.h / 2);
+          ctx.lineTo(y.x + y.w / 2, y.y + y.h / 2);
+          ctx.stroke();
+        }
+
         // 플레이어
         ctx.save();
         if (player.hitFlash > 0) {
@@ -3210,19 +3220,21 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
         }
 
         // 화살표 (방향 표시)
-        ctx.fillStyle = "#d8e4ff";
-        ctx.beginPath();
-        if (player.dir > 0) {
-          ctx.moveTo(player.x + player.w + 2, player.y + player.h * 0.5);
-          ctx.lineTo(player.x + player.w + 12, player.y + player.h * 0.35);
-          ctx.lineTo(player.x + player.w + 12, player.y + player.h * 0.65);
-        } else {
-          ctx.moveTo(player.x - 2, player.y + player.h * 0.5);
-          ctx.lineTo(player.x - 12, player.y + player.h * 0.35);
-          ctx.lineTo(player.x - 12, player.y + player.h * 0.65);
+        if (baseAttack === "gun") {
+          ctx.fillStyle = "#d8e4ff";
+          ctx.beginPath();
+          if (player.dir > 0) {
+            ctx.moveTo(player.x + player.w + 2, player.y + player.h * 0.5);
+            ctx.lineTo(player.x + player.w + 12, player.y + player.h * 0.35);
+            ctx.lineTo(player.x + player.w + 12, player.y + player.h * 0.65);
+          } else {
+            ctx.moveTo(player.x - 2, player.y + player.h * 0.5);
+            ctx.lineTo(player.x - 12, player.y + player.h * 0.35);
+            ctx.lineTo(player.x - 12, player.y + player.h * 0.65);
+          }
+          ctx.closePath();
+          ctx.fill();
         }
-        ctx.closePath();
-        ctx.fill();
         ctx.restore();
 
         // 적
@@ -3330,23 +3342,18 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
         }
 
         // 총구 플래시
-        ctx.save();
-        ctx.globalAlpha = 0.15 + Math.random() * 0.1;
-        ctx.fillStyle = "#9ec4ff";
-        const muzzleX =
-          player.dir > 0 ? player.x + player.w + 4 : player.x - 10;
-        ctx.fillRect(muzzleX, player.y + player.h * 0.45 - 2, 8, 4);
-        ctx.restore();
+        if (baseAttack === "gun") {
+          ctx.save();
+          ctx.globalAlpha = 0.15 + Math.random() * 0.1;
+          ctx.fillStyle = "#9ec4ff";
+          const muzzleX =
+            player.dir > 0 ? player.x + player.w + 4 : player.x - 10;
+          ctx.fillRect(muzzleX, player.y + player.h * 0.45 - 2, 8, 4);
+          ctx.restore();
+        }
 
         // 요요
         for (const y of yoyos) {
-          ctx.strokeStyle = "#ddd";
-          ctx.lineWidth = 2;
-          ctx.beginPath();
-          ctx.moveTo(player.x + player.w / 2, player.y + player.h / 2);
-          ctx.lineTo(y.x + y.w / 2, y.y + y.h / 2);
-          ctx.stroke();
-
           ctx.fillStyle = "#facc15";
           ctx.beginPath();
           ctx.arc(y.x + y.w / 2, y.y + y.h / 2, y.w / 2, 0, Math.PI * 2);
