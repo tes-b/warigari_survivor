@@ -1473,6 +1473,10 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
       // --- 스폰 ---
       function spawnEnemy() {
         const left = Math.random() < 0.5;
+        const spawnOffset = 40;
+        const spawnX = left
+          ? -enemySize - spawnOffset
+          : WORLD.w + spawnOffset;
         const tier = weightedTier();
         let typePool;
         if (tier.name === "Weak") {
@@ -1487,7 +1491,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
         const hpBase = tier.hp * scale * type.hpMul;
         enemies.push({
           id: nextEnemyId++,
-          x: left ? -enemySize : WORLD.w,
+          x: spawnX,
           y: WORLD.groundY - enemySize,
           w: enemySize,
           h: enemySize,
@@ -1504,6 +1508,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
           range: enemySize + type.range,
           defense: type.defense || 0,
           knockbackImmune: !!type.knockbackImmune,
+          entered: false,
           cracks: ((seg) =>
             Array.from({ length: seg }, (_, i) => ({
               x1: 0.5 + (i % 2 ? 0.1 : -0.1),
@@ -2806,7 +2811,13 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
             }
           }
           // Keep entities within the stage boundaries
-          e.x = clamp(e.x, 0, WORLD.w - e.w);
+          if (!e.entered) {
+            if (e.x >= 0 && e.x <= WORLD.w - e.w) {
+              e.entered = true;
+            }
+          } else {
+            e.x = clamp(e.x, 0, WORLD.w - e.w);
+          }
           e.y = clamp(e.y, 0, WORLD.groundY - e.h);
           if (
             (e.x === 0 && e.knockbackVx < 0) ||
