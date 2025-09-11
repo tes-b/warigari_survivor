@@ -587,6 +587,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
           RANGE: 180, // 요요 사정거리 (px)
           KNOCKBACK: 0, // 요요 넉백 거리 (px)
           TRAVEL_TIME: 450, // 최대 사거리 도달 시간 (ms)
+          COLOR: "#facc15", // 요요 색상
         },
         // 검 관련
         SWORD: {
@@ -628,6 +629,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
       let yoyoRange = INIT.YOYO.RANGE;
       let yoyoKnockback = INIT.YOYO.KNOCKBACK;
       let yoyoTravelTime = INIT.YOYO.TRAVEL_TIME;
+      let yoyoColor = INIT.YOYO.COLOR;
       let yoyoSpeed = yoyoRange / (yoyoTravelTime / 1000);
       let lifeSteal = INIT.BULLET.LIFESTEAL;
 
@@ -3144,6 +3146,30 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
         ctx.quadraticCurveTo(player.x, player.y, player.x + radius, player.y);
         ctx.fill();
 
+        // 스냅백 (요요 기본 공격 시)
+        if (baseAttack === "yoyo") {
+          ctx.fillStyle = yoyoColor;
+          const capRadius = player.w / 2;
+          ctx.beginPath();
+          ctx.arc(
+            player.x + capRadius,
+            player.y,
+            capRadius,
+            Math.PI,
+            0,
+            true,
+          );
+          ctx.fill();
+          const brimWidth = player.w * 0.6;
+          const brimHeight = 3;
+          ctx.fillRect(
+            player.x + (player.w - brimWidth) / 2,
+            player.y,
+            brimWidth,
+            brimHeight,
+          );
+        }
+
         // 눈 (방향에 따라 위치 변경)
         ctx.fillStyle = "#2a4177";
         const eyeY = player.y + player.h * 0.3;
@@ -3354,7 +3380,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
 
         // 요요
         for (const y of yoyos) {
-          ctx.fillStyle = "#facc15";
+          ctx.fillStyle = yoyoColor;
           ctx.beginPath();
           ctx.arc(y.x + y.w / 2, y.y + y.h / 2, y.w / 2, 0, Math.PI * 2);
           ctx.fill();
