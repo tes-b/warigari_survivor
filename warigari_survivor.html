@@ -3229,14 +3229,14 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
           const bladeLen = swordRange - handleLen * 2;
           const glowProgress = Math.min(swordTimer / swordCooldown, 1);
           const glow = glowProgress * glowProgress;
-          const r = Math.round(255 - (255 - 147) * glowProgress);
-          const g = Math.round(255 - (255 - 197) * glowProgress);
-          const b = Math.round(253 * glowProgress);
+          const r = Math.round(147 + (255 - 147) * glowProgress);
+          const g = Math.round(197 + (255 - 197) * glowProgress);
+          const b = Math.round(253 - 253 * glowProgress);
           ctx.save();
           ctx.translate(cx, cy);
           ctx.scale(player.dir, 1);
           ctx.rotate(-11 * Math.PI / 18);
-          ctx.shadowColor = `rgba(147, 197, 253, ${0.35 * glow})`;
+          ctx.shadowColor = `rgba(${r}, ${g}, ${b}, ${0.35 * glow})`;
           ctx.shadowBlur = 10 * glow;
           ctx.fillStyle = "#b45309";
           ctx.fillRect(0, -3, handleLen, 6);
@@ -3487,7 +3487,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
           ctx.fillRect(0, -3, handleLen, 6);
           ctx.fillStyle = "#d1d5db";
           ctx.fillRect(handleLen - 2, -8, 4, 16);
-          ctx.fillStyle = "#93c5fd";
+          ctx.fillStyle = "#facc15";
           ctx.fillRect(handleLen, -4, bladeLen, 8);
           ctx.restore();
         }
