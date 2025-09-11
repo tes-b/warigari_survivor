@@ -2133,8 +2133,9 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
         selected.forEach(upgrade => {
           const btn = document.createElement("div");
           btn.className = "upgrade-btn";
+          const current = acquiredUpgrades[upgrade.id] || 0;
           btn.innerHTML = `
-            <div class="upgrade-title">${upgrade.icon} ${upgrade.title}</div>
+            <div class="upgrade-title">${upgrade.icon} ${upgrade.title} (${current}/${upgrade.limit})</div>
             <div class="upgrade-desc">${upgrade.desc}</div>
         `;
           btn.onclick = () => {
