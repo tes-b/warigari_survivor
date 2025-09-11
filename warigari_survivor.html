@@ -2854,10 +2854,11 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
                   e._killed = true;
                   break;
                 }
-              }
             }
-            // 요요와 충돌
-            for (const y of yoyos) {
+          }
+          if (e._killed) continue;
+          // 요요와 충돌
+          for (const y of yoyos) {
               if (y.hitSet.has(e.id)) continue;
               if (aabb(e, y)) {
                 const raw = y.dmg - (e.defense || 0);
@@ -2890,13 +2891,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
                 y.hitSet.add(e.id);
               }
             }
-            if (e.hp <= 0) {
-              dropExpOrbs(e);
-              enemies.splice(i, 1);
-              score += e.reward;
-              e._killed = true;
-              continue;
-            }
+            if (e._killed) continue;
             // 레이저와 충돌
             for (let j = lasers.length - 1; j >= 0; j--) {
               const l = lasers[j];
