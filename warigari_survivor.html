@@ -518,7 +518,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
         // 플레이어 관련
         PLAYER: {
           HP: 1000, // 플레이어 최대 HP
-          SPEED: 160, // 플레이어 이동 속도 (px/s)
+          SPEED: 120, // 플레이어 이동 속도 (px/s)
           IFRAMES: 500, // 피격 후 무적 시간 (ms)
           HITFLASH: 200, // 피격 시 시각 효과 지속 시간 (ms)
           DEFENSE: 0, // 플레이어 방어력
@@ -538,7 +538,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
         ENEMY: {
           CONTACT_DAMAGE: 100, // 적 접촉 시 플레이어가 받는 피해
           REWARD: 1, // 적 처치 시 점수
-          SIZE: 28, // 적 크기
+          SIZE: 25.2, // 적 크기
         },
         // 궤도 구슬 관련
         ORBITAL: {
@@ -657,11 +657,11 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
 
       // 적 티어별 설정 (5단계로 확장, 체력 증가/속도 감소)
       let enemyTiers = [
-        { name: "Weak", speed: 35, color: "#4ade80", hp: 150, exp: 1 },
-        { name: "Basic", speed: 45, color: "#60a5fa", hp: 300, exp: 2 },
-        { name: "Medium", speed: 55, color: "#a78bfa", hp: 500, exp: 4 },
-        { name: "Strong", speed: 65, color: "#f59e0b", hp: 1000, exp: 8 },
-        { name: "Elite", speed: 75, color: "#ef4444", hp: 1400, exp: 16 },
+        { name: "Weak", speed: 26.25, color: "#4ade80", hp: 150, exp: 1 },
+        { name: "Basic", speed: 33.75, color: "#60a5fa", hp: 300, exp: 2 },
+        { name: "Medium", speed: 41.25, color: "#a78bfa", hp: 500, exp: 4 },
+        { name: "Strong", speed: 48.75, color: "#f59e0b", hp: 1000, exp: 8 },
+        { name: "Elite", speed: 56.25, color: "#ef4444", hp: 1400, exp: 16 },
       ];
 
       // 적 종류
@@ -1026,9 +1026,9 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
       // --- 플레이어 ---
       const player = {
         x: WORLD.w / 2,
-        y: WORLD.groundY - 6,
-        w: 28,
-        h: 30,
+        y: WORLD.groundY - 5.4,
+        w: 25.2,
+        h: 27,
         dir: 1, // 1 → 오른쪽, -1 → 왼쪽
         prevDir: 1,
         lastDirChange: 0,
@@ -1037,7 +1037,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
         hitFlash: 0, // 피격 시 시각 효과
         walkTime: 0, // 걷기 애니메이션 시간
         footSize: 0.3, // 발 크기 변화량
-        leglength: 6, // 다리 길이
+        leglength: 5.4, // 다리 길이
         deathAnim: {
           // 죽음 애니메이션 관련
           active: false, // 애니메이션 활성화 여부
@@ -3086,8 +3086,8 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
         }
 
         // 발 그리기
-        const footWidth = 8;
-        const footHeight = 3;
+        const footWidth = 7.2;
+        const footHeight = 2.7;
         ctx.fillStyle = "#8ab4ff";
         // 왼쪽 발
         ctx.fillRect(
@@ -3105,7 +3105,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
         );
 
         // 몸체 (둥근 모서리)
-        const radius = 8;
+        const radius = 7.2;
         ctx.fillStyle = "#8ab4ff";
         ctx.beginPath();
         ctx.moveTo(player.x + radius, player.y);
