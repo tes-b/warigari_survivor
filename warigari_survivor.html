@@ -3233,13 +3233,13 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
           ctx.translate(cx, cy);
           ctx.scale(player.dir, 1);
           ctx.rotate(-11 * Math.PI / 18);
-          ctx.shadowColor = `rgba(147, 197, 253, ${0.7 * glow})`;
+          ctx.shadowColor = `rgba(250, 204, 21, ${0.7 * glow})`;
           ctx.shadowBlur = 20 * glow;
           ctx.fillStyle = "#b45309";
           ctx.fillRect(0, -3, handleLen, 6);
           ctx.fillStyle = "#d1d5db";
           ctx.fillRect(handleLen - 2, -8, 4, 16);
-          ctx.fillStyle = `hsl(210, 100%, ${55 + 35 * glow}%)`;
+          ctx.fillStyle = `hsl(50, 100%, ${55 + 35 * glow}%)`;
           ctx.fillRect(handleLen, -4, bladeLen, 8);
           ctx.restore();
         }
