@@ -691,6 +691,17 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
           defense: 20,
           knockbackImmune: true,
         },
+        {
+          id: "jumper",
+          hpMul: 0.5,
+          speedMul: 1,
+          damageMul: 1,
+          range: 0,
+          defense: 0,
+          jumpInterval: 2,
+          jumpHeightMul: 2,
+          jumpDistanceMul: 3,
+        },
       ];
 
       // 스폰 관련
@@ -1530,11 +1541,11 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
         const tier = weightedTier();
         let typePool;
         if (tier.name === "Weak") {
-          typePool = [enemyTypes[0]]; // 균형형만
+          typePool = [enemyTypes[0], enemyTypes[3]]; // 균형형 + 점퍼
         } else if (tier.name === "Medium" || tier.name === "Basic") {
-          typePool = [enemyTypes[0], enemyTypes[1]]; // 균형형 + 공격형
+          typePool = [enemyTypes[0], enemyTypes[1], enemyTypes[3]]; // 균형형 + 공격형 + 점퍼
         } else {
-          typePool = enemyTypes; // 균형형 + 공격형 + 탱크형
+          typePool = enemyTypes; // 균형형 + 공격형 + 탱크형 + 점퍼
         }
         const type = typePool[Math.floor(Math.random() * typePool.length)];
         const scale = enemyScale;
@@ -2734,30 +2745,65 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
           if (e._killed) continue;
 
           if (!e.isBoss) {
-            const eCenter = e.x + e.w * 0.5;
-            const pCenter = player.x + player.w * 0.5;
-            const dir =
-              Math.sign(pCenter - eCenter) || (Math.random() < 0.5 ? -1 : 1);
-            const baseSpeed = e.tier.speed * (e.speedMul || 1) * slowMul;
-            e.vx = dir * baseSpeed;
-            if (e.knockbackVx === undefined) e.knockbackVx = 0;
-            if (e.knockbackVx !== 0) {
-              e.vx += e.knockbackVx;
-              e.knockbackVx -= e.knockbackVx * enemyKnockbackFriction * dt;
-            }
+            if (e.type.id === "jumper") {
+              if (e.jumpTimer === undefined) e.jumpTimer = 0;
+              e.jumpTimer -= dt;
+              if (e.knockbackVx === undefined) e.knockbackVx = 0;
+              const onGround = e.y >= WORLD.groundY - e.h;
+              if (onGround && e.vy >= 0) {
+                e.y = WORLD.groundY - e.h;
+                e.vy = 0;
+                e.vx = 0;
+                if (e.jumpTimer <= 0) {
+                  const eCenter = e.x + e.w * 0.5;
+                  const pCenter = player.x + player.w * 0.5;
+                  const dir = Math.sign(pCenter - eCenter) || 1;
+                  const jumpHeight = player.h * (e.type.jumpHeightMul || 2);
+                  const jumpDistance = player.w * (e.type.jumpDistanceMul || 3);
+                  e.vy = -Math.sqrt(2 * enemyGravity * jumpHeight);
+                  const flightTime = (-2 * e.vy) / enemyGravity;
+                  e.vx = (jumpDistance / flightTime) * dir;
+                  e.jumpTimer = e.type.jumpInterval || 2;
+                }
+              } else {
+                e.vy += enemyGravity * dt;
+              }
+              if (e.knockbackVx !== 0) {
+                e.vx += e.knockbackVx;
+                e.knockbackVx -= e.knockbackVx * enemyKnockbackFriction * dt;
+              }
+              e.x += e.vx * dt;
+              e.y += e.vy * dt;
+              if (e.y >= WORLD.groundY - e.h) {
+                e.y = WORLD.groundY - e.h;
+                e.vy = 0;
+              }
+            } else {
+              const eCenter = e.x + e.w * 0.5;
+              const pCenter = player.x + player.w * 0.5;
+              const dir =
+                Math.sign(pCenter - eCenter) || (Math.random() < 0.5 ? -1 : 1);
+              const baseSpeed = e.tier.speed * (e.speedMul || 1) * slowMul;
+              e.vx = dir * baseSpeed;
+              if (e.knockbackVx === undefined) e.knockbackVx = 0;
+              if (e.knockbackVx !== 0) {
+                e.vx += e.knockbackVx;
+                e.knockbackVx -= e.knockbackVx * enemyKnockbackFriction * dt;
+              }
 
-            // 플레이어와 겹침 방지: 이동 전에 미래 위치 계산
-            let nextX = e.x + e.vx * dt;
+              // 플레이어와 겹침 방지: 이동 전에 미래 위치 계산
+              let nextX = e.x + e.vx * dt;
 
-            // 우선 이동
-            e.x = nextX;
+              // 우선 이동
+              e.x = nextX;
 
-            // 중력 적용 및 수직 이동
-            e.vy += enemyGravity * dt;
-            e.y += e.vy * dt;
-            if (e.y >= WORLD.groundY - e.h) {
-              e.y = WORLD.groundY - e.h;
-              e.vy = 0;
+              // 중력 적용 및 수직 이동
+              e.vy += enemyGravity * dt;
+              e.y += e.vy * dt;
+              if (e.y >= WORLD.groundY - e.h) {
+                e.y = WORLD.groundY - e.h;
+                e.vy = 0;
+              }
             }
           }
 
