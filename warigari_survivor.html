@@ -2744,12 +2744,13 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
             if (e.type.id === "jumper") {
               if (e.jumpTimer === undefined) e.jumpTimer = 0;
               e.jumpTimer -= dt;
+              if (e.baseVx === undefined) e.baseVx = 0;
               if (e.knockbackVx === undefined) e.knockbackVx = 0;
               const onGround = e.y >= WORLD.groundY - e.h;
               if (onGround && e.vy >= 0) {
                 e.y = WORLD.groundY - e.h;
                 e.vy = 0;
-                e.vx = 0;
+                e.baseVx = 0;
                 if (e.jumpTimer <= 0) {
                   const eCenter = e.x + e.w * 0.5;
                   const pCenter = player.x + player.w * 0.5;
@@ -2758,12 +2759,13 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
                   const jumpDistance = player.w * (e.type.jumpDistanceMul || 3);
                   e.vy = -Math.sqrt(2 * enemyGravity * jumpHeight);
                   const flightTime = (-2 * e.vy) / enemyGravity;
-                  e.vx = (jumpDistance / flightTime) * dir;
+                  e.baseVx = (jumpDistance / flightTime) * dir;
                   e.jumpTimer = e.type.jumpInterval || 2;
                 }
               } else {
                 e.vy += enemyGravity * dt;
               }
+              e.vx = e.baseVx;
               if (e.knockbackVx !== 0) {
                 e.vx += e.knockbackVx;
                 e.knockbackVx -= e.knockbackVx * enemyKnockbackFriction * dt;
