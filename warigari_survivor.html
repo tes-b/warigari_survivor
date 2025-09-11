@@ -1990,6 +1990,8 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
           holdLife: 0,
           range: swordRange,
         });
+        let totalHeal = 0;
+        const missingHP = playerHP - hp;
         for (let i = enemies.length - 1; i >= 0; i--) {
           const e = enemies[i];
           if (!e.entered) continue;
@@ -2005,17 +2007,9 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
               const dmg = Math.min(Math.max(raw, 0), e.hp);
               e.hp -= dmg;
               spawnFloatText(ex, e.y - 12, -dmg, "#ff6b6b");
-              if (lifeSteal > 0) {
-                const heal = Math.min(dmg * lifeSteal, playerHP - hp);
-                if (heal > 0) {
-                  hp += heal;
-                  spawnFloatText(
-                    player.x + player.w / 2,
-                    player.y - 14,
-                    heal,
-                    "#6cff96",
-                  );
-                }
+              if (lifeSteal > 0 && totalHeal < missingHP) {
+                const heal = Math.min(dmg * lifeSteal, missingHP - totalHeal);
+                totalHeal += heal;
               }
               if (e.hp <= 0) {
                 dropExpOrbs(e);
@@ -2031,6 +2025,15 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
               }
             }
           }
+        }
+        if (totalHeal > 0) {
+          hp += totalHeal;
+          spawnFloatText(
+            player.x + player.w / 2,
+            player.y - 14,
+            totalHeal,
+            "#6cff96",
+          );
         }
       }
 
