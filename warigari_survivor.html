@@ -586,7 +586,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
           DAMAGE: 80, // 요요 피해량
           RANGE: 180, // 요요 사정거리 (px)
           KNOCKBACK: 0, // 요요 넉백 거리 (px)
-          TRAVEL_TIME: 450, // 최대 사거리 도달 시간 (ms)
+          SPEED: 400, // 요요 던지는 속도 (px/s)
         },
         // 검 관련
         SWORD: {
@@ -627,8 +627,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
       let yoyoDamage = INIT.YOYO.DAMAGE;
       let yoyoRange = INIT.YOYO.RANGE;
       let yoyoKnockback = INIT.YOYO.KNOCKBACK;
-      let yoyoTravelTime = INIT.YOYO.TRAVEL_TIME;
-      let yoyoSpeed = yoyoRange / (yoyoTravelTime / 1000);
+      let yoyoSpeed = INIT.YOYO.SPEED;
       let lifeSteal = INIT.BULLET.LIFESTEAL;
 
       let baseAttack = "gun";
@@ -764,8 +763,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
               swordCooldown = Math.max(300, swordCooldown * 0.85);
             } else {
               yoyoCooldown = Math.max(200, yoyoCooldown * 0.85);
-              yoyoTravelTime *= 0.85;
-              yoyoSpeed = yoyoRange / (yoyoTravelTime / 1000);
+              yoyoSpeed *= 1.15;
             }
           },
         },
@@ -809,7 +807,6 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
               swordRange *= 1.2;
             } else {
               yoyoRange *= 1.2;
-              yoyoSpeed = yoyoRange / (yoyoTravelTime / 1000);
             }
           },
         },
@@ -1388,8 +1385,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
         yoyoDamage = INIT.YOYO.DAMAGE;
         yoyoRange = INIT.YOYO.RANGE;
         yoyoKnockback = INIT.YOYO.KNOCKBACK;
-        yoyoTravelTime = INIT.YOYO.TRAVEL_TIME;
-        yoyoSpeed = yoyoRange / (yoyoTravelTime / 1000);
+        yoyoSpeed = INIT.YOYO.SPEED;
         yoyoSize = INIT.YOYO.SIZE;
         yoyos.length = 0;
         lifeSteal = INIT.BULLET.LIFESTEAL;
