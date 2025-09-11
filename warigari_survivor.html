@@ -1543,9 +1543,18 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
         } else {
           typePool = enemyTypes; // 균형형 + 공격형 + 탱크형 + 점퍼
         }
-        const type = typePool[Math.floor(Math.random() * typePool.length)];
+        const baseType = typePool[Math.floor(Math.random() * typePool.length)];
+        const type = { ...baseType };
+        if (type.id === "jumper") {
+          type.jumpDistanceMul =
+            (type.jumpDistanceMul || 3) * (1 + (Math.random() * 0.1 - 0.05));
+          type.jumpInterval =
+            (type.jumpInterval || 2) * (1 + (Math.random() * 0.1 - 0.05));
+        }
         const scale = enemyScale;
-        const hpBase = tier.hp * scale * type.hpMul;
+        const hpBase =
+          tier.hp * scale * type.hpMul * (1 + (Math.random() * 0.2 - 0.1));
+        const speedMul = type.speedMul * (1 + (Math.random() * 0.1 - 0.05));
         enemies.push({
           id: nextEnemyId++,
           x: spawnX,
@@ -1561,7 +1570,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
           reward: enemyReward,
           hp: hpBase,
           hpMax: hpBase,
-          speedMul: type.speedMul,
+          speedMul,
           range: enemySize + type.range,
           defense: type.defense || 0,
           knockbackImmune: !!type.knockbackImmune,
