@@ -579,6 +579,15 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
           SPEED: 700, // 레이저 속도 (px/s)
           GAP: 100, // 연속 발사 간격 (ms)
         },
+        // 요요 관련
+        YOYO: {
+          SIZE: 20, // 요요 크기
+          COOLDOWN: 700, // 요요 던지기 쿨다운 (ms)
+          DAMAGE: 180, // 요요 피해량
+          RANGE: 180, // 요요 사정거리 (px)
+          KNOCKBACK: 0, // 요요 넉백 거리 (px)
+          TRAVEL_TIME: 450, // 최대 사거리 도달 시간 (ms)
+        },
         // 검 관련
         SWORD: {
           COOLDOWN: 1000, // 검 공격 간격 (ms)
@@ -613,6 +622,13 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
       let bulletPenetration = INIT.BULLET.PENETRATION;
       let bulletKnockback = INIT.BULLET.KNOCKBACK;
       let bulletRange = INIT.BULLET.RANGE;
+      let yoyoSize = INIT.YOYO.SIZE;
+      let yoyoCooldown = INIT.YOYO.COOLDOWN;
+      let yoyoDamage = INIT.YOYO.DAMAGE;
+      let yoyoRange = INIT.YOYO.RANGE;
+      let yoyoKnockback = INIT.YOYO.KNOCKBACK;
+      let yoyoTravelTime = INIT.YOYO.TRAVEL_TIME;
+      let yoyoSpeed = yoyoRange / (yoyoTravelTime / 1000);
       let lifeSteal = INIT.BULLET.LIFESTEAL;
 
       let baseAttack = "gun";
@@ -717,8 +733,10 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
           apply: () => {
             if (baseAttack === "gun") {
               bulletDamage *= 1.3;
-            } else {
+            } else if (baseAttack === "sword") {
               swordDamage *= 1.3;
+            } else {
+              yoyoDamage *= 1.3;
             }
           },
         },
@@ -731,8 +749,12 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
           apply: () => {
             if (baseAttack === "gun") {
               bulletCooldown = Math.max(80, bulletCooldown * 0.85);
-            } else {
+            } else if (baseAttack === "sword") {
               swordCooldown = Math.max(300, swordCooldown * 0.85);
+            } else {
+              yoyoCooldown = Math.max(200, yoyoCooldown * 0.85);
+              yoyoTravelTime *= 0.85;
+              yoyoSpeed = yoyoRange / (yoyoTravelTime / 1000);
             }
           },
         },
@@ -745,8 +767,10 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
           apply: () => {
             if (baseAttack === "gun") {
               bulletKnockback += 40;
-            } else {
+            } else if (baseAttack === "sword") {
               swordKnockback += 40;
+            } else {
+              yoyoKnockback += 40;
             }
           },
         },
@@ -770,8 +794,11 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
           apply: () => {
             if (baseAttack === "gun") {
               bulletRange *= 1.2;
-            } else {
+            } else if (baseAttack === "sword") {
               swordRange *= 1.2;
+            } else {
+              yoyoRange *= 1.2;
+              yoyoSpeed = yoyoRange / (yoyoTravelTime / 1000);
             }
           },
         },
@@ -1031,6 +1058,8 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
       // --- 투사체(자동 공격) ---
       const bullets = [];
       let shootTimer = 0;
+      const yoyos = [];
+      let yoyoTimer = 0;
 
       // --- 보스 레이저 ---
       const bossLasers = [];
@@ -1094,13 +1123,15 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
 
       // 입력: 클릭/스페이스 → 방향 전환
       function toggleDirection() {
-        // Preserve current shoot timer so changing direction
-        // doesn't reset the firing delay of the basic gun attack.
+        // Preserve current attack timers so changing direction
+        // doesn't reset the firing delay of the basic attacks.
         const currentShootTimer = shootTimer;
+        const currentYoyoTimer = yoyoTimer;
         player.prevDir = player.dir;
         player.dir *= -1;
         player.lastDirChange = elapsed;
         if (baseAttack === "gun") shootTimer = currentShootTimer;
+        else if (baseAttack === "yoyo") yoyoTimer = currentYoyoTimer;
       }
       canvas.addEventListener("click", () => {
         if (running) toggleDirection();
@@ -1336,6 +1367,15 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
         bulletPenetration = INIT.BULLET.PENETRATION;
         bulletKnockback = INIT.BULLET.KNOCKBACK;
         bulletRange = INIT.BULLET.RANGE;
+        yoyoTimer = 0;
+        yoyoCooldown = INIT.YOYO.COOLDOWN;
+        yoyoDamage = INIT.YOYO.DAMAGE;
+        yoyoRange = INIT.YOYO.RANGE;
+        yoyoKnockback = INIT.YOYO.KNOCKBACK;
+        yoyoTravelTime = INIT.YOYO.TRAVEL_TIME;
+        yoyoSpeed = yoyoRange / (yoyoTravelTime / 1000);
+        yoyoSize = INIT.YOYO.SIZE;
+        yoyos.length = 0;
         lifeSteal = INIT.BULLET.LIFESTEAL;
         laserOrbCooldown = INIT.LASERORB.COOLDOWN;
         laserOrbDamage = INIT.LASERORB.DAMAGE;
@@ -2211,6 +2251,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
         const weapons = [
           { id: "gun", icon: "🔫", title: "총", desc: "적에게 자동으로 총알을 발사합니다." },
           { id: "sword", icon: "🗡️", title: "검", desc: "전방에 검을 휘둘러 적을 베는 근접 공격입니다." },
+          { id: "yoyo", icon: "🪀", title: "요요", desc: "요요를 던졌다가 되돌려 적을 공격합니다." },
         ];
         weaponGrid.innerHTML = "";
         weapons.forEach(w => {
@@ -2269,6 +2310,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
           }
         }
         shootTimer += dt * 1000;
+        yoyoTimer += dt * 1000;
         bombTimer += dt * 1000;
         spawnTimer += dt * 1000;
         iceFloorTimer += dt * 1000;
@@ -2351,6 +2393,22 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
             penetration: bulletPenetration,
             hitSet: new Set(),
             range: bulletRange,
+          });
+        }
+        if (baseAttack === "yoyo" && yoyoTimer >= yoyoCooldown && yoyos.length === 0) {
+          yoyoTimer = 0;
+          const yx = player.dir > 0 ? player.x + player.w : player.x - yoyoSize;
+          yoyos.push({
+            x: yx,
+            y: player.y + player.h * 0.5 - yoyoSize / 2,
+            w: yoyoSize,
+            h: yoyoSize,
+            vx: player.dir * yoyoSpeed,
+            dmg: yoyoDamage,
+            range: yoyoRange,
+            returning: false,
+            travel: 0,
+            hitSet: new Set(),
           });
         }
 
@@ -2439,6 +2497,30 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
           // 사정거리 또는 화면 밖 제거
           if (b.range <= 0 || b.x < -40 || b.x > WORLD.w + 40) {
             bullets.splice(i, 1);
+          }
+        }
+
+        // 요요 업데이트
+        for (let i = yoyos.length - 1; i >= 0; i--) {
+          const y = yoyos[i];
+          const targetY = player.y + player.h * 0.5 - y.h / 2;
+          y.y = targetY;
+          const step = y.vx * dt;
+          y.x += step;
+          if (!y.returning) {
+            y.travel += Math.abs(step);
+            if (y.travel >= y.range) {
+              y.returning = true;
+              y.hitSet.clear();
+            }
+          } else {
+            const targetX = player.x + player.w / 2 - y.w / 2;
+            const dir = Math.sign(targetX - y.x);
+            y.vx = dir * yoyoSpeed;
+            if (Math.abs(targetX - y.x) <= Math.abs(y.vx * dt)) {
+              yoyos.splice(i, 1);
+              continue;
+            }
           }
         }
 
@@ -2698,6 +2780,47 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
                   break;
                 }
               }
+            }
+            // 요요와 충돌
+            for (const y of yoyos) {
+              if (y.hitSet.has(e.id)) continue;
+              if (aabb(e, y)) {
+                const raw = y.dmg - (e.defense || 0);
+                const dmg = Math.min(Math.max(raw, 0), e.hp);
+                e.hp -= dmg;
+
+                spawnFloatText(e.x + e.w / 2, e.y - 12, -dmg, "#ff6b6b");
+
+                if (lifeSteal > 0 && !y.returning) {
+                  const heal = Math.min(dmg * lifeSteal, playerHP - hp);
+                  if (heal > 0) {
+                    hp += heal;
+                    spawnFloatText(
+                      player.x + player.w / 2,
+                      player.y - 14,
+                      heal,
+                      "#6cff96",
+                    );
+                  }
+                }
+
+                if (yoyoKnockback > 0 && !y.returning && !e.knockbackImmune) {
+                  const knockDir = Math.sign(y.vx);
+                  e.knockbackVx =
+                    (e.knockbackVx || 0) +
+                    knockDir * yoyoKnockback * enemyKnockbackFriction;
+                  e.vy = -enemyKnockbackLift;
+                }
+
+                y.hitSet.add(e.id);
+              }
+            }
+            if (e.hp <= 0) {
+              dropExpOrbs(e);
+              enemies.splice(i, 1);
+              score += e.reward;
+              e._killed = true;
+              continue;
             }
             // 레이저와 충돌
             for (let j = lasers.length - 1; j >= 0; j--) {
@@ -3079,6 +3202,21 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
           player.dir > 0 ? player.x + player.w + 4 : player.x - 10;
         ctx.fillRect(muzzleX, player.y + player.h * 0.45 - 2, 8, 4);
         ctx.restore();
+
+        // 요요
+        for (const y of yoyos) {
+          ctx.strokeStyle = "#ddd";
+          ctx.lineWidth = 2;
+          ctx.beginPath();
+          ctx.moveTo(player.x + player.w / 2, player.y + player.h / 2);
+          ctx.lineTo(y.x + y.w / 2, y.y + y.h / 2);
+          ctx.stroke();
+
+          ctx.fillStyle = "#facc15";
+          ctx.beginPath();
+          ctx.arc(y.x + y.w / 2, y.y + y.h / 2, y.w / 2, 0, Math.PI * 2);
+          ctx.fill();
+        }
 
         // 탄
         ctx.fillStyle = "#fff";
