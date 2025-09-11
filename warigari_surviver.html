@@ -3194,6 +3194,110 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
         ctx.fill();
         ctx.restore();
 
+        // 적
+        for (const e of enemies) {
+          if (bossPreEffectActive(e)) {
+            const effectTime = BOSS_PRE_EFFECT_TIME[e.attackState] || 1000;
+            const progress = Math.min(
+              1,
+              Math.max(0, 1 - e.attackCooldown / effectTime),
+            );
+            const radius = e.w * (1 + 0.5 * progress);
+            ctx.save();
+            ctx.strokeStyle = "#ff6b9d";
+            ctx.lineWidth = 4;
+            ctx.globalAlpha = 0.5 + 0.5 * progress;
+            ctx.beginPath();
+            ctx.arc(e.x + e.w / 2, e.y + e.h / 2, radius, 0, Math.PI * 2);
+            ctx.stroke();
+            ctx.restore();
+          }
+
+          ctx.save();
+          if (!e.entered) ctx.globalAlpha = 0.5;
+          ctx.fillStyle = e.color;
+          ctx.fillRect(e.x, e.y, e.w, e.h);
+
+          // 체력 금 표시
+          const dmgRatio = 1 - e.hp / e.hpMax;
+          if (dmgRatio > 0) {
+            const progress = dmgRatio * e.cracks.length;
+            const full = Math.floor(progress);
+            ctx.save();
+            ctx.strokeStyle = "#000";
+            ctx.lineWidth = 1;
+            for (let i = 0; i < full; i++) {
+              const c = e.cracks[i];
+              ctx.beginPath();
+              ctx.moveTo(e.x + c.x1 * e.w, e.y + c.y1 * e.h);
+              ctx.lineTo(e.x + c.x2 * e.w, e.y + c.y2 * e.h);
+              ctx.stroke();
+            }
+            if (full < e.cracks.length) {
+              const c = e.cracks[full];
+              const t = progress - full;
+              const x1 = e.x + c.x1 * e.w;
+              const y1 = e.y + c.y1 * e.h;
+              const x2 = e.x + c.x2 * e.w;
+              const y2 = e.y + c.y2 * e.h;
+              ctx.beginPath();
+              ctx.moveTo(x1, y1);
+              ctx.lineTo(x1 + (x2 - x1) * t, y1 + (y2 - y1) * t);
+              ctx.stroke();
+            }
+            ctx.restore();
+          }
+
+          // tank 타입: 앞부분에 단색 사각형 방패 표시 (테두리/무늬 없음)
+          if (e.type && e.type.id === "tank") {
+            ctx.save();
+            const facing =
+              player.x + player.w * 0.5 >= e.x + e.w * 0.5 ? 1 : -1;
+            const shieldW = 6;
+            const shieldH = Math.max(14, e.h * 0.9);
+            const shieldY = e.y + (e.h - shieldH) / 2;
+            const shieldX = facing > 0 ? e.x + e.w - 0 : e.x - shieldW + 0;
+
+            ctx.fillStyle = "#bfc7d5";
+            ctx.fillRect(shieldX, shieldY, shieldW, shieldH);
+            ctx.restore();
+          }
+
+          if (e.type && e.type.id === "offense") {
+            ctx.fillStyle = "#cbd5e1";
+            const extra = e.range - e.w;
+            const tipLen = Math.min(6, extra);
+            const shaftLen = extra - tipLen;
+            const shaftThickness = 3;
+            const sx = e.vx >= 0 ? e.x + e.w : e.x - extra;
+            const sy = e.y + e.h * 0.5 - shaftThickness / 2;
+            if (e.vx >= 0) {
+              ctx.fillRect(sx, sy, shaftLen, shaftThickness);
+            } else {
+              ctx.fillRect(sx + tipLen, sy, shaftLen, shaftThickness);
+            }
+            const tx = e.vx >= 0 ? sx + shaftLen : sx + tipLen;
+            const ty = e.y + e.h * 0.5;
+            ctx.beginPath();
+            if (e.vx >= 0) {
+              ctx.moveTo(tx, ty - 4);
+              ctx.lineTo(tx + tipLen, ty);
+              ctx.lineTo(tx, ty + 4);
+            } else {
+              ctx.moveTo(tx, ty - 4);
+              ctx.lineTo(tx - tipLen, ty);
+              ctx.lineTo(tx, ty + 4);
+            }
+            ctx.closePath();
+            ctx.fill();
+          }
+
+          ctx.fillStyle = "#0008";
+          const ex = e.x + (e.vx > 0 ? e.w - 8 : 2);
+          ctx.fillRect(ex, e.y + 8, 6, 6);
+          ctx.restore();
+        }
+
         // 총구 플래시
         ctx.save();
         ctx.globalAlpha = 0.15 + Math.random() * 0.1;
@@ -3343,110 +3447,6 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
           ctx.beginPath();
           ctx.arc(x, y, 6, 0, Math.PI * 2);
           ctx.fill();
-        }
-
-        // 적
-        for (const e of enemies) {
-          if (bossPreEffectActive(e)) {
-            const effectTime = BOSS_PRE_EFFECT_TIME[e.attackState] || 1000;
-            const progress = Math.min(
-              1,
-              Math.max(0, 1 - e.attackCooldown / effectTime),
-            );
-            const radius = e.w * (1 + 0.5 * progress);
-            ctx.save();
-            ctx.strokeStyle = "#ff6b9d";
-            ctx.lineWidth = 4;
-            ctx.globalAlpha = 0.5 + 0.5 * progress;
-            ctx.beginPath();
-            ctx.arc(e.x + e.w / 2, e.y + e.h / 2, radius, 0, Math.PI * 2);
-            ctx.stroke();
-            ctx.restore();
-          }
-
-          ctx.save();
-          if (!e.entered) ctx.globalAlpha = 0.5;
-          ctx.fillStyle = e.color;
-          ctx.fillRect(e.x, e.y, e.w, e.h);
-
-          // 체력 금 표시
-          const dmgRatio = 1 - e.hp / e.hpMax;
-          if (dmgRatio > 0) {
-            const progress = dmgRatio * e.cracks.length;
-            const full = Math.floor(progress);
-            ctx.save();
-            ctx.strokeStyle = "#000";
-            ctx.lineWidth = 1;
-            for (let i = 0; i < full; i++) {
-              const c = e.cracks[i];
-              ctx.beginPath();
-              ctx.moveTo(e.x + c.x1 * e.w, e.y + c.y1 * e.h);
-              ctx.lineTo(e.x + c.x2 * e.w, e.y + c.y2 * e.h);
-              ctx.stroke();
-            }
-            if (full < e.cracks.length) {
-              const c = e.cracks[full];
-              const t = progress - full;
-              const x1 = e.x + c.x1 * e.w;
-              const y1 = e.y + c.y1 * e.h;
-              const x2 = e.x + c.x2 * e.w;
-              const y2 = e.y + c.y2 * e.h;
-              ctx.beginPath();
-              ctx.moveTo(x1, y1);
-              ctx.lineTo(x1 + (x2 - x1) * t, y1 + (y2 - y1) * t);
-              ctx.stroke();
-            }
-            ctx.restore();
-          }
-
-          // tank 타입: 앞부분에 단색 사각형 방패 표시 (테두리/무늬 없음)
-          if (e.type && e.type.id === "tank") {
-            ctx.save();
-            const facing =
-              player.x + player.w * 0.5 >= e.x + e.w * 0.5 ? 1 : -1;
-            const shieldW = 6;
-            const shieldH = Math.max(14, e.h * 0.9);
-            const shieldY = e.y + (e.h - shieldH) / 2;
-            const shieldX = facing > 0 ? e.x + e.w - 0 : e.x - shieldW + 0;
-
-            ctx.fillStyle = "#bfc7d5";
-            ctx.fillRect(shieldX, shieldY, shieldW, shieldH);
-            ctx.restore();
-          }
-
-          if (e.type && e.type.id === "offense") {
-            ctx.fillStyle = "#cbd5e1";
-            const extra = e.range - e.w;
-            const tipLen = Math.min(6, extra);
-            const shaftLen = extra - tipLen;
-            const shaftThickness = 3;
-            const sx = e.vx >= 0 ? e.x + e.w : e.x - extra;
-            const sy = e.y + e.h * 0.5 - shaftThickness / 2;
-            if (e.vx >= 0) {
-              ctx.fillRect(sx, sy, shaftLen, shaftThickness);
-            } else {
-              ctx.fillRect(sx + tipLen, sy, shaftLen, shaftThickness);
-            }
-            const tx = e.vx >= 0 ? sx + shaftLen : sx + tipLen;
-            const ty = e.y + e.h * 0.5;
-            ctx.beginPath();
-            if (e.vx >= 0) {
-              ctx.moveTo(tx, ty - 4);
-              ctx.lineTo(tx + tipLen, ty);
-              ctx.lineTo(tx, ty + 4);
-            } else {
-              ctx.moveTo(tx, ty - 4);
-              ctx.lineTo(tx - tipLen, ty);
-              ctx.lineTo(tx, ty + 4);
-            }
-            ctx.closePath();
-            ctx.fill();
-          }
-
-          ctx.fillStyle = "#0008";
-          const ex = e.x + (e.vx > 0 ? e.w - 8 : 2);
-          ctx.fillRect(ex, e.y + 8, 6, 6);
-          ctx.restore();
         }
 
         // 레벨업 임펄스 이펙트
