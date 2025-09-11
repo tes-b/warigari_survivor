@@ -1093,9 +1093,13 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
 
       // 입력: 클릭/스페이스 → 방향 전환
       function toggleDirection() {
+        // Preserve current shoot timer so changing direction
+        // doesn't reset the firing delay of the basic gun attack.
+        const currentShootTimer = shootTimer;
         player.prevDir = player.dir;
         player.dir *= -1;
         player.lastDirChange = elapsed;
+        if (baseAttack === "gun") shootTimer = currentShootTimer;
       }
       canvas.addEventListener("click", () => {
         if (running) toggleDirection();
