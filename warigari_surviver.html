@@ -2526,6 +2526,8 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
             y.vx = dir * yoyoSpeed;
             if (Math.abs(targetX - y.x) <= Math.abs(y.vx * dt)) {
               yoyos.splice(i, 1);
+              // 요요가 즉시 재사용되도록 쿨다운을 채워준다
+              yoyoTimer = yoyoCooldown;
               continue;
             }
           }
