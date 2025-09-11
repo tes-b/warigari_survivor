@@ -2791,7 +2791,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
 
                 spawnFloatText(e.x + e.w / 2, e.y - 12, -dmg, "#ff6b6b");
 
-                if (lifeSteal > 0) {
+                if (lifeSteal > 0 && !y.returning) {
                   const heal = Math.min(dmg * lifeSteal, playerHP - hp);
                   if (heal > 0) {
                     hp += heal;
@@ -2804,7 +2804,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
                   }
                 }
 
-                if (yoyoKnockback > 0 && !e.knockbackImmune) {
+                if (yoyoKnockback > 0 && !y.returning && !e.knockbackImmune) {
                   const knockDir = Math.sign(y.vx);
                   e.knockbackVx =
                     (e.knockbackVx || 0) +
