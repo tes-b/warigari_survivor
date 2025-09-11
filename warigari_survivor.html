@@ -1435,7 +1435,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
           overlay.innerHTML = `
       <div class="panel">
         <h1>일시정지</h1>
-        <div class="row"><button id="btnResume">계속하기</button></div>
+        <div class="row"><button id="btnResume">계속하기<br>(ESC)</button></div>
       </div>`;
           overlay.style.display = "flex";
           document.getElementById("btnResume").onclick = togglePause;
@@ -1454,15 +1454,15 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
         player.deathAnim.rotation = 0;
 
         // 1초 후에 게임오버 화면 표시
-          setTimeout(() => {
-            running = false;
-            showGameOverScreen({
-              wave: getWaveLabel(),
-              time: `${Math.floor(elapsed / 60)}분 ${(elapsed % 60).toFixed(2).padStart(5, "0")}초`,
-              score,
-            });
-          }, 1000);
-        }
+        setTimeout(() => {
+          running = false;
+          showGameOverScreen({
+            wave: getWaveLabel(),
+            time: `${Math.floor(elapsed / 60)}분 ${(elapsed % 60).toFixed(2).padStart(5, "0")}초`,
+            score,
+          });
+        }, 1000);
+      }
 
       // --- HUD ---
       const hpEl = document.getElementById("hp");
@@ -2222,21 +2222,21 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
         levelupActive = true;
       }
 
-        function showWeaponSelectScreen() {
-          const weaponOverlay = document.getElementById("weaponOverlay");
-          const weaponPanel = document.getElementById("weaponPanel");
-          weaponPanel.innerHTML = `
+      function showWeaponSelectScreen() {
+        const weaponOverlay = document.getElementById("weaponOverlay");
+        const weaponPanel = document.getElementById("weaponPanel");
+        weaponPanel.innerHTML = `
           <h1>기본 공격을 선택하세요</h1>
           <p><span class="kbd">스페이스바</span> <b>짧게 누르기</b> : 무기 변경 / <b>길게 누르기</b> : 선택 하기</p>
           <div class="upgrade-grid" id="weaponGrid"></div>
           <div class="hold-gauge"><div class="fill" id="weaponHoldGaugeFill"></div></div>
         `;
-          const weaponGrid = document.getElementById("weaponGrid");
-          const weapons = [
-            { id: "gun", icon: "🔫", title: "총", desc: "모두를 공평하게 조용히 시킵니다." },
-            { id: "sword", icon: "🗡️", title: "검", desc: "빨간 잉크로 서명합니다." },
-            { id: "yoyo", icon: "🪀", title: "요요", desc: "장난감 같지만, 장난 아닙니다." },
-          ];
+        const weaponGrid = document.getElementById("weaponGrid");
+        const weapons = [
+          { id: "gun", icon: "🔫", title: "총", desc: "모두를 공평하게 조용히 시킵니다." },
+          { id: "sword", icon: "🗡️", title: "검", desc: "빨간 잉크로 서명합니다." },
+          { id: "yoyo", icon: "🪀", title: "요요", desc: "장난감 같지만, 장난 아닙니다." },
+        ];
         weaponGrid.innerHTML = "";
         weapons.forEach(w => {
           const btn = document.createElement("div");
@@ -2257,43 +2257,44 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
         selectionButtons = document.querySelectorAll("#weaponGrid .upgrade-btn");
         focusedOptionIndex = 0;
         holdGaugeFill = document.getElementById("weaponHoldGaugeFill");
-          highlightFocusedOption();
-          holdGaugeFill.style.width = "0%";
-          levelupActive = true;
-        }
+        highlightFocusedOption();
+        holdGaugeFill.style.width = "0%";
+        levelupActive = true;
+      }
 
-        function showStartScreen() {
-          overlay.innerHTML = `
+      function showStartScreen() {
+        overlay.innerHTML = `
         <div class="panel">
           <h1>와리가리 서바이버</h1>
+          <h3>WARI-GARI SURVIVOR</h3>
           <p>클릭 또는 <span class="kbd">스페이스바</span>로 <b>방향 전환</b></p>
-          <div class="row"><button id="btnStart">게임 시작</button></div>
+          <div class="row"><button id="btnStart">게임 시작<br>(SPACE)</button></div>
         </div>`;
-          overlay.style.display = "flex";
-          document.getElementById("btnStart").onclick = () => {
-            overlay.style.display = "none";
-            showWeaponSelectScreen();
-          };
-        }
+        overlay.style.display = "flex";
+        document.getElementById("btnStart").onclick = () => {
+          overlay.style.display = "none";
+          showWeaponSelectScreen();
+        };
+      }
 
-        function showGameOverScreen(stats) {
-          overlay.innerHTML = `
+      function showGameOverScreen(stats) {
+        overlay.innerHTML = `
         <div class="panel">
           <h1>게임 오버</h1>
           <p>웨이브: <b>${stats.wave}</b></p>
           <p>생존 시간: <b>${stats.time}</b></p>
           <p>처치 수: <b>${stats.score}</b></p>
-          <div class="row"><button id="btnRestart">다시 하기</button></div>
+          <div class="row"><button id="btnRestart">다시 하기<br>(SPACE)</button></div>
         </div>`;
-          overlay.style.display = "flex";
-          document.getElementById("btnRestart").onclick = () => {
-            overlay.style.display = "none";
-            showWeaponSelectScreen();
-          };
-        }
+        overlay.style.display = "flex";
+        document.getElementById("btnRestart").onclick = () => {
+          overlay.style.display = "none";
+          showWeaponSelectScreen();
+        };
+      }
 
-        // --- 업데이트 ---
-        function update(dt) {
+      // --- 업데이트 ---
+      function update(dt) {
         if (paused) return; // 레벨업 중에는 업데이트 중지
 
         // 죽음 애니메이션 업데이트
@@ -3512,9 +3513,9 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
       }
 
       // 초기화
-        reset();
-        showStartScreen();
-      })();
+      reset();
+      showStartScreen();
+    })();
   </script>
 </body>
 
