@@ -2889,6 +2889,13 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
                 }
 
                 y.hitSet.add(e.id);
+                if (e.hp <= 0) {
+                  dropExpOrbs(e);
+                  enemies.splice(i, 1);
+                  score += e.reward;
+                  e._killed = true;
+                  break;
+                }
               }
             }
             if (e._killed) continue;
