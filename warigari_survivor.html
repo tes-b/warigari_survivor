@@ -1923,7 +1923,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
           const dist = Math.hypot(ex - b.x, ey - b.y);
           if (dist <= b.radius) {
             const raw = b.damage - (e.defense || 0);
-            const dmg = Math.min(Math.max(raw, 0), e.hp);
+            const dmg = Math.min(Math.max(raw, 1), e.hp);
             e.hp -= dmg;
             spawnFloatText(ex, ey - 12, -dmg, "#ff6b6b");
             if (e.hp <= 0) {
@@ -1956,7 +1956,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
           const dist = Math.hypot(dx, dy);
           if (dist <= levelUpImpulseRadius) {
             const raw = levelUpImpulseDamage - (e.defense || 0);
-            const dmg = Math.min(Math.max(raw, 0), e.hp);
+            const dmg = Math.min(Math.max(raw, 1), e.hp);
             e.hp -= dmg;
             spawnFloatText(e.x + e.w / 2, e.y - 12, -dmg, "#ff6b6b");
             if (e.hp <= 0) {
@@ -2004,7 +2004,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
             const ang = Math.atan2(dy, dx * player.dir);
             if (ang >= -11 * Math.PI / 18 && ang <= Math.PI / 6) {
               const raw = swordDamage - (e.defense || 0);
-              const dmg = Math.min(Math.max(raw, 0), e.hp);
+              const dmg = Math.min(Math.max(raw, 1), e.hp);
               e.hp -= dmg;
               spawnFloatText(ex, e.y - 12, -dmg, "#ff6b6b");
               if (lifeSteal > 0 && totalHeal < missingHP) {
@@ -2573,7 +2573,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
             const hitCondition = l.hitWhenFacing ? facingBoss : !facingBoss;
             if ((l.ignoreFacing || hitCondition) && player.iframes <= 0 && !cheatInvincible) {
               const raw = l.owner.damage - playerDefense;
-              const dmg = Math.min(Math.max(raw, 0), hp);
+              const dmg = Math.min(Math.max(raw, 1), hp);
               hp -= dmg;
               spawnFloatText(
                 player.x + player.w / 2,
@@ -2716,7 +2716,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
             if (iceDamage > 0) {
               const raw =
                 iceDamage * (iceFloorTickInterval / 1000) - (e.defense || 0);
-              const dmg = Math.min(Math.max(raw, 0), e.hp);
+              const dmg = Math.min(Math.max(raw, 1), e.hp);
               e.hp -= dmg;
               spawnFloatText(e.x + e.w / 2, e.y - 12, -dmg, "#60a5fa");
               if (e.hp <= 0) {
@@ -2764,7 +2764,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
               if (b.hitSet.has(e.id)) continue;
               if (aabb(e, b)) {
                 const raw = b.dmg - (e.defense || 0);
-                const dmg = Math.min(Math.max(raw, 0), e.hp);
+                const dmg = Math.min(Math.max(raw, 1), e.hp);
                 e.hp -= dmg;
 
                 spawnFloatText(e.x + e.w / 2, e.y - 12, -dmg, "#ff6b6b");
@@ -2813,7 +2813,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
               if (y.hitSet.has(e.id)) continue;
               if (aabb(e, y)) {
                 const raw = y.dmg - (e.defense || 0);
-                const dmg = Math.min(Math.max(raw, 0), e.hp);
+                const dmg = Math.min(Math.max(raw, 1), e.hp);
                 e.hp -= dmg;
 
                 spawnFloatText(e.x + e.w / 2, e.y - 12, -dmg, "#ff6b6b");
@@ -2859,7 +2859,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
               const rect = { x: l.x - w / 2, y: l.y - h / 2, w, h };
               if (aabb(e, rect)) {
                 const raw = l.dmg - (e.defense || 0);
-                const dmg = Math.min(Math.max(raw, 0), e.hp);
+                const dmg = Math.min(Math.max(raw, 1), e.hp);
                 e.hp -= dmg;
                 spawnFloatText(e.x + e.w / 2, e.y - 12, -dmg, "#ff6b6b");
                 lasers.splice(j, 1);
@@ -2891,7 +2891,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
                 if (orb.hitSet.has(e.id)) continue;
                 orb.hitSet.add(e.id);
                 const raw = orb.damage - (e.defense || 0);
-                const dmg = Math.min(Math.max(raw, 0), e.hp);
+                const dmg = Math.min(Math.max(raw, 1), e.hp);
                 e.hp -= dmg;
 
                 spawnFloatText(e.x + e.w / 2, e.y - 12, -dmg, "#ff6b6b");
@@ -2922,7 +2922,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
             if (playerCollide || aabb(attackRect, player)) {
               if (player.iframes <= 0 && !cheatInvincible) {
                 const raw = e.damage - playerDefense;
-                const dmg = Math.min(Math.max(raw, 0), hp);
+                const dmg = Math.min(Math.max(raw, 1), hp);
                 hp -= dmg;
                 spawnFloatText(
                   player.x + player.w / 2,
