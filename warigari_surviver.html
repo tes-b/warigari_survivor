@@ -2587,25 +2587,27 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
 
           let slowMul = 1;
           let iceDamage = 0;
-          for (const f of iceFloors) {
-            if (aabb(e, f)) {
-              slowMul *= f.slow;
-              if (f.doDamage) {
-                iceDamage = Math.max(iceDamage, f.damage);
+          if (e.entered) {
+            for (const f of iceFloors) {
+              if (aabb(e, f)) {
+                slowMul *= f.slow;
+                if (f.doDamage) {
+                  iceDamage = Math.max(iceDamage, f.damage);
+                }
               }
             }
-          }
-          if (iceDamage > 0) {
-            const raw =
-              iceDamage * (iceFloorTickInterval / 1000) - (e.defense || 0);
-            const dmg = Math.min(Math.max(raw, 0), e.hp);
-            e.hp -= dmg;
-            spawnFloatText(e.x + e.w / 2, e.y - 12, -dmg, "#60a5fa");
-            if (e.hp <= 0) {
-              dropExpOrbs(e);
-              enemies.splice(i, 1);
-              score += e.reward;
-              e._killed = true;
+            if (iceDamage > 0) {
+              const raw =
+                iceDamage * (iceFloorTickInterval / 1000) - (e.defense || 0);
+              const dmg = Math.min(Math.max(raw, 0), e.hp);
+              e.hp -= dmg;
+              spawnFloatText(e.x + e.w / 2, e.y - 12, -dmg, "#60a5fa");
+              if (e.hp <= 0) {
+                dropExpOrbs(e);
+                enemies.splice(i, 1);
+                score += e.reward;
+                e._killed = true;
+              }
             }
           }
           if (e._killed) continue;
@@ -2638,176 +2640,178 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
             }
           }
 
-          // 총알과 충돌(피해 처리)
-          for (let j = bullets.length - 1; j >= 0; j--) {
-            const b = bullets[j];
-            if (b.hitSet.has(e.id)) continue;
-            if (aabb(e, b)) {
-              const raw = b.dmg - (e.defense || 0);
-              const dmg = Math.min(Math.max(raw, 0), e.hp);
-              e.hp -= dmg;
+          if (e.entered) {
+            // 총알과 충돌(피해 처리)
+            for (let j = bullets.length - 1; j >= 0; j--) {
+              const b = bullets[j];
+              if (b.hitSet.has(e.id)) continue;
+              if (aabb(e, b)) {
+                const raw = b.dmg - (e.defense || 0);
+                const dmg = Math.min(Math.max(raw, 0), e.hp);
+                e.hp -= dmg;
 
-              spawnFloatText(e.x + e.w / 2, e.y - 12, -dmg, "#ff6b6b");
+                spawnFloatText(e.x + e.w / 2, e.y - 12, -dmg, "#ff6b6b");
 
-              if (lifeSteal > 0) {
-                const heal = Math.min(dmg * lifeSteal, playerHP - hp);
-                if (heal > 0) {
-                  hp += heal;
-                  spawnFloatText(
-                    player.x + player.w / 2,
-                    player.y - 14,
-                    heal,
-                    "#6cff96",
-                  );
+                if (lifeSteal > 0) {
+                  const heal = Math.min(dmg * lifeSteal, playerHP - hp);
+                  if (heal > 0) {
+                    hp += heal;
+                    spawnFloatText(
+                      player.x + player.w / 2,
+                      player.y - 14,
+                      heal,
+                      "#6cff96",
+                    );
+                  }
+                }
+
+                // 넉백 적용 (업그레이드가 누적된 값을 사용)
+                if (bulletKnockback > 0 && !e.knockbackImmune) {
+                  const knockDir = Math.sign(b.vx);
+                  e.knockbackVx =
+                    (e.knockbackVx || 0) +
+                    knockDir * bulletKnockback * enemyKnockbackFriction;
+                  e.vy = -enemyKnockbackLift;
+                }
+
+                b.hitSet.add(e.id);
+                if (b.penetration === 0) {
+                  bullets.splice(j, 1);
+                } else {
+                  b.penetration--;
+                }
+
+                if (e.hp <= 0) {
+                  // 경험치 구슬 드롭
+                  dropExpOrbs(e);
+                  enemies.splice(i, 1);
+                  score += e.reward;
+                  e._killed = true;
+                  break;
                 }
               }
-
-              // 넉백 적용 (업그레이드가 누적된 값을 사용)
-              if (bulletKnockback > 0 && !e.knockbackImmune) {
-                const knockDir = Math.sign(b.vx);
-                e.knockbackVx =
-                  (e.knockbackVx || 0) +
-                  knockDir * bulletKnockback * enemyKnockbackFriction;
-                e.vy = -enemyKnockbackLift;
+            }
+            // 레이저와 충돌
+            for (let j = lasers.length - 1; j >= 0; j--) {
+              const l = lasers[j];
+              const cos = Math.cos(l.angle);
+              const sin = Math.sin(l.angle);
+              const w = Math.abs(cos * l.len) + Math.abs(sin * l.thick);
+              const h = Math.abs(sin * l.len) + Math.abs(cos * l.thick);
+              const rect = { x: l.x - w / 2, y: l.y - h / 2, w, h };
+              if (aabb(e, rect)) {
+                const raw = l.dmg - (e.defense || 0);
+                const dmg = Math.min(Math.max(raw, 0), e.hp);
+                e.hp -= dmg;
+                spawnFloatText(e.x + e.w / 2, e.y - 12, -dmg, "#ff6b6b");
+                lasers.splice(j, 1);
+                if (e.hp <= 0) {
+                  dropExpOrbs(e);
+                  enemies.splice(i, 1);
+                  score += e.reward;
+                  e._killed = true;
+                  break;
+                }
               }
+            }
+            if (e._killed) continue;
 
-              b.hitSet.add(e.id);
-              if (b.penetration === 0) {
-                bullets.splice(j, 1);
+            // 궤도 구슬과 충돌 (한 바퀴에 한 번씩만 피해)
+            for (const orb of orbitingOrbs) {
+              const orbX =
+                player.x +
+                player.w / 2 +
+                Math.cos(orb.angle + orbitalAngle) * orbitalRadius -
+                orb.size / 2;
+              const orbY =
+                player.y +
+                player.h / 2 +
+                Math.sin(orb.angle + orbitalAngle) * orbitalRadius -
+                orb.size / 2;
+
+              if (aabb(e, { x: orbX, y: orbY, w: orb.size, h: orb.size })) {
+                if (orb.hitSet.has(e.id)) continue;
+                orb.hitSet.add(e.id);
+                const raw = orb.damage - (e.defense || 0);
+                const dmg = Math.min(Math.max(raw, 0), e.hp);
+                e.hp -= dmg;
+
+                spawnFloatText(e.x + e.w / 2, e.y - 12, -dmg, "#ff6b6b");
+                if (e.hp <= 0) {
+                  dropExpOrbs(e);
+                  enemies.splice(i, 1);
+                  score += e.reward;
+                  e._killed = true;
+                  break;
+                }
+              }
+            }
+            if (e._killed) continue;
+
+            // 플레이어와 충돌/공격 처리
+            const playerCollide = aabb(e, player);
+            let attackRect = { x: e.x, y: e.y, w: e.w, h: e.h };
+            if (e.type && e.type.id === "offense") {
+              const extra = e.range - e.w;
+              if (e.vx >= 0) {
+                attackRect.w += extra;
               } else {
-                b.penetration--;
-              }
-
-              if (e.hp <= 0) {
-                // 경험치 구슬 드롭
-                dropExpOrbs(e);
-                enemies.splice(i, 1);
-                score += e.reward;
-                e._killed = true;
-                break;
+                attackRect.x -= extra;
+                attackRect.w += extra;
               }
             }
-          }
-          // 레이저와 충돌
-          for (let j = lasers.length - 1; j >= 0; j--) {
-            const l = lasers[j];
-            const cos = Math.cos(l.angle);
-            const sin = Math.sin(l.angle);
-            const w = Math.abs(cos * l.len) + Math.abs(sin * l.thick);
-            const h = Math.abs(sin * l.len) + Math.abs(cos * l.thick);
-            const rect = { x: l.x - w / 2, y: l.y - h / 2, w, h };
-            if (aabb(e, rect)) {
-              const raw = l.dmg - (e.defense || 0);
-              const dmg = Math.min(Math.max(raw, 0), e.hp);
-              e.hp -= dmg;
-              spawnFloatText(e.x + e.w / 2, e.y - 12, -dmg, "#ff6b6b");
-              lasers.splice(j, 1);
-              if (e.hp <= 0) {
-                dropExpOrbs(e);
-                enemies.splice(i, 1);
-                score += e.reward;
-                e._killed = true;
-                break;
+
+            if (playerCollide || aabb(attackRect, player)) {
+              if (player.iframes <= 0 && !cheatInvincible) {
+                const raw = e.damage - playerDefense;
+                const dmg = Math.min(Math.max(raw, 0), hp);
+                hp -= dmg;
+                spawnFloatText(
+                  player.x + player.w / 2,
+                  player.y - 14,
+                  -dmg,
+                  "#ff6b6b",
+                );
+                player.iframes = playerIframeDuration;
+                player.hitFlash = playerHitFlashDuration;
+                if (hp <= 0) {
+                  hp = 0;
+                  gameOver();
+                  return;
+                }
               }
             }
-          }
-          if (e._killed) continue;
 
-          // 궤도 구슬과 충돌 (한 바퀴에 한 번씩만 피해)
-          for (const orb of orbitingOrbs) {
-            const orbX =
-              player.x +
-              player.w / 2 +
-              Math.cos(orb.angle + orbitalAngle) * orbitalRadius -
-              orb.size / 2;
-            const orbY =
-              player.y +
-              player.h / 2 +
-              Math.sin(orb.angle + orbitalAngle) * orbitalRadius -
-              orb.size / 2;
+            if (playerCollide) {
+              const playerLeft = player.x;
+              const playerRight = player.x + player.w;
+              const eLeft = e.x;
+              const eRight = e.x + e.w;
 
-            if (aabb(e, { x: orbX, y: orbY, w: orb.size, h: orb.size })) {
-              if (orb.hitSet.has(e.id)) continue;
-              orb.hitSet.add(e.id);
-              const raw = orb.damage - (e.defense || 0);
-              const dmg = Math.min(Math.max(raw, 0), e.hp);
-              e.hp -= dmg;
+              const overlapLeft = Math.max(0, playerRight - eLeft);
+              const overlapRight = Math.max(0, eRight - playerLeft);
+              const pushRight = overlapLeft < overlapRight;
+              const enemyPinned =
+                e.isBoss ||
+                (pushRight ? eRight >= WORLD.w : eLeft <= 0);
 
-              spawnFloatText(e.x + e.w / 2, e.y - 12, -dmg, "#ff6b6b");
-              if (e.hp <= 0) {
-                dropExpOrbs(e);
-                enemies.splice(i, 1);
-                score += e.reward;
-                e._killed = true;
-                break;
-              }
-            }
-          }
-          if (e._killed) continue;
-
-          // 플레이어와 충돌/공격 처리
-          const playerCollide = aabb(e, player);
-          let attackRect = { x: e.x, y: e.y, w: e.w, h: e.h };
-          if (e.type && e.type.id === "offense") {
-            const extra = e.range - e.w;
-            if (e.vx >= 0) {
-              attackRect.w += extra;
-            } else {
-              attackRect.x -= extra;
-              attackRect.w += extra;
-            }
-          }
-
-          if (playerCollide || aabb(attackRect, player)) {
-            if (player.iframes <= 0 && !cheatInvincible) {
-              const raw = e.damage - playerDefense;
-              const dmg = Math.min(Math.max(raw, 0), hp);
-              hp -= dmg;
-              spawnFloatText(
-                player.x + player.w / 2,
-                player.y - 14,
-                -dmg,
-                "#ff6b6b",
-              );
-              player.iframes = playerIframeDuration;
-              player.hitFlash = playerHitFlashDuration;
-              if (hp <= 0) {
-                hp = 0;
-                gameOver();
-                return;
-              }
-            }
-          }
-
-          if (playerCollide) {
-            const playerLeft = player.x;
-            const playerRight = player.x + player.w;
-            const eLeft = e.x;
-            const eRight = e.x + e.w;
-
-            const overlapLeft = Math.max(0, playerRight - eLeft);
-            const overlapRight = Math.max(0, eRight - playerLeft);
-            const pushRight = overlapLeft < overlapRight;
-            const enemyPinned =
-              e.isBoss ||
-              (pushRight ? eRight >= WORLD.w : eLeft <= 0);
-
-            if (enemyPinned) {
-              // Move player instead if the enemy can't be pushed
-              if (pushRight) {
-                player.x = eLeft - player.w - separationDistance;
+              if (enemyPinned) {
+                // Move player instead if the enemy can't be pushed
+                if (pushRight) {
+                  player.x = eLeft - player.w - separationDistance;
+                } else {
+                  player.x = eRight + separationDistance;
+                }
+                player.vx = 0;
+                player.x = clamp(player.x, 0, WORLD.w - player.w);
               } else {
-                player.x = eRight + separationDistance;
+                if (pushRight) {
+                  e.x = playerRight + separationDistance;
+                } else {
+                  e.x = playerLeft - e.w - separationDistance;
+                }
+                e.vx = 0;
               }
-              player.vx = 0;
-              player.x = clamp(player.x, 0, WORLD.w - player.w);
-            } else {
-              if (pushRight) {
-                e.x = playerRight + separationDistance;
-              } else {
-                e.x = playerLeft - e.w - separationDistance;
-              }
-              e.vx = 0;
             }
           }
           // Keep entities within the stage boundaries
@@ -3214,6 +3218,8 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
             ctx.restore();
           }
 
+          ctx.save();
+          if (!e.entered) ctx.globalAlpha = 0.5;
           ctx.fillStyle = e.color;
           ctx.fillRect(e.x, e.y, e.w, e.h);
 
@@ -3294,6 +3300,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
           ctx.fillStyle = "#0008";
           const ex = e.x + (e.vx > 0 ? e.w - 8 : 2);
           ctx.fillRect(ex, e.y + 8, 6, 6);
+          ctx.restore();
         }
 
         // 레벨업 임펄스 이펙트
