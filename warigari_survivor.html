@@ -3382,7 +3382,11 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
           }
 
           ctx.fillStyle = "#0008";
-          const ex = e.x + (e.vx > 0 ? e.w - 8 : 2);
+          const facingPlayer =
+            e.type && e.type.id === "jumper"
+              ? player.x + player.w * 0.5 >= e.x + e.w * 0.5
+              : e.vx > 0;
+          const ex = e.x + (facingPlayer ? e.w - 8 : 2);
           ctx.fillRect(ex, e.y + 8, 6, 6);
           ctx.restore();
         }
