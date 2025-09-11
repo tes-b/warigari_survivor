@@ -2754,68 +2754,70 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
           if (e._killed) continue;
 
           // 플레이어와 충돌/공격 처리
-          const playerCollide = aabb(e, player);
-          let attackRect = { x: e.x, y: e.y, w: e.w, h: e.h };
-          if (e.type && e.type.id === "offense") {
-            const extra = e.range - e.w;
-            if (e.vx >= 0) {
-              attackRect.w += extra;
-            } else {
-              attackRect.x -= extra;
-              attackRect.w += extra;
-            }
-          }
-
-          if ((playerCollide || aabb(attackRect, player)) && !spawnProtected) {
-            if (player.iframes <= 0 && !cheatInvincible) {
-              const raw = e.damage - playerDefense;
-              const dmg = Math.min(Math.max(raw, 0), hp);
-              hp -= dmg;
-              spawnFloatText(
-                player.x + player.w / 2,
-                player.y - 14,
-                -dmg,
-                "#ff6b6b",
-              );
-              player.iframes = playerIframeDuration;
-              player.hitFlash = playerHitFlashDuration;
-              if (hp <= 0) {
-                hp = 0;
-                gameOver();
-                return;
+          if (!spawnProtected) {
+            const playerCollide = aabb(e, player);
+            let attackRect = { x: e.x, y: e.y, w: e.w, h: e.h };
+            if (e.type && e.type.id === "offense") {
+              const extra = e.range - e.w;
+              if (e.vx >= 0) {
+                attackRect.w += extra;
+              } else {
+                attackRect.x -= extra;
+                attackRect.w += extra;
               }
             }
-          }
 
-          if (playerCollide) {
-            const playerLeft = player.x;
-            const playerRight = player.x + player.w;
-            const eLeft = e.x;
-            const eRight = e.x + e.w;
-
-            const overlapLeft = Math.max(0, playerRight - eLeft);
-            const overlapRight = Math.max(0, eRight - playerLeft);
-            const pushRight = overlapLeft < overlapRight;
-            const enemyPinned =
-              e.isBoss ||
-              (pushRight ? eRight >= WORLD.w : eLeft <= 0);
-
-            if (enemyPinned) {
-              // Move player instead if the enemy can't be pushed
-              if (pushRight) {
-                player.x = eLeft - player.w - separationDistance;
-              } else {
-                player.x = eRight + separationDistance;
+            if (playerCollide || aabb(attackRect, player)) {
+              if (player.iframes <= 0 && !cheatInvincible) {
+                const raw = e.damage - playerDefense;
+                const dmg = Math.min(Math.max(raw, 0), hp);
+                hp -= dmg;
+                spawnFloatText(
+                  player.x + player.w / 2,
+                  player.y - 14,
+                  -dmg,
+                  "#ff6b6b",
+                );
+                player.iframes = playerIframeDuration;
+                player.hitFlash = playerHitFlashDuration;
+                if (hp <= 0) {
+                  hp = 0;
+                  gameOver();
+                  return;
+                }
               }
-              player.vx = 0;
-              player.x = clamp(player.x, 0, WORLD.w - player.w);
-            } else {
-              if (pushRight) {
-                e.x = playerRight + separationDistance;
+            }
+
+            if (playerCollide) {
+              const playerLeft = player.x;
+              const playerRight = player.x + player.w;
+              const eLeft = e.x;
+              const eRight = e.x + e.w;
+
+              const overlapLeft = Math.max(0, playerRight - eLeft);
+              const overlapRight = Math.max(0, eRight - playerLeft);
+              const pushRight = overlapLeft < overlapRight;
+              const enemyPinned =
+                e.isBoss ||
+                (pushRight ? eRight >= WORLD.w : eLeft <= 0);
+
+              if (enemyPinned) {
+                // Move player instead if the enemy can't be pushed
+                if (pushRight) {
+                  player.x = eLeft - player.w - separationDistance;
+                } else {
+                  player.x = eRight + separationDistance;
+                }
+                player.vx = 0;
+                player.x = clamp(player.x, 0, WORLD.w - player.w);
               } else {
-                e.x = playerLeft - e.w - separationDistance;
+                if (pushRight) {
+                  e.x = playerRight + separationDistance;
+                } else {
+                  e.x = playerLeft - e.w - separationDistance;
+                }
+                e.vx = 0;
               }
-              e.vx = 0;
             }
           }
           // Keep entities within the stage boundaries
