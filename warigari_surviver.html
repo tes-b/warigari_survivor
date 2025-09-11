@@ -2508,12 +2508,19 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
           const step = y.vx * dt;
           y.x += step;
           if (!y.returning) {
-            y.travel += Math.abs(step);
-            if (y.travel >= y.range) {
+            // 플레이어가 방향을 바꾸면 즉시 되돌아오도록
+            if (player.dir !== Math.sign(y.vx)) {
               y.returning = true;
               y.hitSet.clear();
+            } else {
+              y.travel += Math.abs(step);
+              if (y.travel >= y.range) {
+                y.returning = true;
+                y.hitSet.clear();
+              }
             }
-          } else {
+          }
+          if (y.returning) {
             const targetX = player.x + player.w / 2 - y.w / 2;
             const dir = Math.sign(targetX - y.x);
             y.vx = dir * yoyoSpeed;
