@@ -1593,7 +1593,12 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
       }
 
       function pickBossPattern(b) {
-        const patterns = ["jump", "airLaser", "timedLaser", "rush"];
+        let patterns;
+        if (currentWave === 11) {
+          patterns = ["jump", "timedLaser", "rush", "airLaser"];
+        } else {
+          patterns = ["jump", "timedLaser", "rush"];
+        }
         b.attackState = patterns[(Math.random() * patterns.length) | 0];
         b.attackCooldown = BOSS_PATTERN_DELAY;
         b.laserCount = 0;
@@ -1689,16 +1694,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
             jumping: false,
             returning: false,
           });
-        } else if (currentWave === 7) {
-          Object.assign(boss, {
-            attackState: "jump",
-            attackCooldown: 1000,
-            laserCount: 0,
-            jumpCount: 0,
-            jumping: false,
-            returning: false,
-          });
-        } else if (currentWave === 11) {
+        } else if (currentWave === 7 || currentWave === 11) {
           pickBossPattern(boss);
         }
         // 보스 스폰 후 5초후에 패턴 시작
@@ -1782,7 +1778,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
                 b.attackCooldown = BOSS_PATTERN_DELAY;
                 b.jumpCount = 0;
                 b.returning = false;
-              } else if (currentWave === 11) {
+              } else {
                 pickBossPattern(b);
               }
             }
@@ -1828,13 +1824,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
                     b.rushDir = 0;
                     b.rushColorTimer = 0;
                     b.color = "#ff6b9d";
-                  } else if (currentWave === 7) {
-                    b.attackState = "timedLaser";
-                    b.laserCount = 0;
-                    b.attackCooldown = BOSS_PATTERN_DELAY;
-                    b.jumpCount = 0;
-                    b.returning = false;
-                  } else if (currentWave === 11) {
+                  } else {
                     pickBossPattern(b);
                   }
                 }
@@ -1848,9 +1838,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
               b.laserCount++;
               b.attackCooldown = 1500;
             } else if (!bossLasers.some((l) => l.owner === b)) {
-              if (currentWave === 11) {
-                pickBossPattern(b);
-              }
+              pickBossPattern(b);
             }
           }
           b.vx = 0;
@@ -1869,16 +1857,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
               b.laserCount++;
               b.attackCooldown = 500;
             } else if (!bossLasers.some((l) => l.owner === b)) {
-              if (currentWave === 7) {
-                b.attackState = "jump";
-                b.laserCount = 0;
-                b.attackCooldown = BOSS_PATTERN_DELAY;
-                b.jumpCount = 0;
-                b.jumping = false;
-                b.returning = false;
-              } else if (currentWave === 11) {
-                pickBossPattern(b);
-              }
+              pickBossPattern(b);
             }
           }
           b.vx = 0;
@@ -1917,7 +1896,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
                   b.attackState = "laser";
                   b.laserCount = 0;
                   b.attackCooldown = BOSS_PATTERN_DELAY;
-                } else if (currentWave === 11) {
+                } else {
                   pickBossPattern(b);
                 }
               }
