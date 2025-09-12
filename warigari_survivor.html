@@ -586,7 +586,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
           DAMAGE: 80, // 요요 피해량
           RANGE: 180, // 요요 사정거리 (px)
           KNOCKBACK: 0, // 요요 넉백 거리 (px)
-          SPEED: 400, // 요요 던지는 속도 (px/s)
+          SPEED: 350, // 요요 던지는 속도 (px/s)
         },
         // 검 관련
         SWORD: {
@@ -1542,7 +1542,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
         const tier = weightedTier();
         let typePool;
         if (tier.name === "Weak") {
-          typePool = [enemyTypes[0], enemyTypes[3]]; // 균형형 + 점퍼
+          typePool = [enemyTypes[0], enemyTypes[0], enemyTypes[3]]; // 균형형x2 + 점퍼
         } else if (tier.name === "Medium" || tier.name === "Basic") {
           typePool = [enemyTypes[0], enemyTypes[1], enemyTypes[3]]; // 균형형 + 공격형 + 점퍼
         } else {
