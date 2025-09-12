@@ -3384,6 +3384,21 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
             ctx.restore();
           }
 
+          // boss는 바라보는 방향에 방패를 표시 (방패 두께 5px)
+          if (e.isBoss) {
+            ctx.save();
+            const facing =
+              player.x + player.w * 0.5 >= e.x + e.w * 0.5 ? 1 : -1;
+            const shieldW = 5;
+            const shieldH = Math.max(14, e.h * 0.9);
+            const shieldY = e.y + (e.h - shieldH) / 2;
+            const shieldX = facing > 0 ? e.x + e.w - 0 : e.x - shieldW + 0;
+
+            ctx.fillStyle = "#bfc7d5";
+            ctx.fillRect(shieldX, shieldY, shieldW, shieldH);
+            ctx.restore();
+          }
+
           if (e.type && e.type.id === "offense") {
             ctx.fillStyle = "#cbd5e1";
             const extra = e.range - e.w;
@@ -3429,7 +3444,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
 
           ctx.fillStyle = "#0008";
           const facingPlayer =
-            e.type && e.type.id === "jumper"
+            e.isBoss || (e.type && e.type.id === "jumper")
               ? player.x + player.w * 0.5 >= e.x + e.w * 0.5
               : e.vx > 0;
           const ex = e.x + (facingPlayer ? e.w - 8 : 2);
