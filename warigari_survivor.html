@@ -582,7 +582,6 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
         // 요요 관련
         YOYO: {
           SIZE: 15, // 요요 크기
-          COOLDOWN: 700, // 요요 던지기 쿨다운 (ms)
           DAMAGE: 80, // 요요 피해량
           RANGE: 180, // 요요 사정거리 (px)
           KNOCKBACK: 0, // 요요 넉백 거리 (px)
@@ -623,7 +622,6 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
       let bulletKnockback = INIT.BULLET.KNOCKBACK;
       let bulletRange = INIT.BULLET.RANGE;
       let yoyoSize = INIT.YOYO.SIZE;
-      let yoyoCooldown = INIT.YOYO.COOLDOWN;
       let yoyoDamage = INIT.YOYO.DAMAGE;
       let yoyoRange = INIT.YOYO.RANGE;
       let yoyoKnockback = INIT.YOYO.KNOCKBACK;
@@ -762,7 +760,6 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
             } else if (baseAttack === "sword") {
               swordCooldown = Math.max(300, swordCooldown * 0.85);
             } else {
-              yoyoCooldown = Math.max(200, yoyoCooldown * 0.85);
               yoyoSpeed *= 1.15;
             }
           },
@@ -1069,7 +1066,6 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
       const bullets = [];
       let shootTimer = 0;
       const yoyos = [];
-      let yoyoTimer = 0;
 
       // --- 보스 레이저 ---
       const bossLasers = [];
@@ -1136,12 +1132,10 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
         // Preserve current attack timers so changing direction
         // doesn't reset the firing delay of the basic attacks.
         const currentShootTimer = shootTimer;
-        const currentYoyoTimer = yoyoTimer;
         player.prevDir = player.dir;
         player.dir *= -1;
         player.lastDirChange = elapsed;
         if (baseAttack === "gun") shootTimer = currentShootTimer;
-        else if (baseAttack === "yoyo") yoyoTimer = currentYoyoTimer;
       }
       canvas.addEventListener("click", () => {
         if (running) toggleDirection();
@@ -1385,8 +1379,6 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
         bulletPenetration = INIT.BULLET.PENETRATION;
         bulletKnockback = INIT.BULLET.KNOCKBACK;
         bulletRange = INIT.BULLET.RANGE;
-        yoyoTimer = 0;
-        yoyoCooldown = INIT.YOYO.COOLDOWN;
         yoyoDamage = INIT.YOYO.DAMAGE;
         yoyoRange = INIT.YOYO.RANGE;
         yoyoKnockback = INIT.YOYO.KNOCKBACK;
@@ -2380,7 +2372,6 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
           }
         }
         shootTimer += dt * 1000;
-        yoyoTimer += dt * 1000;
         bombTimer += dt * 1000;
         spawnTimer += dt * 1000;
         iceFloorTimer += dt * 1000;
@@ -2465,8 +2456,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
             range: bulletRange,
           });
         }
-        if (baseAttack === "yoyo" && yoyoTimer >= yoyoCooldown && yoyos.length === 0) {
-          yoyoTimer = 0;
+        if (baseAttack === "yoyo" && yoyos.length === 0) {
           const yx = player.dir > 0 ? player.x + player.w : player.x - yoyoSize;
           yoyos.push({
             x: yx,
@@ -2596,8 +2586,6 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
             y.vx = dir * yoyoSpeed;
             if (Math.abs(targetX - y.x) <= Math.abs(y.vx * dt)) {
               yoyos.splice(i, 1);
-              // 요요가 즉시 재사용되도록 쿨다운을 채워준다
-              yoyoTimer = yoyoCooldown;
               continue;
             }
           }
