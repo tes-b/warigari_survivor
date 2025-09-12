@@ -1642,6 +1642,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
           type: enemyTypes[0],
           vx: 0,
           vy: 0,
+          dir: -1,
           color: "#ff6b9d",
           damage: enemyContactDamage * enemyScale * 3,
           reward: enemyReward * 10,
@@ -1737,13 +1738,20 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
         }
       }
 
-      function updateBossBehavior(b, dt) {
-        if (b.attackState === "laser") {
-          b.attackCooldown -= dt * 1000;
-          if (b.attackCooldown <= 0) {
-            if (b.laserCount < 5) {
-              fireBossLaser(b);
-              b.laserCount++;
+        function updateBossBehavior(b, dt) {
+          if (
+            !b.jumping &&
+            (b.attackState !== "jump" || b.jumpCount === 0)
+          ) {
+            b.dir =
+              player.x + player.w / 2 >= b.x + b.w / 2 ? 1 : -1;
+          }
+          if (b.attackState === "laser") {
+            b.attackCooldown -= dt * 1000;
+            if (b.attackCooldown <= 0) {
+              if (b.laserCount < 5) {
+                fireBossLaser(b);
+                b.laserCount++;
               b.attackCooldown = 1000;
             } else if (!bossLasers.some((l) => l.owner === b)) {
               if (currentWave === 3) {
@@ -1771,39 +1779,41 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
             }
           } else {
             b.attackCooldown -= dt * 1000;
-            if (b.attackCooldown <= 0) {
-              const jumpVy = -800;
-              const flight = (-2 * jumpVy) / 1500;
-              if (b.jumpCount < 5) {
-                const targetX = player.x;
-                b.vx = (targetX - b.x) / flight;
-                b.vy = jumpVy;
-                b.jumping = true;
-                b.jumpCount++;
-              } else if (!b.returning) {
-                b.vx = (b.startX - b.x) / flight;
-                b.vy = jumpVy;
-                b.jumping = true;
-                b.returning = true;
-              } else {
-                if (currentWave === 3) {
-                  b.attackState = "laser";
-                  b.laserCount = 0;
-                  b.attackCooldown = BOSS_PATTERN_DELAY;
-                  b.jumpCount = 0;
-                  b.returning = false;
-                } else if (currentWave === 11) {
-                  pickBossPattern(b);
+              if (b.attackCooldown <= 0) {
+                const jumpVy = -800;
+                const flight = (-2 * jumpVy) / 1500;
+                if (b.jumpCount < 5) {
+                  const targetX = player.x;
+                  b.vx = (targetX - b.x) / flight;
+                  b.dir = Math.sign(b.vx);
+                  b.vy = jumpVy;
+                  b.jumping = true;
+                  b.jumpCount++;
+                } else if (!b.returning) {
+                  b.vx = (b.startX - b.x) / flight;
+                  b.dir = Math.sign(b.vx);
+                  b.vy = jumpVy;
+                  b.jumping = true;
+                  b.returning = true;
+                } else {
+                  if (currentWave === 3) {
+                    b.attackState = "laser";
+                    b.laserCount = 0;
+                    b.attackCooldown = BOSS_PATTERN_DELAY;
+                    b.jumpCount = 0;
+                    b.returning = false;
+                  } else if (currentWave === 11) {
+                    pickBossPattern(b);
+                  }
                 }
               }
             }
-          }
-        } else if (b.attackState === "airLaser") {
-          b.attackCooldown -= dt * 1000;
-          if (b.attackCooldown <= 0) {
-            if (b.laserCount < 5) {
-              fireBossAirLasers(b);
-              b.laserCount++;
+          } else if (b.attackState === "airLaser") {
+            b.attackCooldown -= dt * 1000;
+            if (b.attackCooldown <= 0) {
+              if (b.laserCount < 5) {
+                fireBossAirLasers(b);
+                b.laserCount++;
               b.attackCooldown = 1500;
             } else if (!bossLasers.some((l) => l.owner === b)) {
               if (currentWave === 7) {
@@ -3387,8 +3397,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
           // boss는 바라보는 방향에 방패를 표시 (방패 두께 5px)
           if (e.isBoss) {
             ctx.save();
-            const facing =
-              player.x + player.w * 0.5 >= e.x + e.w * 0.5 ? 1 : -1;
+            const facing = e.dir > 0 ? 1 : -1;
             const shieldW = 5;
             const shieldH = Math.max(14, e.h * 0.9);
             const shieldY = e.y + (e.h - shieldH) / 2;
@@ -3443,8 +3452,9 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
           }
 
           ctx.fillStyle = "#0008";
-          const facingPlayer =
-            e.isBoss || (e.type && e.type.id === "jumper")
+          const facingPlayer = e.isBoss
+            ? e.dir > 0
+            : (e.type && e.type.id === "jumper")
               ? player.x + player.w * 0.5 >= e.x + e.w * 0.5
               : e.vx > 0;
           const ex = e.x + (facingPlayer ? e.w - 8 : 2);
