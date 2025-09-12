@@ -998,6 +998,8 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
 
       const HOLD_DURATION = 800;
       let levelupActive = false;
+      let pendingLevelUps = 0; // 큐에 대기 중인 레벨업 수
+      let pendingBossOrbs = 0; // 보상 대기 중인 보스 구슬 수
       let focusedOptionIndex = 0;
       let spaceHoldStart = null;
       let holdTimeout = null;
@@ -1200,7 +1202,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
         } else if (e.code === "Digit4") {
           e.preventDefault();
           if (running && !levelupActive) {
-            showLevelUpScreen(1, true);
+            queueBossOrb();
           }
         }
       });
@@ -1333,12 +1335,15 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
       function reset() {
         running = false;
         paused = false;
+        levelupActive = false;
         lastTime = performance.now();
         elapsed = 0;
         score = 0;
         hp = playerHP;
         exp = 0;
         level = 1;
+        pendingLevelUps = 0;
+        pendingBossOrbs = 0;
         expToNextLevel = 80;
         player.x = WORLD.w / 2;
         player.y = WORLD.groundY - player.h - player.leglength;
@@ -2122,6 +2127,28 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
       }
 
       // 레벨업 처리
+      function processLevelUpQueue() {
+        if (levelupActive) return;
+        if (pendingBossOrbs > 0) {
+          pendingBossOrbs--;
+          showLevelUpScreen(1, true);
+        } else if (pendingLevelUps > 0) {
+          const levels = pendingLevelUps;
+          pendingLevelUps = 0;
+          showLevelUpScreen(levels);
+        }
+      }
+
+      function queueLevelUps(count) {
+        pendingLevelUps += count;
+        processLevelUpQueue();
+      }
+
+      function queueBossOrb() {
+        pendingBossOrbs++;
+        processLevelUpQueue();
+      }
+
       function checkLevelUp() {
         if (exp >= expToNextLevel) {
           let levelsGained = 0;
@@ -2131,8 +2158,8 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
             levelsGained++;
             expToNextLevel = Math.floor(expToNextLevel * expGrowthRate);
           }
-          // 첫 번째 레벨업 화면 표시
-          showLevelUpScreen(levelsGained);
+          // 큐에 레벨업 추가
+          queueLevelUps(levelsGained);
         }
       }
 
@@ -2230,7 +2257,10 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
             } else {
               paused = false;
               updateHUD();
-              requestAnimationFrame(loop);
+              processLevelUpQueue();
+              if (!levelupActive) {
+                requestAnimationFrame(loop);
+              }
             }
           };
           upgradeGrid.appendChild(btn);
@@ -2693,12 +2723,11 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
 
           // 플레이어와 접촉 시 획득
           if (aabb(orb, player)) {
+            expOrbs.splice(i, 1);
             if (orb.upgrade) {
-              expOrbs.splice(i, 1);
-              showLevelUpScreen(1, true);
+              queueBossOrb();
             } else {
               exp += orb.value;
-              expOrbs.splice(i, 1);
               checkLevelUp();
             }
             continue;
