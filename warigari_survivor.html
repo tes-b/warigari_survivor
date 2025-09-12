@@ -1269,6 +1269,15 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
         return weights.length - 1;
       }
 
+      function isBossFacingPlayer(b) {
+        const playerCenter = player.x + player.w / 2;
+        const bossCenter = b.x + b.w / 2;
+        return (
+          (b.dir > 0 && playerCenter >= bossCenter) ||
+          (b.dir < 0 && playerCenter <= bossCenter)
+        );
+      }
+
       // --- 게임 제어 ---
       const overlay = document.getElementById("overlay");
 
@@ -1672,9 +1681,12 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
           });
         } else if (currentWave === 7) {
           Object.assign(boss, {
-            attackState: "airLaser",
+            attackState: "jump",
             attackCooldown: 1000,
             laserCount: 0,
+            jumpCount: 0,
+            jumping: false,
+            returning: false,
           });
         } else if (currentWave === 11) {
           pickBossPattern(boss);
@@ -1802,6 +1814,12 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
                     b.attackCooldown = BOSS_PATTERN_DELAY;
                     b.jumpCount = 0;
                     b.returning = false;
+                  } else if (currentWave === 7) {
+                    b.attackState = "timedLaser";
+                    b.laserCount = 0;
+                    b.attackCooldown = BOSS_PATTERN_DELAY;
+                    b.jumpCount = 0;
+                    b.returning = false;
                   } else if (currentWave === 11) {
                     pickBossPattern(b);
                   }
@@ -1816,11 +1834,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
                 b.laserCount++;
               b.attackCooldown = 1500;
             } else if (!bossLasers.some((l) => l.owner === b)) {
-              if (currentWave === 7) {
-                b.attackState = "timedLaser";
-                b.laserCount = 0;
-                b.attackCooldown = BOSS_PATTERN_DELAY;
-              } else if (currentWave === 11) {
+              if (currentWave === 11) {
                 pickBossPattern(b);
               }
             }
@@ -1842,9 +1856,12 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
               b.attackCooldown = 500;
             } else if (!bossLasers.some((l) => l.owner === b)) {
               if (currentWave === 7) {
-                b.attackState = "airLaser";
+                b.attackState = "jump";
                 b.laserCount = 0;
                 b.attackCooldown = BOSS_PATTERN_DELAY;
+                b.jumpCount = 0;
+                b.jumping = false;
+                b.returning = false;
               } else if (currentWave === 11) {
                 pickBossPattern(b);
               }
@@ -1986,7 +2003,10 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
           const dist = Math.hypot(dx, dy);
           if (dist <= levelUpImpulseRadius) {
             const raw = levelUpImpulseDamage - (e.defense || 0);
-            const dmg = Math.min(Math.max(raw, 1), e.hp);
+            let dmg = Math.min(Math.max(raw, 1), e.hp);
+            if (e.isBoss && isBossFacingPlayer(e)) {
+              dmg = Math.max(Math.floor(dmg * 0.25), 1);
+            }
             e.hp -= dmg;
             spawnFloatText(e.x + e.w / 2, e.y - 12, -dmg, "#ff6b6b");
             if (e.hp <= 0) {
@@ -2034,7 +2054,10 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
             const ang = Math.atan2(dy, dx * player.dir);
             if (ang >= -11 * Math.PI / 18 && ang <= Math.PI / 6) {
               const raw = swordDamage - (e.defense || 0);
-              const dmg = Math.min(Math.max(raw, 1), e.hp);
+              let dmg = Math.min(Math.max(raw, 1), e.hp);
+              if (e.isBoss && isBossFacingPlayer(e)) {
+                dmg = Math.max(Math.floor(dmg * 0.25), 1);
+              }
               e.hp -= dmg;
               spawnFloatText(ex, e.y - 12, -dmg, "#ff6b6b");
               if (lifeSteal > 0 && totalHeal < missingHP) {
@@ -2851,7 +2874,10 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
               if (b.hitSet.has(e.id)) continue;
               if (aabb(e, b)) {
                 const raw = b.dmg - (e.defense || 0);
-                const dmg = Math.min(Math.max(raw, 1), e.hp);
+                let dmg = Math.min(Math.max(raw, 1), e.hp);
+                if (e.isBoss && isBossFacingPlayer(e)) {
+                  dmg = Math.max(Math.floor(dmg * 0.25), 1);
+                }
                 e.hp -= dmg;
 
                 spawnFloatText(e.x + e.w / 2, e.y - 12, -dmg, "#ff6b6b");
@@ -2901,7 +2927,10 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
               if (y.hitSet.has(e.id)) continue;
               if (aabb(e, y)) {
                 const raw = y.dmg - (e.defense || 0);
-                const dmg = Math.min(Math.max(raw, 1), e.hp);
+                let dmg = Math.min(Math.max(raw, 1), e.hp);
+                if (e.isBoss && isBossFacingPlayer(e)) {
+                  dmg = Math.max(Math.floor(dmg * 0.25), 1);
+                }
                 e.hp -= dmg;
 
                 spawnFloatText(e.x + e.w / 2, e.y - 12, -dmg, "#ff6b6b");
@@ -2948,7 +2977,10 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
               const rect = { x: l.x - w / 2, y: l.y - h / 2, w, h };
               if (aabb(e, rect)) {
                 const raw = l.dmg - (e.defense || 0);
-                const dmg = Math.min(Math.max(raw, 1), e.hp);
+                let dmg = Math.min(Math.max(raw, 1), e.hp);
+                if (e.isBoss && isBossFacingPlayer(e)) {
+                  dmg = Math.max(Math.floor(dmg * 0.25), 1);
+                }
                 e.hp -= dmg;
                 spawnFloatText(e.x + e.w / 2, e.y - 12, -dmg, "#ff6b6b");
                 lasers.splice(j, 1);
