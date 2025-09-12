@@ -1794,7 +1794,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
               b.vy = 0;
               b.jumping = false;
               b.x = b.returning ? b.startX : b.x;
-              b.attackCooldown = 500;
+              b.attackCooldown = 1000;
             }
           } else {
             b.attackCooldown -= dt * 1000;
@@ -1814,20 +1814,20 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
                 b.vy = jumpVy;
                 b.jumping = true;
                 b.returning = true;
+              } else {
+                if (currentWave === 3) {
+                  b.attackState = "rush";
+                  b.attackCooldown = BOSS_PATTERN_DELAY;
+                  b.jumpCount = 0;
+                  b.returning = false;
+                  b.rushing = false;
+                  b.rushDir = 0;
+                  b.rushColorTimer = 0;
+                  b.color = "#ff6b9d";
                 } else {
-                  if (currentWave === 3) {
-                    b.attackState = "rush";
-                    b.attackCooldown = BOSS_PATTERN_DELAY;
-                    b.jumpCount = 0;
-                    b.returning = false;
-                    b.rushing = false;
-                    b.rushDir = 0;
-                    b.rushColorTimer = 0;
-                    b.color = "#ff6b9d";
-                  } else {
-                    pickBossPattern(b);
-                  }
+                  pickBossPattern(b);
                 }
+              }
             }
           }
         } else if (b.attackState === "airLaser") {
@@ -1885,21 +1885,21 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
             if (b.rushDir < 0 && b.x <= 0) {
               b.x = 0;
               b.rushDir = 1;
-              } else if (b.rushDir > 0 && b.x >= WORLD.w - b.w) {
-                b.x = WORLD.w - b.w;
-                b.rushing = false;
-                b.vx = 0;
-                b.color = "#ff6b9d";
-                b.rushDir = 0;
-                b.rushColorTimer = 0;
-                if (currentWave === 3) {
-                  b.attackState = "laser";
-                  b.laserCount = 0;
-                  b.attackCooldown = BOSS_PATTERN_DELAY;
-                } else {
-                  pickBossPattern(b);
-                }
+            } else if (b.rushDir > 0 && b.x >= WORLD.w - b.w) {
+              b.x = WORLD.w - b.w;
+              b.rushing = false;
+              b.vx = 0;
+              b.color = "#ff6b9d";
+              b.rushDir = 0;
+              b.rushColorTimer = 0;
+              if (currentWave === 3) {
+                b.attackState = "laser";
+                b.laserCount = 0;
+                b.attackCooldown = BOSS_PATTERN_DELAY;
+              } else {
+                pickBossPattern(b);
               }
+            }
           } else {
             b.vx = 0;
           }
