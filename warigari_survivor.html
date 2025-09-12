@@ -1455,6 +1455,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
       }
 
       function gameOver() {
+        updateHUD(); // 즉시 HUD 업데이트
         // 죽음 애니메이션 시작
         player.deathAnim.active = true;
         player.deathAnim.time = 0;
