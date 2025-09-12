@@ -1681,9 +1681,12 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
           });
         } else if (currentWave === 7) {
           Object.assign(boss, {
-            attackState: "airLaser",
+            attackState: "jump",
             attackCooldown: 1000,
             laserCount: 0,
+            jumpCount: 0,
+            jumping: false,
+            returning: false,
           });
         } else if (currentWave === 11) {
           pickBossPattern(boss);
@@ -1811,6 +1814,12 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
                     b.attackCooldown = BOSS_PATTERN_DELAY;
                     b.jumpCount = 0;
                     b.returning = false;
+                  } else if (currentWave === 7) {
+                    b.attackState = "timedLaser";
+                    b.laserCount = 0;
+                    b.attackCooldown = BOSS_PATTERN_DELAY;
+                    b.jumpCount = 0;
+                    b.returning = false;
                   } else if (currentWave === 11) {
                     pickBossPattern(b);
                   }
@@ -1825,11 +1834,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
                 b.laserCount++;
               b.attackCooldown = 1500;
             } else if (!bossLasers.some((l) => l.owner === b)) {
-              if (currentWave === 7) {
-                b.attackState = "timedLaser";
-                b.laserCount = 0;
-                b.attackCooldown = BOSS_PATTERN_DELAY;
-              } else if (currentWave === 11) {
+              if (currentWave === 11) {
                 pickBossPattern(b);
               }
             }
@@ -1851,9 +1856,12 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
               b.attackCooldown = 500;
             } else if (!bossLasers.some((l) => l.owner === b)) {
               if (currentWave === 7) {
-                b.attackState = "airLaser";
+                b.attackState = "jump";
                 b.laserCount = 0;
                 b.attackCooldown = BOSS_PATTERN_DELAY;
+                b.jumpCount = 0;
+                b.jumping = false;
+                b.returning = false;
               } else if (currentWave === 11) {
                 pickBossPattern(b);
               }
