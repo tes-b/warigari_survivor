@@ -1593,13 +1593,22 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
       }
 
       function pickBossPattern(b) {
-        const patterns = ["jump", "airLaser", "timedLaser"];
+        let patterns;
+        if (currentWave === 11) {
+          patterns = ["jump", "timedLaser", "rush", "airLaser"];
+        } else {
+          patterns = ["jump", "timedLaser", "rush"];
+        }
         b.attackState = patterns[(Math.random() * patterns.length) | 0];
         b.attackCooldown = BOSS_PATTERN_DELAY;
         b.laserCount = 0;
         b.jumpCount = 0;
         b.jumping = false;
         b.returning = false;
+        b.rushing = false;
+        b.rushDir = 0;
+        b.rushColorTimer = 0;
+        b.color = "#ff6b9d";
       }
 
       const BOSS_PATTERN_DELAY = 3000;
@@ -1607,6 +1616,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
       const BOSS_PRE_EFFECT_TIME = {
         laser: 500,
         timedLaser: 300,
+        rush: 1000,
       };
 
       function bossPreEffectActive(b) {
@@ -1624,6 +1634,8 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
         if (b.attackState === "laser" && b.laserCount < 5 && b.attackCooldown <= effectTime)
           return true;
         if (b.attackState === "timedLaser" && b.laserCount < 10 && b.attackCooldown <= effectTime)
+          return true;
+        if (b.attackState === "rush" && !b.rushing && b.attackCooldown <= effectTime)
           return true;
         return false;
       }
@@ -1669,6 +1681,9 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
               x2: 0.5 + ((i + 1) % 2 ? 0.1 : -0.1),
               y2: (i + 1) / seg,
             })))(8),
+          rushing: false,
+          rushDir: 0,
+          rushColorTimer: 0,
         };
         if (currentWave === 3) {
           Object.assign(boss, {
@@ -1679,16 +1694,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
             jumping: false,
             returning: false,
           });
-        } else if (currentWave === 7) {
-          Object.assign(boss, {
-            attackState: "jump",
-            attackCooldown: 1000,
-            laserCount: 0,
-            jumpCount: 0,
-            jumping: false,
-            returning: false,
-          });
-        } else if (currentWave === 11) {
+        } else if (currentWave === 7 || currentWave === 11) {
           pickBossPattern(boss);
         }
         // 보스 스폰 후 5초후에 패턴 시작
@@ -1753,7 +1759,8 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
       function updateBossBehavior(b, dt) {
         if (
           !b.jumping &&
-          (b.attackState !== "jump" || b.jumpCount === 0)
+          (b.attackState !== "jump" || b.jumpCount === 0) &&
+          b.attackState !== "rush"
         ) {
           b.dir =
             player.x + player.w / 2 >= b.x + b.w / 2 ? 1 : -1;
@@ -1771,7 +1778,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
                 b.attackCooldown = BOSS_PATTERN_DELAY;
                 b.jumpCount = 0;
                 b.returning = false;
-              } else if (currentWave === 11) {
+              } else {
                 pickBossPattern(b);
               }
             }
@@ -1807,23 +1814,20 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
                 b.vy = jumpVy;
                 b.jumping = true;
                 b.returning = true;
-              } else {
-                if (currentWave === 3) {
-                  b.attackState = "laser";
-                  b.laserCount = 0;
-                  b.attackCooldown = BOSS_PATTERN_DELAY;
-                  b.jumpCount = 0;
-                  b.returning = false;
-                } else if (currentWave === 7) {
-                  b.attackState = "timedLaser";
-                  b.laserCount = 0;
-                  b.attackCooldown = BOSS_PATTERN_DELAY;
-                  b.jumpCount = 0;
-                  b.returning = false;
-                } else if (currentWave === 11) {
-                  pickBossPattern(b);
+                } else {
+                  if (currentWave === 3) {
+                    b.attackState = "rush";
+                    b.attackCooldown = BOSS_PATTERN_DELAY;
+                    b.jumpCount = 0;
+                    b.returning = false;
+                    b.rushing = false;
+                    b.rushDir = 0;
+                    b.rushColorTimer = 0;
+                    b.color = "#ff6b9d";
+                  } else {
+                    pickBossPattern(b);
+                  }
                 }
-              }
             }
           }
         } else if (b.attackState === "airLaser") {
@@ -1834,9 +1838,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
               b.laserCount++;
               b.attackCooldown = 1500;
             } else if (!bossLasers.some((l) => l.owner === b)) {
-              if (currentWave === 11) {
-                pickBossPattern(b);
-              }
+              pickBossPattern(b);
             }
           }
           b.vx = 0;
@@ -1855,19 +1857,52 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
               b.laserCount++;
               b.attackCooldown = 500;
             } else if (!bossLasers.some((l) => l.owner === b)) {
-              if (currentWave === 7) {
-                b.attackState = "jump";
-                b.laserCount = 0;
-                b.attackCooldown = BOSS_PATTERN_DELAY;
-                b.jumpCount = 0;
-                b.jumping = false;
-                b.returning = false;
-              } else if (currentWave === 11) {
-                pickBossPattern(b);
-              }
+              pickBossPattern(b);
             }
           }
           b.vx = 0;
+        } else if (b.attackState === "rush") {
+          b.attackCooldown -= dt * 1000;
+          if (b.attackCooldown <= 0) {
+            if (!b.rushing) {
+              b.rushing = true;
+              b.rushDir = -1;
+              b.color = "#ff6b9d";
+              b.rushColorTimer = 0;
+            }
+
+            b.rushColorTimer += dt;
+            if (b.rushColorTimer >= 1) {
+              b.rushColorTimer -= 1;
+              b.color = b.color === "#ff6b9d" ? "#4ade80" : "#ff6b9d";
+            }
+
+            const speed = player.speed * 2;
+            b.vx = b.rushDir * speed;
+            b.x += b.vx * dt;
+            b.dir = b.rushDir;
+
+            if (b.rushDir < 0 && b.x <= 0) {
+              b.x = 0;
+              b.rushDir = 1;
+              } else if (b.rushDir > 0 && b.x >= WORLD.w - b.w) {
+                b.x = WORLD.w - b.w;
+                b.rushing = false;
+                b.vx = 0;
+                b.color = "#ff6b9d";
+                b.rushDir = 0;
+                b.rushColorTimer = 0;
+                if (currentWave === 3) {
+                  b.attackState = "laser";
+                  b.laserCount = 0;
+                  b.attackCooldown = BOSS_PATTERN_DELAY;
+                } else {
+                  pickBossPattern(b);
+                }
+              }
+          } else {
+            b.vx = 0;
+          }
         }
       }
 
@@ -3029,6 +3064,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
 
             // 플레이어와 충돌/공격 처리
             const playerCollide = aabb(e, player);
+            const bossGreen = e.isBoss && e.color === "#4ade80";
             let attackRect = { x: e.x, y: e.y, w: e.w, h: e.h };
             if (e.type && e.type.id === "offense") {
               const extra = e.range - e.w;
@@ -3040,7 +3076,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
               }
             }
 
-            if (playerCollide || aabb(attackRect, player)) {
+            if (!bossGreen && (playerCollide || aabb(attackRect, player))) {
               if (player.iframes <= 0 && !cheatInvincible) {
                 const raw = e.damage - playerDefense;
                 const dmg = Math.min(Math.max(raw, 1), hp);
@@ -3061,7 +3097,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
               }
             }
 
-            if (playerCollide) {
+            if (!bossGreen && playerCollide) {
               const playerLeft = player.x;
               const playerRight = player.x + player.w;
               const eLeft = e.x;
