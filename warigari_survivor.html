@@ -1611,6 +1611,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
       const BOSS_PRE_EFFECT_TIME = {
         laser: 500,
         timedLaser: 300,
+        rush: 1000,
       };
 
       function bossPreEffectActive(b) {
@@ -1628,6 +1629,8 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
         if (b.attackState === "laser" && b.laserCount < 5 && b.attackCooldown <= effectTime)
           return true;
         if (b.attackState === "timedLaser" && b.laserCount < 10 && b.attackCooldown <= effectTime)
+          return true;
+        if (b.attackState === "rush" && !b.rushing && b.attackCooldown <= effectTime)
           return true;
         return false;
       }
