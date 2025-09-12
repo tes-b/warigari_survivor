@@ -523,15 +523,15 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
           HITFLASH: 200, // 피격 시 시각 효과 지속 시간 (ms)
           DEFENSE: 0, // 플레이어 방어력
         },
-        // 총알 관련
+        // 총 관련
         BULLET: {
           SPEED: 500, // 총알 속도 (px/s)
           SIZE: 10, // 총알 크기
           COOLDOWN: 500, // 총알 발사 쿨다운 (ms)
-          DAMAGE: 180, // 총알 피해량
+          DAMAGE: 120, // 총알 피해량
           PENETRATION: 0, // 총알 관통 수
           KNOCKBACK: 0, // 총알 넉백 거리 (px)
-          RANGE: 250, // 총알 사정거리 (px)
+          RANGE: 180, // 총알 사정거리 (px)
           LIFESTEAL: 0, // 기본 공격 피해로 체력 회복 비율
         },
         // 적 관련
@@ -581,7 +581,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
         },
         // 요요 관련
         YOYO: {
-          SIZE: 15, // 요요 크기
+          SIZE: 12, // 요요 크기
           DAMAGE: 80, // 요요 피해량
           RANGE: 180, // 요요 사정거리 (px)
           KNOCKBACK: 0, // 요요 넉백 거리 (px)
@@ -1750,20 +1750,20 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
         }
       }
 
-        function updateBossBehavior(b, dt) {
-          if (
-            !b.jumping &&
-            (b.attackState !== "jump" || b.jumpCount === 0)
-          ) {
-            b.dir =
-              player.x + player.w / 2 >= b.x + b.w / 2 ? 1 : -1;
-          }
-          if (b.attackState === "laser") {
-            b.attackCooldown -= dt * 1000;
-            if (b.attackCooldown <= 0) {
-              if (b.laserCount < 5) {
-                fireBossLaser(b);
-                b.laserCount++;
+      function updateBossBehavior(b, dt) {
+        if (
+          !b.jumping &&
+          (b.attackState !== "jump" || b.jumpCount === 0)
+        ) {
+          b.dir =
+            player.x + player.w / 2 >= b.x + b.w / 2 ? 1 : -1;
+        }
+        if (b.attackState === "laser") {
+          b.attackCooldown -= dt * 1000;
+          if (b.attackCooldown <= 0) {
+            if (b.laserCount < 5) {
+              fireBossLaser(b);
+              b.laserCount++;
               b.attackCooldown = 1000;
             } else if (!bossLasers.some((l) => l.owner === b)) {
               if (currentWave === 3) {
@@ -1791,47 +1791,47 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
             }
           } else {
             b.attackCooldown -= dt * 1000;
-              if (b.attackCooldown <= 0) {
-                const jumpVy = -800;
-                const flight = (-2 * jumpVy) / 1500;
-                if (b.jumpCount < 5) {
-                  const targetX = player.x;
-                  b.vx = (targetX - b.x) / flight;
-                  b.dir = Math.sign(b.vx);
-                  b.vy = jumpVy;
-                  b.jumping = true;
-                  b.jumpCount++;
-                } else if (!b.returning) {
-                  b.vx = (b.startX - b.x) / flight;
-                  b.dir = Math.sign(b.vx);
-                  b.vy = jumpVy;
-                  b.jumping = true;
-                  b.returning = true;
-                } else {
-                  if (currentWave === 3) {
-                    b.attackState = "laser";
-                    b.laserCount = 0;
-                    b.attackCooldown = BOSS_PATTERN_DELAY;
-                    b.jumpCount = 0;
-                    b.returning = false;
-                  } else if (currentWave === 7) {
-                    b.attackState = "timedLaser";
-                    b.laserCount = 0;
-                    b.attackCooldown = BOSS_PATTERN_DELAY;
-                    b.jumpCount = 0;
-                    b.returning = false;
-                  } else if (currentWave === 11) {
-                    pickBossPattern(b);
-                  }
+            if (b.attackCooldown <= 0) {
+              const jumpVy = -800;
+              const flight = (-2 * jumpVy) / 1500;
+              if (b.jumpCount < 5) {
+                const targetX = player.x;
+                b.vx = (targetX - b.x) / flight;
+                b.dir = Math.sign(b.vx);
+                b.vy = jumpVy;
+                b.jumping = true;
+                b.jumpCount++;
+              } else if (!b.returning) {
+                b.vx = (b.startX - b.x) / flight;
+                b.dir = Math.sign(b.vx);
+                b.vy = jumpVy;
+                b.jumping = true;
+                b.returning = true;
+              } else {
+                if (currentWave === 3) {
+                  b.attackState = "laser";
+                  b.laserCount = 0;
+                  b.attackCooldown = BOSS_PATTERN_DELAY;
+                  b.jumpCount = 0;
+                  b.returning = false;
+                } else if (currentWave === 7) {
+                  b.attackState = "timedLaser";
+                  b.laserCount = 0;
+                  b.attackCooldown = BOSS_PATTERN_DELAY;
+                  b.jumpCount = 0;
+                  b.returning = false;
+                } else if (currentWave === 11) {
+                  pickBossPattern(b);
                 }
               }
             }
-          } else if (b.attackState === "airLaser") {
-            b.attackCooldown -= dt * 1000;
-            if (b.attackCooldown <= 0) {
-              if (b.laserCount < 5) {
-                fireBossAirLasers(b);
-                b.laserCount++;
+          }
+        } else if (b.attackState === "airLaser") {
+          b.attackCooldown -= dt * 1000;
+          if (b.attackCooldown <= 0) {
+            if (b.laserCount < 5) {
+              fireBossAirLasers(b);
+              b.laserCount++;
               b.attackCooldown = 1500;
             } else if (!bossLasers.some((l) => l.owner === b)) {
               if (currentWave === 11) {
@@ -2919,16 +2919,16 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
                   e._killed = true;
                   break;
                 }
+              }
             }
-          }
-          if (e._killed) continue;
-          // 요요와 충돌
-          for (const y of yoyos) {
+            if (e._killed) continue;
+            // 요요와 충돌
+            for (const y of yoyos) {
               if (y.hitSet.has(e.id)) continue;
               if (aabb(e, y)) {
                 const raw = y.dmg - (e.defense || 0);
                 let dmg = Math.min(Math.max(raw, 1), e.hp);
-                if (e.isBoss && isBossFacingPlayer(e)) {
+                if (e.isBoss && isBossFacingPlayer(e) && !y.returning) {
                   dmg = Math.max(Math.floor(dmg * 0.25), 1);
                 }
                 e.hp -= dmg;
