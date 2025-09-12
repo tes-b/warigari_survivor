@@ -1894,6 +1894,8 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
           spawnExpOrb(x, y);
         }
         if (e.isBoss) {
+          if (e._bigOrbDropped) return;
+          e._bigOrbDropped = true;
           spawnExpOrb(x, y, {
             size: expOrbSize * 3,
             color: "#3b82f6",
