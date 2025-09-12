@@ -1739,8 +1739,12 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
       }
 
         function updateBossBehavior(b, dt) {
-          if (!b.jumping) {
-            b.dir = player.x + player.w / 2 >= b.x + b.w / 2 ? 1 : -1;
+          if (
+            !b.jumping &&
+            (b.attackState !== "jump" || b.jumpCount === 0)
+          ) {
+            b.dir =
+              player.x + player.w / 2 >= b.x + b.w / 2 ? 1 : -1;
           }
           if (b.attackState === "laser") {
             b.attackCooldown -= dt * 1000;
