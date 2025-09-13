@@ -571,6 +571,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
         ICEFLOOR: {
           DAMAGE: 20, // 초당 피해량
           DURATION: 3000, // 기본 지속 시간 (ms)
+          SLOW: 0.7, // 이동 속도 감소 비율
         },
         // 레이저 구슬 관련
         LASERORB: {
@@ -926,15 +927,16 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
         },
         {
           id: "iceFloor",
-          limit: 6,
+          limit: 5,
           title: "얼음 바닥",
           icon: "❄️",
-          desc: "바닥에 얼음을 생성해 적을 둔화시킵니다.\n(지속 시간 +1초, 피해 +10)",
+          desc: "바닥에 얼음을 생성해 적을 둔화시킵니다.\n(지속 시간 +1초, 피해 +20, 둔화 +10%)",
           apply: () => {
             const level = acquiredUpgrades["iceFloor"] || 0;
             if (level === 0) iceFloorEnabled = true;
             iceFloorDuration += 1000;
-            iceFloorDamage += 10;
+            iceFloorDamage += 20;
+            iceFloorSlow -= 0.1;
           },
         },
         {
@@ -1105,8 +1107,8 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
       let iceFloorEnabled = false;
       let iceFloorDamage = INIT.ICEFLOOR.DAMAGE;
       let iceFloorDuration = INIT.ICEFLOOR.DURATION;
+      let iceFloorSlow = INIT.ICEFLOOR.SLOW;
       const iceFloorSpawnInterval = 500; // ms
-      const iceFloorSlow = 0.5;
       const iceFloorTickInterval = 500; // ms
 
       // --- 적 ---
@@ -2823,7 +2825,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
             }
             if (iceDamage > 0) {
               const raw =
-                iceDamage * (iceFloorTickInterval / 1000) - (e.defense || 0);
+                iceDamage - (e.defense || 0);
               const dmg = Math.min(Math.max(raw, 1), e.hp);
               e.hp -= dmg;
               spawnFloatText(e.x + e.w / 2, e.y - 12, -dmg, "#60a5fa");
