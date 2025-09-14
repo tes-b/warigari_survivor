@@ -270,7 +270,7 @@
 
     .upgrade-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      grid-template-columns: repeat(auto-fit, minmax(calc(180px * var(--ui-scale)), 1fr));
       gap: calc(12px * var(--ui-scale));
       margin-top: calc(20px * var(--ui-scale));
     }
@@ -2287,6 +2287,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
       function showLevelUpScreen(remainingLevels, all = false) {
         paused = true;
         const levelupOverlay = document.getElementById("levelupOverlay");
+        const levelupPanel = levelupOverlay.querySelector(".levelup-panel");
         const upgradeGrid = document.getElementById("upgradeGrid");
 
         // 한계 수량에 도달한 업그레이드를 제외
@@ -2336,7 +2337,13 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
           };
           upgradeGrid.appendChild(btn);
         });
-
+        if (all) {
+          upgradeGrid.style.gridTemplateColumns = "repeat(5, 1fr)";
+          levelupPanel.style.maxWidth = "calc(1000px * var(--ui-scale))";
+        } else {
+          upgradeGrid.style.gridTemplateColumns = "";
+          levelupPanel.style.maxWidth = "";
+        }
         levelupOverlay.style.display = "flex";
         selectionButtons = document.querySelectorAll("#upgradeGrid .upgrade-btn");
         focusedOptionIndex = 0;
