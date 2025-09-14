@@ -731,6 +731,9 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
       let levelUpImpulseRadius = INIT.LEVELUP.RADIUS; // 임펄스 범위 (px)
       let levelUpImpulseKnockback = INIT.LEVELUP.KNOCKBACK; // 넉백 거리 (px) - 넉백 2단계 업그레이드와 동일
 
+      // 보스가 플레이어를 바라볼 때 피해 배율
+      const bossFacingDamageMultiplier = 0.5;
+
       // 업그레이드 옵션들
       const UPGRADES = [
         {
@@ -2048,7 +2051,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
             const raw = levelUpImpulseDamage - (e.defense || 0);
             let dmg = Math.min(Math.max(raw, 1), e.hp);
             if (e.isBoss && isBossFacingPlayer(e)) {
-              dmg = Math.max(Math.floor(dmg * 0.25), 1);
+              dmg = Math.max(Math.floor(dmg * bossFacingDamageMultiplier), 1);
             }
             e.hp -= dmg;
             spawnFloatText(e.x + e.w / 2, e.y - 12, -dmg, "#ff6b6b");
@@ -2099,7 +2102,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
               const raw = swordDamage - (e.defense || 0);
               let dmg = Math.min(Math.max(raw, 1), e.hp);
               if (e.isBoss && isBossFacingPlayer(e)) {
-                dmg = Math.max(Math.floor(dmg * 0.25), 1);
+                dmg = Math.max(Math.floor(dmg * bossFacingDamageMultiplier), 1);
               }
               e.hp -= dmg;
               spawnFloatText(ex, e.y - 12, -dmg, "#ff6b6b");
@@ -2926,7 +2929,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
                 const raw = b.dmg - (e.defense || 0);
                 let dmg = Math.min(Math.max(raw, 1), e.hp);
                 if (e.isBoss && isBossFacingPlayer(e)) {
-                  dmg = Math.max(Math.floor(dmg * 0.25), 1);
+                  dmg = Math.max(Math.floor(dmg * bossFacingDamageMultiplier), 1);
                 }
                 e.hp -= dmg;
 
@@ -2979,7 +2982,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
                 const raw = y.dmg - (e.defense || 0);
                 let dmg = Math.min(Math.max(raw, 1), e.hp);
                 if (e.isBoss && isBossFacingPlayer(e) && !y.returning) {
-                  dmg = Math.max(Math.floor(dmg * 0.25), 1);
+                  dmg = Math.max(Math.floor(dmg * bossFacingDamageMultiplier), 1);
                 }
                 e.hp -= dmg;
 
@@ -3029,7 +3032,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
                 const raw = l.dmg - (e.defense || 0);
                 let dmg = Math.min(Math.max(raw, 1), e.hp);
                 if (e.isBoss && isBossFacingPlayer(e)) {
-                  dmg = Math.max(Math.floor(dmg * 0.25), 1);
+                  dmg = Math.max(Math.floor(dmg * bossFacingDamageMultiplier), 1);
                 }
                 e.hp -= dmg;
                 spawnFloatText(e.x + e.w / 2, e.y - 12, -dmg, "#ff6b6b");
