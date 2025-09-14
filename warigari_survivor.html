@@ -3661,7 +3661,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
 
           ctx.save();
           const color =
-            orbitingOrbs.length >= UPGRADE_LIMITS.orbital
+            (acquiredUpgrades.orbital || 0) >= UPGRADE_LIMITS.orbital
               ? RAINBOW_COLORS[idx % RAINBOW_COLORS.length]
               : "#ff6b9d";
           ctx.fillStyle = color;
