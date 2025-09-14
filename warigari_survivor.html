@@ -828,21 +828,24 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
         },
         {
           id: "orbital",
-          limit: 7,
+          limit: 6,
           title: "궤도 구슬",
           icon: "🌟",
-          desc: "주변을 도는 구슬이 생성됩니다.\n(구슬 +1개)",
+          desc: "주변을 도는 구슬이 생성됩니다.\n(처음 2개, 이후 +1개)",
           apply() {
             if (orbitingOrbs.length >= this.limit) return;
 
-            // 새 구슬 추가
-            orbitingOrbs.push({
-              angle: 0,
-              size: 12,
-              damage: orbitalDamage,
-              hitSet: new Set(),
-              lastAngle: 0,
-            });
+            // 새 구슬 추가 (최초 2개, 이후 1개)
+            const addCount = orbitingOrbs.length === 0 ? 2 : 1;
+            for (let i = 0; i < addCount && orbitingOrbs.length < this.limit; i++) {
+              orbitingOrbs.push({
+                angle: 0,
+                size: 12,
+                damage: orbitalDamage,
+                hitSet: new Set(),
+                lastAngle: 0,
+              });
+            }
 
             // 등간격으로 재배치
             const count = orbitingOrbs.length;
