@@ -650,28 +650,28 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
       const BOSS_CONFIG = {
         3: {
           hp: 4000,
-          shield: true,
+          shield: false,
           shieldMultiplier: 0.5,
           attacks: {
-            contact: 3,
-            laser: 3,
-            airLaser: 3,
-            timedLaser: 3,
-            rush: 3,
-            jump: 3,
+            contact: 1,
+            laser: 1,
+            airLaser: 1,
+            timedLaser: 1,
+            rush: 1,
+            jump: 1,
           },
         },
         7: {
-          hp: 8000,
+          hp: 6000,
           shield: true,
           shieldMultiplier: 0.5,
           attacks: {
-            contact: 3,
-            laser: 3,
-            airLaser: 3,
-            timedLaser: 3,
-            rush: 3,
-            jump: 3,
+            contact: 2,
+            laser: 2,
+            airLaser: 2,
+            timedLaser: 2,
+            rush: 2,
+            jump: 2,
           },
         },
         11: {
@@ -696,10 +696,10 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
 
       // 적 티어별 설정 (5단계로 확장, 체력 증가/속도 감소)
       let enemyTiers = [
-        { name: "Weak", speed: 25, color: "#4ade80", hp: 150, exp: 1 },
-        { name: "Basic", speed: 23, color: "#60a5fa", hp: 300, exp: 2 },
+        { name: "Weak", speed: 25, color: "#4ade80", hp: 110, exp: 1 },
+        { name: "Basic", speed: 23, color: "#60a5fa", hp: 250, exp: 2 },
         { name: "Medium", speed: 40, color: "#a78bfa", hp: 500, exp: 4 },
-        { name: "Strong", speed: 46, color: "#f59e0b", hp: 1000, exp: 8 },
+        { name: "Strong", speed: 46, color: "#f59e0b", hp: 900, exp: 8 },
         { name: "Elite", speed: 54, color: "#ef4444", hp: 1400, exp: 16 },
       ];
 
@@ -723,7 +723,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
         },
         {
           id: "tank",
-          hpMul: 2,
+          hpMul: 1.5,
           speedMul: 0.7,
           damageMul: 1,
           range: 0,
