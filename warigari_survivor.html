@@ -647,6 +647,47 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
       let bossSpawnTimer = 0;
       let bossSpawnPos = null;
       let enemyScale = 1; // 웨이브에 따른 적 체력/공격력 배율
+      const BOSS_CONFIG = {
+        3: {
+          hp: 4000,
+          shield: true,
+          shieldMultiplier: 0.5,
+          attacks: {
+            contact: 3,
+            laser: 3,
+            airLaser: 3,
+            timedLaser: 3,
+            rush: 3,
+            jump: 3,
+          },
+        },
+        7: {
+          hp: 8000,
+          shield: true,
+          shieldMultiplier: 0.5,
+          attacks: {
+            contact: 3,
+            laser: 3,
+            airLaser: 3,
+            timedLaser: 3,
+            rush: 3,
+            jump: 3,
+          },
+        },
+        11: {
+          hp: 13000,
+          shield: true,
+          shieldMultiplier: 0.5,
+          attacks: {
+            contact: 3,
+            laser: 3,
+            airLaser: 3,
+            timedLaser: 3,
+            rush: 3,
+            jump: 3,
+          },
+        },
+      };
       let infiniteMode = false; // 12웨이브 이후 무한 모드 여부
       let infiniteWaveCount = 0; // 무한 모드에서 경과한 웨이브 수
 
@@ -730,9 +771,6 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
       let levelUpImpulseDamage = INIT.LEVELUP.DAMAGE; // 레벨업 시 주변 적에게 줄 피해
       let levelUpImpulseRadius = INIT.LEVELUP.RADIUS; // 임펄스 범위 (px)
       let levelUpImpulseKnockback = INIT.LEVELUP.KNOCKBACK; // 넉백 거리 (px) - 넉백 2단계 업그레이드와 동일
-
-      // 보스가 플레이어를 바라볼 때 피해 배율
-      const bossFacingDamageMultiplier = 0.5;
 
       // 업그레이드 옵션들
       const UPGRADES = [
@@ -1658,15 +1696,9 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
 
       function spawnBoss() {
         const size = enemySize * 3;
-        let hpBase;
-        // 보스별 체력 차등 적용
-        if (currentWave === 3) {
-          hpBase = 4000 * enemyScale; // 첫 번째 보스
-        } else if (currentWave === 7) {
-          hpBase = 8000 * enemyScale; // 두 번째 보스
-        } else if (currentWave === 11) {
-          hpBase = 13000 * enemyScale; // 최종 보스
-        }
+        const cfg = BOSS_CONFIG[currentWave];
+        const hpBase = cfg.hp * enemyScale;
+        const dmgBase = enemyContactDamage * enemyScale;
         const startX = WORLD.w - size - 10;
         const boss = {
           id: nextEnemyId++,
@@ -1681,7 +1713,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
           vy: 0,
           dir: -1,
           color: "#ff6b9d",
-          damage: enemyContactDamage * enemyScale * 3,
+          damage: dmgBase * cfg.attacks.contact,
           reward: enemyReward * 10,
           hp: hpBase,
           hpMax: hpBase,
@@ -1700,6 +1732,16 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
           rushing: false,
           rushDir: 0,
           rushColorTimer: 0,
+          attackDamage: {
+            contact: dmgBase * cfg.attacks.contact,
+            laser: dmgBase * cfg.attacks.laser,
+            airLaser: dmgBase * cfg.attacks.airLaser,
+            timedLaser: dmgBase * cfg.attacks.timedLaser,
+            rush: dmgBase * cfg.attacks.rush,
+            jump: dmgBase * cfg.attacks.jump,
+          },
+          hasShield: cfg.shield,
+          shieldMultiplier: cfg.shieldMultiplier,
         };
         pickBossPattern(boss);
         // 보스 스폰 후 5초후에 패턴 시작
@@ -1725,6 +1767,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
           color: opts.color || "#ff6b9d",
           hitWhenFacing:
             opts.hitWhenFacing !== undefined ? opts.hitWhenFacing : true,
+          damage: opts.damage || boss.attackDamage.laser,
         });
       }
 
@@ -1757,6 +1800,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
             ignoreFacing: true,
             persistent: true,
             active: false,
+            damage: boss.attackDamage.airLaser,
           });
         }
       }
@@ -1840,6 +1884,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
                 color,
                 hitWhenFacing: requireFacing,
                 width,
+                damage: b.attackDamage.timedLaser,
               });
               b.laserCount++;
               b.attackCooldown = 500;
@@ -2020,8 +2065,8 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
           if (dist <= levelUpImpulseRadius) {
             const raw = levelUpImpulseDamage - (e.defense || 0);
             let dmg = Math.min(Math.max(raw, 1), e.hp);
-            if (e.isBoss && isBossFacingPlayer(e)) {
-              dmg = Math.max(Math.floor(dmg * bossFacingDamageMultiplier), 1);
+            if (e.isBoss && e.hasShield && isBossFacingPlayer(e)) {
+              dmg = Math.max(Math.floor(dmg * e.shieldMultiplier), 1);
             }
             e.hp -= dmg;
             spawnFloatText(e.x + e.w / 2, e.y - 12, -dmg, "#ff6b6b");
@@ -2071,8 +2116,8 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
             if (ang >= -11 * Math.PI / 18 && ang <= Math.PI / 6) {
               const raw = swordDamage - (e.defense || 0);
               let dmg = Math.min(Math.max(raw, 1), e.hp);
-              if (e.isBoss && isBossFacingPlayer(e)) {
-                dmg = Math.max(Math.floor(dmg * bossFacingDamageMultiplier), 1);
+              if (e.isBoss && e.hasShield && isBossFacingPlayer(e)) {
+                dmg = Math.max(Math.floor(dmg * e.shieldMultiplier), 1);
               }
               e.hp -= dmg;
               spawnFloatText(ex, e.y - 12, -dmg, "#ff6b6b");
@@ -2669,7 +2714,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
             const facingBoss = bossLeft ? player.dir < 0 : player.dir > 0;
             const hitCondition = l.hitWhenFacing ? facingBoss : !facingBoss;
             if ((l.ignoreFacing || hitCondition) && player.iframes <= 0 && !cheatInvincible) {
-              const raw = l.owner.damage - playerDefense;
+              const raw = l.damage - playerDefense;
               const dmg = Math.min(Math.max(raw, 1), hp);
               hp -= dmg;
               spawnFloatText(
@@ -2898,8 +2943,8 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
               if (aabb(e, b)) {
                 const raw = b.dmg - (e.defense || 0);
                 let dmg = Math.min(Math.max(raw, 1), e.hp);
-                if (e.isBoss && isBossFacingPlayer(e)) {
-                  dmg = Math.max(Math.floor(dmg * bossFacingDamageMultiplier), 1);
+                if (e.isBoss && e.hasShield && isBossFacingPlayer(e)) {
+                  dmg = Math.max(Math.floor(dmg * e.shieldMultiplier), 1);
                 }
                 e.hp -= dmg;
 
@@ -2951,8 +2996,8 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
               if (aabb(e, y)) {
                 const raw = y.dmg - (e.defense || 0);
                 let dmg = Math.min(Math.max(raw, 1), e.hp);
-                if (e.isBoss && isBossFacingPlayer(e) && !y.returning) {
-                  dmg = Math.max(Math.floor(dmg * bossFacingDamageMultiplier), 1);
+                if (e.isBoss && e.hasShield && isBossFacingPlayer(e) && !y.returning) {
+                  dmg = Math.max(Math.floor(dmg * e.shieldMultiplier), 1);
                 }
                 e.hp -= dmg;
 
@@ -3001,8 +3046,8 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
               if (aabb(e, rect)) {
                 const raw = l.dmg - (e.defense || 0);
                 let dmg = Math.min(Math.max(raw, 1), e.hp);
-                if (e.isBoss && isBossFacingPlayer(e)) {
-                  dmg = Math.max(Math.floor(dmg * bossFacingDamageMultiplier), 1);
+                if (e.isBoss && e.hasShield && isBossFacingPlayer(e)) {
+                  dmg = Math.max(Math.floor(dmg * e.shieldMultiplier), 1);
                 }
                 e.hp -= dmg;
                 spawnFloatText(e.x + e.w / 2, e.y - 12, -dmg, "#ff6b6b");
@@ -3066,7 +3111,13 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
 
             if (!bossGreen && (playerCollide || aabb(attackRect, player))) {
               if (player.iframes <= 0 && !cheatInvincible) {
-                const raw = e.damage - playerDefense;
+                let baseDamage = e.damage;
+                if (e.isBoss) {
+                  if (e.attackState === "rush" && e.rushing) baseDamage = e.attackDamage.rush;
+                  else if (e.attackState === "jump" && e.jumping) baseDamage = e.attackDamage.jump;
+                  else baseDamage = e.attackDamage.contact;
+                }
+                const raw = baseDamage - playerDefense;
                 const dmg = Math.min(Math.max(raw, 1), hp);
                 hp -= dmg;
                 spawnFloatText(
