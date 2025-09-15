@@ -628,6 +628,8 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
       let yoyoSpeed = INIT.YOYO.SPEED;
       let lifeSteal = 0;
       let explosionEnabled = false;
+      let explosionRadius = INIT.EXPLOSION.RADIUS;
+      let explosionMinDamage = INIT.EXPLOSION.MIN_DAMAGE;
 
       let baseAttack = "gun";
 
@@ -972,12 +974,15 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
         },
         {
           id: "explosion",
-          limit: 1,
+          limit: 5,
           title: "폭발",
           icon: "💣",
-          desc: "기본 공격이 적중 시 폭발하여 주변 적에게 피해를 줍니다.",
+          desc: "기본 공격이 적중 시 폭발하여 주변 적에게 피해를 줍니다.\n(범위 +20, 폭발 피해 +20)",
           apply: () => {
-            explosionEnabled = true;
+            const level = acquiredUpgrades["explosion"] || 0;
+            if (level === 0) explosionEnabled = true;
+            explosionRadius += 20;
+            explosionMinDamage += 20;
           },
         },
         {
@@ -1430,6 +1435,8 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
         yoyos.length = 0;
         lifeSteal = 0;
         explosionEnabled = false;
+        explosionRadius = INIT.EXPLOSION.RADIUS;
+        explosionMinDamage = INIT.EXPLOSION.MIN_DAMAGE;
         laserOrbCooldown = INIT.LASERORB.COOLDOWN;
         laserOrbDamage = INIT.LASERORB.DAMAGE;
         laserOrbSpeed = INIT.LASERORB.SPEED;
@@ -1967,12 +1974,12 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
         impulseEffects.push({
           x: cx,
           y: cy,
-          radius: INIT.EXPLOSION.RADIUS,
+          radius: explosionRadius,
           life: 0,
           duration: 200,
           color: "#f97316",
         });
-        let base = INIT.EXPLOSION.MIN_DAMAGE;
+        let base = explosionMinDamage;
         if (playerDist > 20) base += (playerDist - 20) * INIT.EXPLOSION.DAMAGE_STEP;
         let primaryExtra = 0;
         for (let i = enemies.length - 1; i >= 0; i--) {
@@ -1981,7 +1988,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
           const ex = e.x + e.w / 2;
           const ey = e.y + e.h / 2;
           const dist = Math.hypot(ex - cx, ey - cy);
-          if (dist <= INIT.EXPLOSION.RADIUS) {
+          if (dist <= explosionRadius) {
             const raw = base - (e.defense || 0);
             let dmg = Math.min(Math.max(raw, 1), e.hp);
             if (e.isBoss && e.hasShield && isBossFacingPlayer(e)) {
