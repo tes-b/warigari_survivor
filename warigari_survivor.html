@@ -581,6 +581,12 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
           DURATION: 3000, // 기본 지속 시간 (ms)
           SLOW: 0.7, // 이동 속도 감소 비율
         },
+        // 폭발 관련
+        EXPLOSION: {
+          RADIUS: 40, // 폭발 범위 (px)
+          MIN_DAMAGE: 30, // 최소 폭발 피해
+          DAMAGE_STEP: 0.5, // 거리 1당 추가 폭발 피해
+        },
         // 레이저 구슬 관련
         LASERORB: {
           COOLDOWN: 1000, // 레이저 발사 간격 (ms)
@@ -621,6 +627,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
       let yoyoKnockback = INIT.YOYO.KNOCKBACK;
       let yoyoSpeed = INIT.YOYO.SPEED;
       let lifeSteal = 0;
+      let explosionEnabled = false;
 
       let baseAttack = "gun";
 
@@ -961,6 +968,16 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
             iceFloorDuration += 1000;
             iceFloorDamage += 20;
             iceFloorSlow -= 0.1;
+          },
+        },
+        {
+          id: "explosion",
+          limit: 1,
+          title: "폭발",
+          icon: "💣",
+          desc: "기본 공격이 적중 시 폭발하여 주변 적에게 피해를 줍니다.",
+          apply: () => {
+            explosionEnabled = true;
           },
         },
         {
@@ -1387,6 +1404,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
         enemies.length = 0;
         expOrbs.length = 0;
         orbitingOrbs.length = 0;
+        impulseEffects.length = 0;
         shootTimer = 0;
         spawnTimer = 0;
         currentWave = 0;
@@ -1411,6 +1429,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
         yoyoSize = INIT.YOYO.SIZE;
         yoyos.length = 0;
         lifeSteal = 0;
+        explosionEnabled = false;
         laserOrbCooldown = INIT.LASERORB.COOLDOWN;
         laserOrbDamage = INIT.LASERORB.DAMAGE;
         laserOrbSpeed = INIT.LASERORB.SPEED;
@@ -1944,6 +1963,40 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
         }
       }
 
+      function triggerExplosion(cx, cy, playerDist) {
+        impulseEffects.push({
+          x: cx,
+          y: cy,
+          radius: INIT.EXPLOSION.RADIUS,
+          life: 0,
+          duration: 200,
+          color: "#f97316",
+        });
+        let base = INIT.EXPLOSION.MIN_DAMAGE;
+        if (playerDist > 20) base += (playerDist - 20) * INIT.EXPLOSION.DAMAGE_STEP;
+        for (let i = enemies.length - 1; i >= 0; i--) {
+          const e = enemies[i];
+          if (!e.entered) continue;
+          const ex = e.x + e.w / 2;
+          const ey = e.y + e.h / 2;
+          const dist = Math.hypot(ex - cx, ey - cy);
+          if (dist <= INIT.EXPLOSION.RADIUS) {
+            const raw = base - (e.defense || 0);
+            let dmg = Math.min(Math.max(raw, 1), e.hp);
+            if (e.isBoss && e.hasShield && isBossFacingPlayer(e)) {
+              dmg = Math.max(Math.floor(dmg * e.shieldMultiplier), 1);
+            }
+            e.hp -= dmg;
+            spawnFloatText(e.x + e.w / 2, e.y - 12, -dmg, "#ff6b6b");
+            if (e.hp <= 0) {
+              dropExpOrbs(e);
+              enemies.splice(i, 1);
+              score += e.reward;
+            }
+          }
+        }
+      }
+
       function pickRandomEnemy() {
         if (enemies.length === 0) return null;
         const idx = Math.floor(Math.random() * enemies.length);
@@ -2040,7 +2093,8 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
           const ey = e.y + e.h / 2;
           const dx = ex - px;
           const dy = ey - py;
-          const dist = Math.hypot(dx, dy) - Math.max(e.w, e.h) / 2;
+          const distToPlayer = Math.hypot(dx, dy);
+          const dist = distToPlayer - Math.max(e.w, e.h) / 2;
           if (dist <= swordRange - handleLen) {
             const ang = Math.atan2(dy, dx * player.dir);
             if (ang >= -11 * Math.PI / 18 && ang <= Math.PI / 6) {
@@ -2051,6 +2105,12 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
               }
               e.hp -= dmg;
               spawnFloatText(ex, e.y - 12, -dmg, "#ff6b6b");
+              if (explosionEnabled) {
+                triggerExplosion(ex, ey, distToPlayer);
+                if (i >= enemies.length || enemies[i].id !== e.id) {
+                  continue;
+                }
+              }
               if (lifeSteal > 0 && totalHeal < missingHP) {
                 const heal = Math.min(dmg * lifeSteal, missingHP - totalHeal);
                 totalHeal += heal;
@@ -2841,6 +2901,8 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
               const b = bullets[j];
               if (b.hitSet.has(e.id)) continue;
               if (aabb(e, b)) {
+                const ex = e.x + e.w / 2;
+                const ey = e.y + e.h / 2;
                 const raw = b.dmg - (e.defense || 0);
                 let dmg = Math.min(Math.max(raw, 1), e.hp);
                 if (e.isBoss && e.hasShield && isBossFacingPlayer(e)) {
@@ -2848,7 +2910,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
                 }
                 e.hp -= dmg;
 
-                spawnFloatText(e.x + e.w / 2, e.y - 12, -dmg, "#ff6b6b");
+                spawnFloatText(ex, e.y - 12, -dmg, "#ff6b6b");
 
                 if (lifeSteal > 0) {
                   const heal = Math.min(dmg * lifeSteal, playerHP - hp);
@@ -2879,6 +2941,17 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
                   b.penetration--;
                 }
 
+                if (explosionEnabled) {
+                  const px = player.x + player.w / 2;
+                  const py = player.y + player.h / 2;
+                  const distP = Math.hypot(ex - px, ey - py);
+                  triggerExplosion(ex, ey, distP);
+                  if (i >= enemies.length || enemies[i].id !== e.id) {
+                    e._killed = true;
+                    break;
+                  }
+                }
+
                 if (e.hp <= 0) {
                   // 경험치 구슬 드롭
                   dropExpOrbs(e);
@@ -2894,14 +2967,21 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
             for (const y of yoyos) {
               if (y.hitSet.has(e.id)) continue;
               if (aabb(e, y)) {
+                const ex = e.x + e.w / 2;
+                const ey = e.y + e.h / 2;
                 const raw = y.dmg - (e.defense || 0);
                 let dmg = Math.min(Math.max(raw, 1), e.hp);
-                if (e.isBoss && e.hasShield && isBossFacingPlayer(e) && !y.returning) {
+                if (
+                  e.isBoss &&
+                  e.hasShield &&
+                  isBossFacingPlayer(e) &&
+                  !y.returning
+                ) {
                   dmg = Math.max(Math.floor(dmg * e.shieldMultiplier), 1);
                 }
                 e.hp -= dmg;
 
-                spawnFloatText(e.x + e.w / 2, e.y - 12, -dmg, "#ff6b6b");
+                spawnFloatText(ex, e.y - 12, -dmg, "#ff6b6b");
 
                 if (lifeSteal > 0 && !y.returning) {
                   const heal = Math.min(dmg * lifeSteal, playerHP - hp);
@@ -2925,6 +3005,18 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
                 }
 
                 y.hitSet.add(e.id);
+
+                if (explosionEnabled) {
+                  const px = player.x + player.w / 2;
+                  const py = player.y + player.h / 2;
+                  const distP = Math.hypot(ex - px, ey - py);
+                  triggerExplosion(ex, ey, distP);
+                  if (i >= enemies.length || enemies[i].id !== e.id) {
+                    e._killed = true;
+                    break;
+                  }
+                }
+
                 if (e.hp <= 0) {
                   dropExpOrbs(e);
                   enemies.splice(i, 1);
@@ -3597,7 +3689,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
         // 레벨업 임펄스 이펙트
         for (const eff of impulseEffects) {
           ctx.save();
-          ctx.strokeStyle = "#9ec4ff";
+          ctx.strokeStyle = eff.color || "#9ec4ff";
           ctx.lineWidth = 2;
           ctx.globalAlpha = 1 - eff.life / eff.duration;
           ctx.beginPath();
