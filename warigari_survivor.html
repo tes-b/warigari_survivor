@@ -2006,7 +2006,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
         });
       }
 
-      function triggerExplosion(x, y, damage, exclude) {
+      function triggerExplosion(x, y, exclude) {
         explosions.push({
           x,
           y,
@@ -2014,6 +2014,8 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
           life: 0,
           duration: 300,
         });
+        const px = player.x + player.w / 2;
+        const py = player.y + player.h / 2;
         for (let i = enemies.length - 1; i >= 0; i--) {
           const e = enemies[i];
           if (!e.entered || e === exclude) continue;
@@ -2021,7 +2023,12 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
           const ey = e.y + e.h / 2;
           const dist = Math.hypot(ex - x, ey - y);
           if (dist <= explosionRadius) {
-            const raw = damage - (e.defense || 0);
+            const distPlayer = Math.hypot(ex - px, ey - py);
+            const base =
+              explosionMinDamage +
+              Math.max(0, Math.floor(distPlayer) - 20) *
+                INIT.EXPLOSION.DAMAGE_STEP;
+            const raw = base - (e.defense || 0);
             const dmg = Math.min(Math.max(raw, 1), e.hp);
             e.hp -= dmg;
             spawnFloatText(ex, ey - 12, -dmg, "#ff6b6b");
@@ -2113,14 +2120,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
               e.hp -= dmg;
               spawnFloatText(ex, e.y - 12, -dmg, "#ff6b6b");
               if (explosionEnabled) {
-                const px = player.x + player.w / 2;
-                const py = player.y + player.h / 2;
-                const distPlayer = Math.hypot(ex - px, ey - py);
-                const expDmg =
-                  explosionMinDamage +
-                  Math.max(0, Math.floor(distPlayer) - 20) *
-                    INIT.EXPLOSION.DAMAGE_STEP;
-                triggerExplosion(ex, ey, expDmg, e);
+                triggerExplosion(ex, ey, e);
               }
               if (lifeSteal > 0 && totalHeal < missingHP) {
                 const heal = Math.min(dmg * lifeSteal, missingHP - totalHeal);
@@ -2929,14 +2929,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
                 spawnFloatText(ex, e.y - 12, -dmg, "#ff6b6b");
 
                 if (explosionEnabled) {
-                  const px = player.x + player.w / 2;
-                  const py = player.y + player.h / 2;
-                  const distPlayer = Math.hypot(ex - px, ey - py);
-                  const expDmg =
-                    explosionMinDamage +
-                    Math.max(0, Math.floor(distPlayer) - 20) *
-                      INIT.EXPLOSION.DAMAGE_STEP;
-                  triggerExplosion(ex, ey, expDmg, e);
+                  triggerExplosion(ex, ey, e);
                 }
 
                 if (lifeSteal > 0) {
@@ -2995,14 +2988,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
                 spawnFloatText(ex, e.y - 12, -dmg, "#ff6b6b");
 
                 if (explosionEnabled) {
-                  const px = player.x + player.w / 2;
-                  const py = player.y + player.h / 2;
-                  const distPlayer = Math.hypot(ex - px, ey - py);
-                  const expDmg =
-                    explosionMinDamage +
-                    Math.max(0, Math.floor(distPlayer) - 20) *
-                      INIT.EXPLOSION.DAMAGE_STEP;
-                  triggerExplosion(ex, ey, expDmg, e);
+                  triggerExplosion(ex, ey, e);
                 }
 
                 if (lifeSteal > 0 && !y.returning) {
