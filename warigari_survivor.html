@@ -3006,7 +3006,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
 
                 y.hitSet.add(e.id);
 
-                if (explosionEnabled) {
+                if (explosionEnabled && !y.returning) {
                   const px = player.x + player.w / 2;
                   const py = player.y + player.h / 2;
                   const distP = Math.hypot(ex - px, ey - py);
