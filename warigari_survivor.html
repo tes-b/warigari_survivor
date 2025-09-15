@@ -3502,7 +3502,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
           }
 
           // boss는 바라보는 방향에 방패를 표시 (방패 두께 5px)
-          if (e.isBoss) {
+          if (e.isBoss && e.hasShield) {
             ctx.save();
             const facing = e.dir > 0 ? 1 : -1;
             const shieldW = 5;
