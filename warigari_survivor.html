@@ -1963,7 +1963,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
         }
       }
 
-      function triggerExplosion(cx, cy, playerDist) {
+      function triggerExplosion(cx, cy, playerDist, primaryId = null) {
         impulseEffects.push({
           x: cx,
           y: cy,
@@ -1974,6 +1974,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
         });
         let base = INIT.EXPLOSION.MIN_DAMAGE;
         if (playerDist > 20) base += (playerDist - 20) * INIT.EXPLOSION.DAMAGE_STEP;
+        let primaryExtra = 0;
         for (let i = enemies.length - 1; i >= 0; i--) {
           const e = enemies[i];
           if (!e.entered) continue;
@@ -1987,7 +1988,11 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
               dmg = Math.max(Math.floor(dmg * e.shieldMultiplier), 1);
             }
             e.hp -= dmg;
-            spawnFloatText(e.x + e.w / 2, e.y - 12, -dmg, "#ff6b6b");
+            if (e.id === primaryId) {
+              primaryExtra = dmg;
+            } else {
+              spawnFloatText(e.x + e.w / 2, e.y - 12, -dmg, "#ff6b6b");
+            }
             if (e.hp <= 0) {
               dropExpOrbs(e);
               enemies.splice(i, 1);
@@ -1995,6 +2000,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
             }
           }
         }
+        return primaryExtra;
       }
 
       function pickRandomEnemy() {
@@ -2103,15 +2109,17 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
               if (e.isBoss && e.hasShield && isBossFacingPlayer(e)) {
                 dmg = Math.max(Math.floor(dmg * e.shieldMultiplier), 1);
               }
-              e.hp -= dmg;
-              spawnFloatText(ex, e.y - 12, -dmg, "#ff6b6b");
-              if (explosionEnabled) {
-                triggerExplosion(ex, ey, distToPlayer);
-                if (i >= enemies.length || enemies[i].id !== e.id) {
-                  continue;
+                e.hp -= dmg;
+                let extra = 0;
+                if (explosionEnabled) {
+                  extra = triggerExplosion(ex, ey, distToPlayer, e.id);
+                  if (i >= enemies.length || enemies[i].id !== e.id) {
+                    spawnFloatText(ex, e.y - 12, -(dmg + extra), "#ff6b6b");
+                    continue;
+                  }
                 }
-              }
-              if (lifeSteal > 0 && totalHeal < missingHP) {
+                spawnFloatText(ex, e.y - 12, -(dmg + extra), "#ff6b6b");
+                if (lifeSteal > 0 && totalHeal < missingHP) {
                 const heal = Math.min(dmg * lifeSteal, missingHP - totalHeal);
                 totalHeal += heal;
               }
@@ -2908,11 +2916,9 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
                 if (e.isBoss && e.hasShield && isBossFacingPlayer(e)) {
                   dmg = Math.max(Math.floor(dmg * e.shieldMultiplier), 1);
                 }
-                e.hp -= dmg;
+                  e.hp -= dmg;
 
-                spawnFloatText(ex, e.y - 12, -dmg, "#ff6b6b");
-
-                if (lifeSteal > 0) {
+                  if (lifeSteal > 0) {
                   const heal = Math.min(dmg * lifeSteal, playerHP - hp);
                   if (heal > 0) {
                     hp += heal;
@@ -2934,25 +2940,27 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
                   e.vy = -enemyKnockbackLift;
                 }
 
-                b.hitSet.add(e.id);
-                if (b.penetration === 0) {
-                  bullets.splice(j, 1);
-                } else {
-                  b.penetration--;
-                }
+                  b.hitSet.add(e.id);
+                  if (b.penetration === 0) {
+                    bullets.splice(j, 1);
+                  } else {
+                    b.penetration--;
+                  }
 
-                if (explosionEnabled) {
-                  const px = player.x + player.w / 2;
-                  const py = player.y + player.h / 2;
-                  const distP = Math.hypot(ex - px, ey - py);
-                  triggerExplosion(ex, ey, distP);
-                  if (i >= enemies.length || enemies[i].id !== e.id) {
+                  let extra = 0;
+                  if (explosionEnabled) {
+                    const px = player.x + player.w / 2;
+                    const py = player.y + player.h / 2;
+                    const distP = Math.hypot(ex - px, ey - py);
+                    extra = triggerExplosion(ex, ey, distP, e.id);
+                  }
+                  spawnFloatText(ex, e.y - 12, -(dmg + extra), "#ff6b6b");
+                  if (explosionEnabled && (i >= enemies.length || enemies[i].id !== e.id)) {
                     e._killed = true;
                     break;
                   }
-                }
 
-                if (e.hp <= 0) {
+                  if (e.hp <= 0) {
                   // 경험치 구슬 드롭
                   dropExpOrbs(e);
                   enemies.splice(i, 1);
@@ -2981,8 +2989,6 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
                 }
                 e.hp -= dmg;
 
-                spawnFloatText(ex, e.y - 12, -dmg, "#ff6b6b");
-
                 if (lifeSteal > 0 && !y.returning) {
                   const heal = Math.min(dmg * lifeSteal, playerHP - hp);
                   if (heal > 0) {
@@ -3006,15 +3012,17 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
 
                 y.hitSet.add(e.id);
 
+                let extra = 0;
                 if (explosionEnabled && !y.returning) {
                   const px = player.x + player.w / 2;
                   const py = player.y + player.h / 2;
                   const distP = Math.hypot(ex - px, ey - py);
-                  triggerExplosion(ex, ey, distP);
-                  if (i >= enemies.length || enemies[i].id !== e.id) {
-                    e._killed = true;
-                    break;
-                  }
+                  extra = triggerExplosion(ex, ey, distP, e.id);
+                }
+                spawnFloatText(ex, e.y - 12, -(dmg + extra), "#ff6b6b");
+                if (explosionEnabled && !y.returning && (i >= enemies.length || enemies[i].id !== e.id)) {
+                  e._killed = true;
+                  break;
                 }
 
                 if (e.hp <= 0) {
