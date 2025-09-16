@@ -977,7 +977,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
           limit: 5,
           title: "폭발",
           icon: "💣",
-          desc: "기본 공격이 적중 시 폭발하여 주변 적에게 피해를 줍니다.\n(범위 +20, 폭발 피해 +20)",
+          desc: "기본 공격이 적중 시 폭발하여 주변 적에게 피해를 줍니다. 적과의 거리가 멀 수록 피해량이 증가합니다.\n(범위 +20, 폭발 피해 +20)",
           apply: () => {
             const level = acquiredUpgrades["explosion"] || 0;
             if (level === 0) explosionEnabled = true;
