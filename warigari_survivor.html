@@ -416,13 +416,7 @@
     <div id="canvasWrap">
       <canvas id="game" width="960" height="540"></canvas>
 
-      <button
-        type="button"
-        class="pause-button"
-        id="pauseButton"
-        aria-label="일시정지"
-        title="일시정지"
-      >⏸</button>
+      <button type="button" class="pause-button" id="pauseButton" aria-label="일시정지" title="일시정지">⏸</button>
 
       <div class="hud" id="hud">
         <div class="stat" id="hp">HP: 1000/1000</div>
@@ -535,7 +529,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
       <div class="bottom-tip" id="tip">TIP: 팁을 보려면 팁을 내세요.</div>
       <div class="levelup-overlay" id="levelupOverlay">
         <div class="levelup-panel">
-          <h1>🎉 레벨 업! 🎉</h1>
+          <h1>🔶 업그레이드 🔶</h1>
           <p>
             <span class="kbd">스페이스바</span> <b>짧게 누르기</b> : 선택지 변경 / <b>길게 누르기</b> : 선택 하기<br>
           </p>
@@ -566,7 +560,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
           HITFLASH: 200, // 피격 시 시각 효과 지속 시간 (ms)
           DEFENSE: 0, // 플레이어 방어력
           HP_STEP: 500, // 체력 증가 업그레이드당 최대 HP 증가량
-          DEFENSE_STEP: 20, // 방어력 업그레이드당 증가량
+          DEFENSE_STEP: 30, // 방어력 업그레이드당 증가량
           DEFENSE_REFLECT_MULT: 2, // 방어로 반사되는 피해 배수
         },
         // 총 관련
@@ -1005,7 +999,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
               INIT.FROST.SLOW - INIT.FROST.SLOW_STEP * (level - 1),
             );
           },
-        },        
+        },
         {
           id: "magnet",
           limit: 5,
@@ -1044,7 +1038,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
                 "#6cff96",
               );
           },
-        },        
+        },
         {
           id: "laserOrb",
           limit: 10,
@@ -1062,10 +1056,10 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
         },
         {
           id: "defense",
-          limit: 10,
+          limit: 7,
           title: "방어",
           icon: "🛡️",
-          desc: "방어력이 증가하고\n방어로 감소시킨 데미지의 2배 만큼 해당 적에게 반사",
+          desc: "방어력을 얻고 감소시킨 피해를 2배로 반사합니다.\n(+30)",
           apply: () => {
             playerDefense += INIT.PLAYER.DEFENSE_STEP;
           },
@@ -3220,9 +3214,9 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
                 if (e.isBoss && e.hasShield && isBossFacingPlayer(e)) {
                   dmg = Math.max(Math.floor(dmg * e.shieldMultiplier), 1);
                 }
-                  e.hp -= dmg;
+                e.hp -= dmg;
 
-                  if (lifeSteal > 0) {
+                if (lifeSteal > 0) {
                   const heal = Math.min(dmg * lifeSteal, playerHP - hp);
                   if (heal > 0) {
                     hp += heal;
@@ -3251,22 +3245,22 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
                   bullets.splice(j, 1);
                 } else {
                   b.penetration--;
-                  }
+                }
 
-                  let extra = 0;
-                  if (explosionEnabled) {
-                    const px = player.x + player.w / 2;
-                    const py = player.y + player.h / 2;
-                    const distP = Math.hypot(ex - px, ey - py);
-                    extra = triggerExplosion(ex, ey, distP, e.id);
-                  }
-                  spawnFloatText(ex, e.y - 12, -(dmg + extra), "#ff6b6b");
-                  if (explosionEnabled && (i >= enemies.length || enemies[i].id !== e.id)) {
-                    e._killed = true;
-                    break;
-                  }
+                let extra = 0;
+                if (explosionEnabled) {
+                  const px = player.x + player.w / 2;
+                  const py = player.y + player.h / 2;
+                  const distP = Math.hypot(ex - px, ey - py);
+                  extra = triggerExplosion(ex, ey, distP, e.id);
+                }
+                spawnFloatText(ex, e.y - 12, -(dmg + extra), "#ff6b6b");
+                if (explosionEnabled && (i >= enemies.length || enemies[i].id !== e.id)) {
+                  e._killed = true;
+                  break;
+                }
 
-                  if (e.hp <= 0) {
+                if (e.hp <= 0) {
                   // 경험치 구슬 드롭
                   dropExpOrbs(e);
                   enemies.splice(i, 1);
