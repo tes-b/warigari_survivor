@@ -565,6 +565,8 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
           IFRAMES: 500, // 피격 후 무적 시간 (ms)
           HITFLASH: 200, // 피격 시 시각 효과 지속 시간 (ms)
           DEFENSE: 0, // 플레이어 방어력
+          HP_STEP: 500, // 체력 증가 업그레이드당 최대 HP 증가량
+          DEFENSE_STEP: 20, // 방어력 업그레이드당 증가량
         },
         // 총 관련
         BULLET: {
@@ -575,6 +577,12 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
           PENETRATION: 0, // 총알 관통 수
           KNOCKBACK: 0, // 총알 넉백 거리 (px)
           RANGE: 180, // 총알 사정거리 (px)
+          COOLDOWN_MIN: 80, // 공격 속도 업그레이드 시 최소 쿨다운 (ms)
+          DAMAGE_STEP: 0.2, // 공격력 업그레이드당 피해 증가율 (20%)
+          COOLDOWN_STEP: 0.15, // 공격 속도 업그레이드당 쿨다운 감소율 (15%)
+          KNOCKBACK_STEP: 40, // 넉백 업그레이드당 거리 증가량 (px)
+          PENETRATION_STEP: 1, // 관통 업그레이드당 증가 수치
+          RANGE_STEP: 0.2, // 사거리 업그레이드당 증가율 (20%)
         },
         // 요요 관련
         YOYO: {
@@ -583,6 +591,10 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
           RANGE: 180, // 요요 사정거리 (px)
           KNOCKBACK: 0, // 요요 넉백 거리 (px)
           SPEED: 350, // 요요 던지는 속도 (px/s)
+          DAMAGE_STEP: 0.2, // 공격력 업그레이드당 피해 증가율 (20%)
+          RANGE_STEP: 0.2, // 사거리 업그레이드당 증가율 (20%)
+          KNOCKBACK_STEP: 40, // 넉백 업그레이드당 거리 증가량 (px)
+          SPEED_STEP: 0.15, // 공격 속도 업그레이드당 속도 증가율 (15%)
         },
         // 검 관련
         SWORD: {
@@ -590,6 +602,11 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
           DAMAGE: 200, // 검 피해량
           RANGE: 120, // 검 공격 범위 (px)
           KNOCKBACK: 120, // 검 넉백 거리 (px)
+          COOLDOWN_MIN: 300, // 공격 속도 업그레이드 시 최소 쿨다운 (ms)
+          DAMAGE_STEP: 0.2, // 공격력 업그레이드당 피해 증가율 (20%)
+          RANGE_STEP: 0.2, // 사거리 업그레이드당 증가율 (20%)
+          KNOCKBACK_STEP: 40, // 넉백 업그레이드당 거리 증가량 (px)
+          COOLDOWN_STEP: 0.15, // 공격 속도 업그레이드당 쿨다운 감소율 (15%)
         },
         // 적 관련
         ENEMY: {
@@ -602,6 +619,9 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
           RADIUS: 75, // 궤도 반지름
           SPEED: 5, // 궤도 회전 속도 (rad/s)
           DAMAGE: 100, // 궤도 구슬 피해량
+          SIZE: 12, // 궤도 구슬 기본 크기
+          INITIAL_COUNT: 2, // 업그레이드 최초 획득 시 생성될 구슬 수
+          COUNT_STEP: 1, // 업그레이드 추가 획득 시 추가되는 구슬 수
         },
         // 경험치 관련
         EXP: {
@@ -610,6 +630,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
           ORB_SIZE: 10, // 경험치 구슬 크기
           GROWTH_RATE: 1.2, // 다음 레벨 경험치 증가율
           FIRST_LEVEL: 80, // 첫 레벨업에 필요한 경험치
+          ORB_VALUE_STEP: 0.3, // 경험치 증가 업그레이드당 증가율 (30%)
         },
         // 레벨업 임펄스 관련
         LEVELUP: {
@@ -622,6 +643,9 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
           DAMAGE: 20, // 초당 피해량
           DURATION: 3000, // 기본 지속 시간 (ms)
           SLOW: 0.7, // 이동 속도 감소 비율
+          DAMAGE_STEP: 20, // 업그레이드당 초당 피해 증가량
+          DURATION_STEP: 1000, // 업그레이드당 지속 시간 증가량 (ms)
+          SLOW_STEP: 0.1, // 업그레이드당 이동 속도 추가 감소율
         },
         // 냉기 효과 관련
         FROST: {
@@ -638,6 +662,8 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
           RADIUS: 40, // 폭발 범위 (px)
           MIN_DAMAGE: 30, // 최소 폭발 피해
           DAMAGE_STEP: 0.5, // 거리 1당 추가 폭발 피해
+          RADIUS_STEP: 20, // 업그레이드당 폭발 범위 증가량 (px)
+          MIN_DAMAGE_STEP: 20, // 업그레이드당 최소 폭발 피해 증가량
         },
         // 레이저 구슬 관련
         LASERORB: {
@@ -645,6 +671,19 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
           DAMAGE: 120, // 레이저 피해량
           SPEED: 700, // 레이저 속도 (px/s)
           GAP: 100, // 연속 발사 간격 (ms)
+          COUNT_STEP: 1, // 업그레이드 최초 획득 시 생성될 구슬 수
+          SHOT_STEP: 1, // 업그레이드당 추가 발사 횟수
+        },
+        // 자석 관련
+        MAGNET: {
+          RADIUS: 0, // 기본 자석 범위 (px)
+          PULL_SPEED: 400, // 자석 당기는 속도 (px/s)
+          RADIUS_STEP: 60, // 업그레이드당 자석 범위 증가량 (px)
+        },
+        // 흡혈 관련
+        LIFESTEAL: {
+          BASE: 0, // 기본 흡혈량 비율
+          STEP: 0.03, // 업그레이드당 흡혈 비율 증가량
         },
       };
 
@@ -678,7 +717,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
       let yoyoRange = INIT.YOYO.RANGE;
       let yoyoKnockback = INIT.YOYO.KNOCKBACK;
       let yoyoSpeed = INIT.YOYO.SPEED;
-      let lifeSteal = 0;
+      let lifeSteal = INIT.LIFESTEAL.BASE;
       let explosionEnabled = false;
       let explosionRadius = INIT.EXPLOSION.RADIUS;
       let explosionMinDamage = INIT.EXPLOSION.MIN_DAMAGE;
@@ -818,8 +857,8 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
       let expOrbValue = INIT.EXP.ORB_VALUE; // 경험치 구슬 하나당 경험치
       let expOrbSpeed = INIT.EXP.ORB_SPEED; // 경험치 구슬 이동 속도 (px/s)
       let expOrbSize = INIT.EXP.ORB_SIZE; // 경험치 구슬 크기
-      let magnetRadius = 0; // 자석 범위 (px)
-      let magnetPullSpeed = 400; // 자석 당기는 속도 (px/s)
+      let magnetRadius = INIT.MAGNET.RADIUS; // 자석 범위 (px)
+      let magnetPullSpeed = INIT.MAGNET.PULL_SPEED; // 자석 당기는 속도 (px/s)
 
       // 궤도 구슬 관련
       let orbitingOrbs = []; // 궤도 구슬 배열
@@ -842,11 +881,11 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
           desc: "기본 공격의 공격력이 증가합니다.\n(+20%)",
           apply: () => {
             if (baseAttack === "gun") {
-              bulletDamage *= 1.2;
+              bulletDamage *= 1 + INIT.BULLET.DAMAGE_STEP;
             } else if (baseAttack === "sword") {
-              swordDamage *= 1.2;
+              swordDamage *= 1 + INIT.SWORD.DAMAGE_STEP;
             } else {
-              yoyoDamage *= 1.2;
+              yoyoDamage *= 1 + INIT.YOYO.DAMAGE_STEP;
             }
           },
         },
@@ -858,11 +897,17 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
           desc: "기본 공격의 속도가 증가합니다.\n(+15%)",
           apply: () => {
             if (baseAttack === "gun") {
-              bulletCooldown = Math.max(80, bulletCooldown * 0.85);
+              bulletCooldown = Math.max(
+                INIT.BULLET.COOLDOWN_MIN,
+                bulletCooldown * (1 - INIT.BULLET.COOLDOWN_STEP),
+              );
             } else if (baseAttack === "sword") {
-              swordCooldown = Math.max(300, swordCooldown * 0.85);
+              swordCooldown = Math.max(
+                INIT.SWORD.COOLDOWN_MIN,
+                swordCooldown * (1 - INIT.SWORD.COOLDOWN_STEP),
+              );
             } else {
-              yoyoSpeed *= 1.15;
+              yoyoSpeed *= 1 + INIT.YOYO.SPEED_STEP;
             }
           },
         },
@@ -874,11 +919,11 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
           desc: "기본 공격이 적을 뒤로 밀어냅니다.\n(넉백거리 +40)",
           apply: () => {
             if (baseAttack === "gun") {
-              bulletKnockback += 40;
+              bulletKnockback += INIT.BULLET.KNOCKBACK_STEP;
             } else if (baseAttack === "sword") {
-              swordKnockback += 40;
+              swordKnockback += INIT.SWORD.KNOCKBACK_STEP;
             } else {
-              yoyoKnockback += 40;
+              yoyoKnockback += INIT.YOYO.KNOCKBACK_STEP;
             }
           },
         },
@@ -913,7 +958,8 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
           icon: "🎯",
           desc: "기본 공격이 적을 관통합니다.\n(+1명)",
           apply: () => {
-            if (baseAttack === "gun") bulletPenetration += 1;
+            if (baseAttack === "gun")
+              bulletPenetration += INIT.BULLET.PENETRATION_STEP;
           },
         },
         {
@@ -924,11 +970,11 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
           desc: "기본 공격의 사정거리가 증가합니다.\n(+20%)",
           apply: () => {
             if (baseAttack === "gun") {
-              bulletRange *= 1.2;
+              bulletRange *= 1 + INIT.BULLET.RANGE_STEP;
             } else if (baseAttack === "sword") {
-              swordRange *= 1.2;
+              swordRange *= 1 + INIT.SWORD.RANGE_STEP;
             } else {
-              yoyoRange *= 1.2;
+              yoyoRange *= 1 + INIT.YOYO.RANGE_STEP;
             }
           },
         },
@@ -939,7 +985,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
           icon: "❤️",
           desc: "최대 체력이 증가하고 체력을 모두 회복합니다.\n(+500)",
           apply: () => {
-            playerHP += 500;
+            playerHP += INIT.PLAYER.HP_STEP;
             const healed = playerHP - hp;
             hp = playerHP;
             if (healed > 0)
@@ -963,11 +1009,14 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
 
             if (orbitingOrbs.length < this.limit) {
               // 새 구슬 추가 (최초 2개, 이후 1개)
-              const addCount = orbitingOrbs.length === 0 ? 2 : 1;
+              const addCount =
+                orbitingOrbs.length === 0
+                  ? INIT.ORBITAL.INITIAL_COUNT
+                  : INIT.ORBITAL.COUNT_STEP;
               for (let i = 0; i < addCount && orbitingOrbs.length < this.limit; i++) {
                 orbitingOrbs.push({
                   angle: 0,
-                  size: 12,
+                  size: INIT.ORBITAL.SIZE,
                   damage: orbitalDamage,
                   hitSet: new Set(),
                   lastAngle: 0,
@@ -1003,7 +1052,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
           icon: "🩸",
           desc: "기본 공격 피해의 3%를 체력으로 회복합니다.\n(+3%)",
           apply: () => {
-            lifeSteal += 0.03;
+            lifeSteal += INIT.LIFESTEAL.STEP;
           },
         },
         {
@@ -1013,7 +1062,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
           icon: "🧲",
           desc: "경험치 구슬을 끌어당깁니다 \n(범위 +60)",
           apply: () => {
-            magnetRadius += 60;
+            magnetRadius += INIT.MAGNET.RADIUS_STEP;
           },
         },
         {
@@ -1023,7 +1072,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
           icon: "📘",
           desc: "경험치 획득량 30% 증가",
           apply: () => {
-            expOrbValue *= 1.3;
+            expOrbValue *= 1 + INIT.EXP.ORB_VALUE_STEP;
           },
         },
         {
@@ -1035,7 +1084,9 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
           apply: () => {
             const level = acquiredUpgrades["laserOrb"] || 0;
             if (level === 0) {
-              laserOrbs.push({ offsetX: 0 });
+              for (let i = 0; i < INIT.LASERORB.COUNT_STEP; i++) {
+                laserOrbs.push({ offsetX: 0 });
+              }
             }
           },
         },
@@ -1049,9 +1100,9 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
           apply: () => {
             const level = acquiredUpgrades["iceFloor"] || 0;
             if (level === 0) iceFloorEnabled = true;
-            iceFloorDuration += 1000;
-            iceFloorDamage += 20;
-            iceFloorSlow -= 0.1;
+            iceFloorDuration += INIT.ICEFLOOR.DURATION_STEP;
+            iceFloorDamage += INIT.ICEFLOOR.DAMAGE_STEP;
+            iceFloorSlow -= INIT.ICEFLOOR.SLOW_STEP;
           },
         },
         {
@@ -1063,8 +1114,8 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
           apply: () => {
             const level = acquiredUpgrades["explosion"] || 0;
             if (level === 0) explosionEnabled = true;
-            explosionRadius += 20;
-            explosionMinDamage += 20;
+            explosionRadius += INIT.EXPLOSION.RADIUS_STEP;
+            explosionMinDamage += INIT.EXPLOSION.MIN_DAMAGE_STEP;
           },
         },
         {
@@ -1074,7 +1125,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
           icon: "🛡️",
           desc: "방어력 +20",
           apply: () => {
-            playerDefense += 20;
+            playerDefense += INIT.PLAYER.DEFENSE_STEP;
           },
         },
       ];
@@ -1546,7 +1597,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
         yoyoSpeed = INIT.YOYO.SPEED;
         yoyoSize = INIT.YOYO.SIZE;
         yoyos.length = 0;
-        lifeSteal = 0;
+        lifeSteal = INIT.LIFESTEAL.BASE;
         explosionEnabled = false;
         explosionRadius = INIT.EXPLOSION.RADIUS;
         explosionMinDamage = INIT.EXPLOSION.MIN_DAMAGE;
@@ -1559,7 +1610,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
         laserOrbDamage = INIT.LASERORB.DAMAGE;
         laserOrbSpeed = INIT.LASERORB.SPEED;
         laserOrbGap = INIT.LASERORB.GAP;
-        magnetRadius = 0;
+        magnetRadius = INIT.MAGNET.RADIUS;
         expOrbValue = INIT.EXP.ORB_VALUE;
         orbitalRadius = INIT.ORBITAL.RADIUS;
         orbitalSpeed = INIT.ORBITAL.SPEED;
@@ -1572,6 +1623,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
         iceFloorEnabled = false;
         iceFloorDamage = INIT.ICEFLOOR.DAMAGE;
         iceFloorDuration = INIT.ICEFLOOR.DURATION;
+        iceFloorSlow = INIT.ICEFLOOR.SLOW;
 
         swordSwings.length = 0;
         swordTimer = 0;
@@ -2734,7 +2786,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
             if (laserOrbSeqTimer >= laserOrbGap) {
               laserOrbSeqTimer = 0;
               spawnLaserFromOrb(laserOrbs[0]);
-              laserOrbShots--;
+              laserOrbShots -= INIT.LASERORB.SHOT_STEP;
             }
           } else {
             laserOrbTimer += dt * 1000;
@@ -2743,9 +2795,10 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
               (acquiredUpgrades["laserOrb"] || 0) > 0
             ) {
               laserOrbTimer = 0;
-              laserOrbShots = acquiredUpgrades["laserOrb"] || 0;
+              const level = acquiredUpgrades["laserOrb"] || 0;
+              laserOrbShots = level * INIT.LASERORB.SHOT_STEP;
               spawnLaserFromOrb(laserOrbs[0]);
-              laserOrbShots--;
+              laserOrbShots -= INIT.LASERORB.SHOT_STEP;
               laserOrbSeqTimer = 0;
             }
           }
