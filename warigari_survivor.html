@@ -3182,7 +3182,9 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
                   e.vy = -enemyKnockbackLift;
                 }
 
-                applyFrostEffect(e);
+                if (!y.returning) {
+                  applyFrostEffect(e);
+                }
 
                 b.hitSet.add(e.id);
                 if (b.penetration === 0) {
@@ -3254,7 +3256,9 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
                   e.vy = -enemyKnockbackLift;
                 }
 
-                applyFrostEffect(e);
+                if (!y.returning) {
+                  applyFrostEffect(e);
+                }
 
                 y.hitSet.add(e.id);
 
