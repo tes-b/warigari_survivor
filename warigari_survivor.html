@@ -567,6 +567,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
           DEFENSE: 0, // 플레이어 방어력
           HP_STEP: 500, // 체력 증가 업그레이드당 최대 HP 증가량
           DEFENSE_STEP: 20, // 방어력 업그레이드당 증가량
+          DEFENSE_REFLECT_MULT: 2, // 방어로 반사되는 피해 배수
         },
         // 총 관련
         BULLET: {
@@ -1062,9 +1063,9 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
         {
           id: "defense",
           limit: 10,
-          title: "방어력 증가",
+          title: "방어",
           icon: "🛡️",
-          desc: "방어력 +20",
+          desc: "방어력이 증가하고\n방어로 감소시킨 데미지의 2배 만큼 해당 적에게 반사",
           apply: () => {
             playerDefense += INIT.PLAYER.DEFENSE_STEP;
           },
@@ -1452,6 +1453,42 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
 
       function spawnFloatText(x, y, value, color) {
         floatTexts.push({ x, y, value, color, life: 0 });
+      }
+
+      function applyDefenseReflection(attacker, mitigatedDamage, attackerIndex = -1) {
+        if (!attacker || typeof attacker.hp !== "number") return false;
+        if (mitigatedDamage <= 0) return false;
+
+        const multiplier = INIT.PLAYER.DEFENSE_REFLECT_MULT || 0;
+        if (multiplier <= 0) return false;
+
+        const reflectDamageRaw = mitigatedDamage * multiplier;
+        const reflectDamage = Math.max(Math.round(reflectDamageRaw), 0);
+        if (reflectDamage <= 0) return false;
+
+        const finalDamage = Math.min(reflectDamage, attacker.hp);
+        if (finalDamage <= 0) return false;
+
+        attacker.hp -= finalDamage;
+        spawnFloatText(
+          attacker.x + attacker.w / 2,
+          attacker.y - 12,
+          -finalDamage,
+          "#60a5fa",
+        );
+
+        if (attacker.hp <= 0 && !attacker._killed) {
+          dropExpOrbs(attacker);
+          if (attackerIndex === -1) attackerIndex = enemies.indexOf(attacker);
+          if (attackerIndex !== -1) {
+            enemies.splice(attackerIndex, 1);
+          }
+          score += attacker.reward || 0;
+          attacker._killed = true;
+          return true;
+        }
+
+        return false;
       }
 
       function pickWeightedIndex(weights) {
@@ -2911,8 +2948,10 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
             const facingBoss = bossLeft ? player.dir < 0 : player.dir > 0;
             const hitCondition = l.hitWhenFacing ? facingBoss : !facingBoss;
             if ((l.ignoreFacing || hitCondition) && player.iframes <= 0 && !cheatInvincible) {
-              const raw = l.damage - playerDefense;
-              const dmg = Math.min(Math.max(raw, 1), hp);
+              const baseDamage = l.damage;
+              const raw = baseDamage - playerDefense;
+              const finalDamage = Math.max(raw, 1);
+              const dmg = Math.min(finalDamage, hp);
               hp -= dmg;
               spawnFloatText(
                 player.x + player.w / 2,
@@ -2920,6 +2959,12 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
                 -dmg,
                 "#ff6b6b",
               );
+              if (acquiredUpgrades["defense"]) {
+                const mitigated = baseDamage - finalDamage;
+                if (mitigated > 0) {
+                  applyDefenseReflection(l.owner, mitigated);
+                }
+              }
               player.iframes = playerIframeDuration;
               player.hitFlash = playerHitFlashDuration;
               if (hp <= 0) {
@@ -3359,6 +3404,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
               }
             }
 
+            let enemyRemovedByReflect = false;
             if (!bossGreen && (playerCollide || aabb(attackRect, player))) {
               if (player.iframes <= 0 && !cheatInvincible) {
                 let baseDamage = e.damage;
@@ -3368,7 +3414,8 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
                   else baseDamage = e.attackDamage.contact;
                 }
                 const raw = baseDamage - playerDefense;
-                const dmg = Math.min(Math.max(raw, 1), hp);
+                const finalDamage = Math.max(raw, 1);
+                const dmg = Math.min(finalDamage, hp);
                 hp -= dmg;
                 spawnFloatText(
                   player.x + player.w / 2,
@@ -3376,6 +3423,12 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
                   -dmg,
                   "#ff6b6b",
                 );
+                if (acquiredUpgrades["defense"]) {
+                  const mitigated = baseDamage - finalDamage;
+                  if (mitigated > 0) {
+                    enemyRemovedByReflect = applyDefenseReflection(e, mitigated, i);
+                  }
+                }
                 player.iframes = playerIframeDuration;
                 player.hitFlash = playerHitFlashDuration;
                 if (hp <= 0) {
@@ -3384,6 +3437,10 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
                   return;
                 }
               }
+            }
+
+            if (enemyRemovedByReflect) {
+              continue;
             }
 
             if (!bossGreen && playerCollide) {
