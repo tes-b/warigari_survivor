@@ -623,6 +623,16 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
           DURATION: 3000, // 기본 지속 시간 (ms)
           SLOW: 0.7, // 이동 속도 감소 비율
         },
+        // 냉기 효과 관련
+        FROST: {
+          DURATION: 1000, // 기본 지속 시간 (ms)
+          TICK: 500, // 피해 간격 (ms)
+          DAMAGE: 20, // 기본 틱 당 피해량
+          SLOW: 0.7, // 기본 이동 속도 배율 (0.7 = 30% 감소)
+          DURATION_STEP: 1000, // 업그레이드당 지속 시간 증가량 (ms)
+          DAMAGE_STEP: 20, // 업그레이드당 틱 피해 증가량
+          SLOW_STEP: 0.1, // 업그레이드당 추가 이동 속도 감소율
+        },
         // 폭발 관련
         EXPLOSION: {
           RADIUS: 40, // 폭발 범위 (px)
@@ -672,6 +682,12 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
       let explosionEnabled = false;
       let explosionRadius = INIT.EXPLOSION.RADIUS;
       let explosionMinDamage = INIT.EXPLOSION.MIN_DAMAGE;
+
+      let frostEnabled = false;
+      let frostDuration = INIT.FROST.DURATION;
+      let frostTickInterval = INIT.FROST.TICK;
+      let frostDamage = INIT.FROST.DAMAGE;
+      let frostSlow = INIT.FROST.SLOW;
 
       let baseAttack = "gun";
 
@@ -864,6 +880,29 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
             } else {
               yoyoKnockback += 40;
             }
+          },
+        },
+        {
+          id: "frost",
+          limit: 4,
+          title: "냉기",
+          icon: "🥶",
+          desc:
+            "기본 공격 적중 시 적이 1초간 30% 느려지고\n0.5초마다 20 피해를 받습니다.\n(레벨당 지속시간 +1초 / 피해 +20 / 둔화 +10%)",
+          apply: () => {
+            const level = (acquiredUpgrades.frost || 0) + 1;
+            frostEnabled = true;
+            frostDuration =
+              INIT.FROST.DURATION +
+              INIT.FROST.DURATION_STEP * (level - 1);
+            frostTickInterval = INIT.FROST.TICK;
+            frostDamage =
+              INIT.FROST.DAMAGE +
+              INIT.FROST.DAMAGE_STEP * (level - 1);
+            frostSlow = Math.max(
+              0,
+              INIT.FROST.SLOW - INIT.FROST.SLOW_STEP * (level - 1),
+            );
           },
         },
         {
@@ -1510,6 +1549,11 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
         explosionEnabled = false;
         explosionRadius = INIT.EXPLOSION.RADIUS;
         explosionMinDamage = INIT.EXPLOSION.MIN_DAMAGE;
+        frostEnabled = false;
+        frostDuration = INIT.FROST.DURATION;
+        frostTickInterval = INIT.FROST.TICK;
+        frostDamage = INIT.FROST.DAMAGE;
+        frostSlow = INIT.FROST.SLOW;
         laserOrbCooldown = INIT.LASERORB.COOLDOWN;
         laserOrbDamage = INIT.LASERORB.DAMAGE;
         laserOrbSpeed = INIT.LASERORB.SPEED;
@@ -2087,6 +2131,22 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
         return primaryExtra;
       }
 
+      function applyFrostEffect(enemy) {
+        if (!frostEnabled) return;
+        if (!enemy.frost) {
+          enemy.frost = {
+            timer: frostDuration,
+            accum: 0,
+            duration: frostDuration,
+            seed: Math.random() * Math.PI * 2,
+          };
+        } else {
+          enemy.frost.timer = frostDuration;
+          enemy.frost.accum = Math.min(enemy.frost.accum || 0, frostTickInterval);
+          enemy.frost.duration = frostDuration;
+        }
+      }
+
       function pickRandomEnemy() {
         if (enemies.length === 0) return null;
         const idx = Math.floor(Math.random() * enemies.length);
@@ -2193,17 +2253,20 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
               if (e.isBoss && e.hasShield && isBossFacingPlayer(e)) {
                 dmg = Math.max(Math.floor(dmg * e.shieldMultiplier), 1);
               }
-                e.hp -= dmg;
-                let extra = 0;
-                if (explosionEnabled) {
-                  extra = triggerExplosion(ex, ey, distToPlayer, e.id);
-                  if (i >= enemies.length || enemies[i].id !== e.id) {
-                    spawnFloatText(ex, e.y - 12, -(dmg + extra), "#ff6b6b");
-                    continue;
-                  }
+              e.hp -= dmg;
+
+              applyFrostEffect(e);
+
+              let extra = 0;
+              if (explosionEnabled) {
+                extra = triggerExplosion(ex, ey, distToPlayer, e.id);
+                if (i >= enemies.length || enemies[i].id !== e.id) {
+                  spawnFloatText(ex, e.y - 12, -(dmg + extra), "#ff6b6b");
+                  continue;
                 }
-                spawnFloatText(ex, e.y - 12, -(dmg + extra), "#ff6b6b");
-                if (lifeSteal > 0 && totalHeal < missingHP) {
+              }
+              spawnFloatText(ex, e.y - 12, -(dmg + extra), "#ff6b6b");
+              if (lifeSteal > 0 && totalHeal < missingHP) {
                 const heal = Math.min(dmg * lifeSteal, missingHP - totalHeal);
                 totalHeal += heal;
               }
@@ -2904,6 +2967,36 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
 
           let slowMul = 1;
           let iceDamage = 0;
+          if (e.frost) {
+            if (e.frost.duration == null) e.frost.duration = frostDuration;
+            if (e.frost.seed == null) e.frost.seed = Math.random() * Math.PI * 2;
+            const remaining = e.frost.timer;
+            if (remaining > 0) {
+              slowMul *= frostSlow;
+              const elapsedMs = dt * 1000;
+              const activeTime = Math.min(remaining, elapsedMs);
+              e.frost.timer = Math.max(0, remaining - elapsedMs);
+              e.frost.accum = (e.frost.accum || 0) + activeTime;
+              while (e.frost.accum >= frostTickInterval && !e._killed) {
+                e.frost.accum -= frostTickInterval;
+                const raw = frostDamage - (e.defense || 0);
+                const dmg = Math.min(Math.max(raw, 1), e.hp);
+                e.hp -= dmg;
+                spawnFloatText(e.x + e.w / 2, e.y - 12, -dmg, "#93c5fd");
+                if (e.hp <= 0) {
+                  dropExpOrbs(e);
+                  enemies.splice(i, 1);
+                  score += e.reward;
+                  e._killed = true;
+                  break;
+                }
+              }
+            }
+            if (!e._killed && e.frost.timer <= 0) {
+              delete e.frost;
+            }
+          }
+          if (e._killed) continue;
           if (e.entered) {
             for (const f of iceFloors) {
               if (aabb(e, f)) {
@@ -2954,7 +3047,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
               } else {
                 e.vy += enemyGravity * dt;
               }
-              e.vx = e.baseVx;
+              e.vx = e.baseVx * slowMul;
               if (e.knockbackVx !== 0) {
                 e.vx += e.knockbackVx;
                 e.knockbackVx -= e.knockbackVx * enemyKnockbackFriction * dt;
@@ -3031,11 +3124,13 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
                   e.vy = -enemyKnockbackLift;
                 }
 
-                  b.hitSet.add(e.id);
-                  if (b.penetration === 0) {
-                    bullets.splice(j, 1);
-                  } else {
-                    b.penetration--;
+                applyFrostEffect(e);
+
+                b.hitSet.add(e.id);
+                if (b.penetration === 0) {
+                  bullets.splice(j, 1);
+                } else {
+                  b.penetration--;
                   }
 
                   let extra = 0;
@@ -3100,6 +3195,8 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
                     knockDir * yoyoKnockback * enemyKnockbackFriction;
                   e.vy = -enemyKnockbackLift;
                 }
+
+                applyFrostEffect(e);
 
                 y.hitSet.add(e.id);
 
@@ -3540,12 +3637,52 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
           }
 
           ctx.save();
-          if (!e.entered) ctx.globalAlpha = 0.5;
+          const baseAlpha = e.entered ? 1 : 0.5;
+          ctx.globalAlpha = baseAlpha;
           ctx.fillStyle = e.color;
           ctx.fillRect(e.x, e.y, e.w, e.h);
           ctx.strokeStyle = "#bbbbbb";
           ctx.lineWidth = 0.5;
           ctx.strokeRect(e.x + 0.5, e.y + 0.5, e.w - 1, e.h - 1);
+
+          const frostStatus = e.frost;
+          if (frostStatus) {
+            const frostTotal = frostStatus.duration || frostDuration;
+            const frostProgress = frostTotal
+              ? clamp(1 - frostStatus.timer / frostTotal, 0, 1)
+              : 1;
+            const frostSeed = frostStatus.seed || 0;
+            const frostPulse = 0.5 + 0.5 * Math.sin(elapsed * 8 + frostSeed);
+            const auraPadding = 2 + 2 * frostProgress;
+
+            ctx.save();
+            ctx.globalAlpha = baseAlpha * (0.35 + 0.25 * frostPulse);
+            ctx.globalCompositeOperation = "lighter";
+            ctx.fillStyle = "#7dd3fc";
+            ctx.fillRect(e.x, e.y, e.w, e.h);
+            ctx.restore();
+
+            ctx.save();
+            ctx.globalAlpha = baseAlpha * (0.55 + 0.25 * frostPulse);
+            ctx.strokeStyle = `rgba(125, 211, 252, ${0.55 + 0.3 * (1 - frostProgress)})`;
+            ctx.lineWidth = 2;
+            ctx.shadowColor = "rgba(191, 219, 254, 0.5)";
+            ctx.shadowBlur = 10 + 6 * frostProgress;
+            ctx.strokeRect(
+              e.x - auraPadding,
+              e.y - auraPadding,
+              e.w + auraPadding * 2,
+              e.h + auraPadding * 2,
+            );
+            ctx.restore();
+
+            ctx.save();
+            ctx.globalAlpha = baseAlpha * (0.25 + 0.2 * frostPulse);
+            const shineHeight = Math.max(4, e.h * 0.35);
+            ctx.fillStyle = "rgba(224, 242, 254, 1)";
+            ctx.fillRect(e.x, e.y, e.w, shineHeight);
+            ctx.restore();
+          }
 
           // 체력 금 표시
           const dmgRatio = 1 - e.hp / e.hpMax;
