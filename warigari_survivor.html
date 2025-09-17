@@ -622,6 +622,10 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
           SIZE: 12, // 궤도 구슬 기본 크기
           INITIAL_COUNT: 2, // 업그레이드 최초 획득 시 생성될 구슬 수
           COUNT_STEP: 1, // 업그레이드 추가 획득 시 추가되는 구슬 수
+          DAMAGE_MAX_STEP: 500, // 최대 업그레이드 시 피해량
+          RADIUS_MAX_STEP: 90, // 최대 업그레이드 시 반지름
+          SPEED_MAX_STEP: 7, // 최대 업그레이드 시 회전 속도 (rad/s)
+          SIZE_MAX_STEP: 36, // 최대 업그레이드 시 구슬 크기
         },
         // 경험치 관련
         EXP: {
@@ -928,29 +932,6 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
           },
         },
         {
-          id: "frost",
-          limit: 4,
-          title: "냉기",
-          icon: "🥶",
-          desc:
-            "기본 공격 적중 시 적이 1초간 30% 느려지고\n0.5초마다 20 피해를 받습니다.\n(레벨당 지속시간 +1초 / 피해 +20 / 둔화 +10%)",
-          apply: () => {
-            const level = (acquiredUpgrades.frost || 0) + 1;
-            frostEnabled = true;
-            frostDuration =
-              INIT.FROST.DURATION +
-              INIT.FROST.DURATION_STEP * (level - 1);
-            frostTickInterval = INIT.FROST.TICK;
-            frostDamage =
-              INIT.FROST.DAMAGE +
-              INIT.FROST.DAMAGE_STEP * (level - 1);
-            frostSlow = Math.max(
-              0,
-              INIT.FROST.SLOW - INIT.FROST.SLOW_STEP * (level - 1),
-            );
-          },
-        },
-        {
           id: "penetration",
           limit: 10,
           weapon: "gun",
@@ -979,6 +960,72 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
           },
         },
         {
+          id: "lifesteal",
+          limit: 10,
+          title: "흡혈",
+          icon: "🩸",
+          desc: "기본 공격 피해의 3%를 체력으로 회복합니다.\n(+3%)",
+          apply: () => {
+            lifeSteal += INIT.LIFESTEAL.STEP;
+          },
+        },
+        {
+          id: "explosion",
+          limit: 5,
+          title: "폭발",
+          icon: "💣",
+          desc: "기본 공격이 폭발하여 주변 적에게 피해를 줍니다.\n적과의 거리가 멀 수록 피해량이 증가합니다.\n(범위 +20, 폭발 피해 +20)",
+          apply: () => {
+            const level = acquiredUpgrades["explosion"] || 0;
+            if (level === 0) explosionEnabled = true;
+            explosionRadius += INIT.EXPLOSION.RADIUS_STEP;
+            explosionMinDamage += INIT.EXPLOSION.MIN_DAMAGE_STEP;
+          },
+        },
+        {
+          id: "frost",
+          limit: 4,
+          title: "냉기",
+          icon: "❄️",
+          desc:
+            "기본 공격이 적을 둔화시키고 피해를 줍니다.\n(지속시간 +1초, 피해 +20, 둔화 +10%)",
+          apply: () => {
+            const level = (acquiredUpgrades.frost || 0) + 1;
+            frostEnabled = true;
+            frostDuration =
+              INIT.FROST.DURATION +
+              INIT.FROST.DURATION_STEP * (level - 1);
+            frostTickInterval = INIT.FROST.TICK;
+            frostDamage =
+              INIT.FROST.DAMAGE +
+              INIT.FROST.DAMAGE_STEP * (level - 1);
+            frostSlow = Math.max(
+              0,
+              INIT.FROST.SLOW - INIT.FROST.SLOW_STEP * (level - 1),
+            );
+          },
+        },        
+        {
+          id: "magnet",
+          limit: 5,
+          title: "자석",
+          icon: "🧲",
+          desc: "경험치 구슬을 끌어당깁니다 \n(범위 +60)",
+          apply: () => {
+            magnetRadius += INIT.MAGNET.RADIUS_STEP;
+          },
+        },
+        {
+          id: "expBoost",
+          limit: 5,
+          title: "경험치 증가",
+          icon: "📘",
+          desc: "경험치 획득량 30% 증가",
+          apply: () => {
+            expOrbValue *= 1 + INIT.EXP.ORB_VALUE_STEP;
+          },
+        },
+        {
           id: "health",
           limit: 10,
           title: "체력 증가",
@@ -995,6 +1042,31 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
                 healed,
                 "#6cff96",
               );
+          },
+        },        
+        {
+          id: "laserOrb",
+          limit: 10,
+          title: "레이저 구슬",
+          icon: "🔶",
+          desc: "구슬이 무작위 적에게 레이저를 발사합니다.\n(투사체 +1)",
+          apply: () => {
+            const level = acquiredUpgrades["laserOrb"] || 0;
+            if (level === 0) {
+              for (let i = 0; i < INIT.LASERORB.COUNT_STEP; i++) {
+                laserOrbs.push({ offsetX: 0 });
+              }
+            }
+          },
+        },
+        {
+          id: "defense",
+          limit: 10,
+          title: "방어력 증가",
+          icon: "🛡️",
+          desc: "방어력 +20",
+          apply: () => {
+            playerDefense += INIT.PLAYER.DEFENSE_STEP;
           },
         },
         {
@@ -1034,100 +1106,31 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
 
             // 업그레이드 6회 획득 시 폭발적 강화
             if (nextCount === this.limit) {
-              orbitalDamage = 500; // 궤도 구슬 피해량
-              orbitalRadius = 90; // 궤도 반지름
-              orbitalSpeed = 7; // 궤도 회전 속도 (rad/s)
+              orbitalDamage = INIT.ORBITAL.DAMAGE_MAX_STEP; // 궤도 구슬 피해량
+              orbitalRadius = INIT.ORBITAL.RADIUS_MAX_STEP; // 궤도 반지름
+              orbitalSpeed = INIT.ORBITAL.SPEED_MAX_STEP; // 궤도 회전 속도 (rad/s)
               orbitingOrbs.forEach(orb => {
-                orb.size *= 3; // 궤도 구슬 크기 3배 증가
+                orb.size = INIT.ORBITAL.SIZE_MAX_STEP; // 궤도 구슬 크기 3배 증가
                 orb.damage = orbitalDamage; // 궤도 구슬 피해량 갱신
               });
             }
           },
         },
-
-        {
-          id: "lifesteal",
-          limit: 10,
-          title: "흡혈",
-          icon: "🩸",
-          desc: "기본 공격 피해의 3%를 체력으로 회복합니다.\n(+3%)",
-          apply: () => {
-            lifeSteal += INIT.LIFESTEAL.STEP;
-          },
-        },
-        {
-          id: "magnet",
-          limit: 5,
-          title: "자석",
-          icon: "🧲",
-          desc: "경험치 구슬을 끌어당깁니다 \n(범위 +60)",
-          apply: () => {
-            magnetRadius += INIT.MAGNET.RADIUS_STEP;
-          },
-        },
-        {
-          id: "expBoost",
-          limit: 5,
-          title: "경험치 증가",
-          icon: "📘",
-          desc: "경험치 획득량 30% 증가",
-          apply: () => {
-            expOrbValue *= 1 + INIT.EXP.ORB_VALUE_STEP;
-          },
-        },
-        {
-          id: "laserOrb",
-          limit: 10,
-          title: "레이저 구슬",
-          icon: "🔶",
-          desc: "구슬이 무작위 적에게 레이저를 발사합니다.\n(투사체 +1)",
-          apply: () => {
-            const level = acquiredUpgrades["laserOrb"] || 0;
-            if (level === 0) {
-              for (let i = 0; i < INIT.LASERORB.COUNT_STEP; i++) {
-                laserOrbs.push({ offsetX: 0 });
-              }
-            }
-          },
-        },
-        {
-          id: "iceFloor",
-          limit: 5,
-          title: "얼음 바닥",
-          icon: "❄️",
-          enabled: false,
-          desc: "바닥에 얼음을 생성해 적을 둔화시킵니다.\n(지속 시간 +1초, 피해 +20, 둔화 +10%)",
-          apply: () => {
-            const level = acquiredUpgrades["iceFloor"] || 0;
-            if (level === 0) iceFloorEnabled = true;
-            iceFloorDuration += INIT.ICEFLOOR.DURATION_STEP;
-            iceFloorDamage += INIT.ICEFLOOR.DAMAGE_STEP;
-            iceFloorSlow -= INIT.ICEFLOOR.SLOW_STEP;
-          },
-        },
-        {
-          id: "explosion",
-          limit: 5,
-          title: "폭발",
-          icon: "💣",
-          desc: "기본 공격이 적중 시 폭발하여 주변 적에게 피해를 줍니다. 적과의 거리가 멀 수록 피해량이 증가합니다.\n(범위 +20, 폭발 피해 +20)",
-          apply: () => {
-            const level = acquiredUpgrades["explosion"] || 0;
-            if (level === 0) explosionEnabled = true;
-            explosionRadius += INIT.EXPLOSION.RADIUS_STEP;
-            explosionMinDamage += INIT.EXPLOSION.MIN_DAMAGE_STEP;
-          },
-        },
-        {
-          id: "defense",
-          limit: 10,
-          title: "방어력 증가",
-          icon: "🛡️",
-          desc: "방어력 +20",
-          apply: () => {
-            playerDefense += INIT.PLAYER.DEFENSE_STEP;
-          },
-        },
+        // {
+        //   id: "iceFloor",
+        //   limit: 5,
+        //   title: "얼음 바닥",
+        //   icon: "❄️",
+        //   enabled: false,
+        //   desc: "바닥에 얼음을 생성해 적을 둔화시킵니다.\n(지속 시간 +1초, 피해 +20, 둔화 +10%)",
+        //   apply: () => {
+        //     const level = acquiredUpgrades["iceFloor"] || 0;
+        //     if (level === 0) iceFloorEnabled = true;
+        //     iceFloorDuration += INIT.ICEFLOOR.DURATION_STEP;
+        //     iceFloorDamage += INIT.ICEFLOOR.DAMAGE_STEP;
+        //     iceFloorSlow -= INIT.ICEFLOOR.SLOW_STEP;
+        //   },
+        // },
       ];
 
       const UPGRADE_LIMITS = Object.fromEntries(
