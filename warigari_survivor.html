@@ -625,10 +625,13 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
         },
         // 냉기 효과 관련
         FROST: {
-          DURATION: 1000, // 지속 시간 (ms)
+          DURATION: 1000, // 기본 지속 시간 (ms)
           TICK: 500, // 피해 간격 (ms)
-          DAMAGE: 20, // 틱 당 피해량
-          SLOW: 0.7, // 이동 속도 감소 비율
+          DAMAGE: 20, // 기본 틱 당 피해량
+          SLOW: 0.7, // 기본 이동 속도 배율 (0.7 = 30% 감소)
+          DURATION_STEP: 1000, // 업그레이드당 지속 시간 증가량 (ms)
+          DAMAGE_STEP: 20, // 업그레이드당 틱 피해 증가량
+          SLOW_STEP: 0.1, // 업그레이드당 추가 이동 속도 감소율
         },
         // 폭발 관련
         EXPLOSION: {
@@ -881,16 +884,25 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
         },
         {
           id: "frost",
-          limit: 1,
+          limit: 4,
           title: "냉기",
           icon: "🥶",
-          desc: "기본 공격 적중 시 적이 1초간 30% 느려지고\n0.5초마다 20 피해를 받습니다.",
+          desc:
+            "기본 공격 적중 시 적이 1초간 30% 느려지고\n0.5초마다 20 피해를 받습니다.\n(레벨당 지속시간 +1초 / 피해 +20 / 둔화 +10%)",
           apply: () => {
+            const level = (acquiredUpgrades.frost || 0) + 1;
             frostEnabled = true;
-            frostDuration = INIT.FROST.DURATION;
+            frostDuration =
+              INIT.FROST.DURATION +
+              INIT.FROST.DURATION_STEP * (level - 1);
             frostTickInterval = INIT.FROST.TICK;
-            frostDamage = INIT.FROST.DAMAGE;
-            frostSlow = INIT.FROST.SLOW;
+            frostDamage =
+              INIT.FROST.DAMAGE +
+              INIT.FROST.DAMAGE_STEP * (level - 1);
+            frostSlow = Math.max(
+              0,
+              INIT.FROST.SLOW - INIT.FROST.SLOW_STEP * (level - 1),
+            );
           },
         },
         {
