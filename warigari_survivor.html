@@ -753,6 +753,8 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
       let waveTimer = 0;
       const bossWaves = [3, 7, 11]; // 4,8,12 웨이브는 보스 스테이지
       const BOSS_SPAWN_DELAY = 5000; // 보스 스폰 지연(ms)
+      const BOSS_LASER_SPEED = 600; // 보스 레이저 속도(px/s)
+      const BOSS_TIMED_LASER_GAP = 500; // 시간차 레이저 간격(ms)
       let bossSpawnTimer = 0;
       let bossSpawnPos = null;
       let enemyScale = 1; // 웨이브에 따른 적 체력/공격력 배율
@@ -1844,6 +1846,10 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
         });
       }
 
+      function rollTimedLaserWidth() {
+        return player.w * (2 + Math.random() * 4);
+      }
+
       function pickBossPattern(b) {
         if (!b.patternSequence) {
           if (currentWave === 11) {
@@ -1867,6 +1873,8 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
         b.rushColorTimer = 0;
         b.rushColorThreshold = 1;
         b.color = "#ff6b9d";
+        b.nextTimedLaserWidth =
+          b.attackState === "timedLaser" ? rollTimedLaserWidth() : undefined;
       }
 
       const BOSS_PATTERN_DELAY = 3000;
@@ -1957,7 +1965,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
       function fireBossLaser(boss, opts = {}) {
         const dir =
           player.x + player.w / 2 >= boss.x + boss.w / 2 ? 1 : -1;
-        const speed = 600;
+        const speed = BOSS_LASER_SPEED;
         const width = opts.width || player.w * 3;
         const travel = ((WORLD.w + boss.w + width) / speed) * 1000;
         bossLasers.push({
@@ -2079,12 +2087,18 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
           }
           b.vx = 0;
         } else if (b.attackState === "timedLaser") {
+          if (b.laserCount < 10 && b.nextTimedLaserWidth === undefined) {
+            b.nextTimedLaserWidth = rollTimedLaserWidth();
+          }
           b.attackCooldown -= dt * 1000;
           if (b.attackCooldown <= 0) {
             if (b.laserCount < 10) {
               const requireFacing = b.laserCount % 2 === 0;
               const color = requireFacing ? "#ff6b9d" : "#4ade80";
-              const width = player.w * (2 + Math.random() * 4);
+              const width =
+                b.nextTimedLaserWidth !== undefined
+                  ? b.nextTimedLaserWidth
+                  : rollTimedLaserWidth();
               fireBossLaser(b, {
                 color,
                 hitWhenFacing: requireFacing,
@@ -2092,8 +2106,17 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
                 damage: b.attackDamage.timedLaser,
               });
               b.laserCount++;
-              b.attackCooldown = 500;
+              if (b.laserCount < 10) {
+                const nextWidth = rollTimedLaserWidth();
+                b.nextTimedLaserWidth = nextWidth;
+                const travelTimeMs = (nextWidth / BOSS_LASER_SPEED) * 1000;
+                b.attackCooldown = travelTimeMs + BOSS_TIMED_LASER_GAP;
+              } else {
+                b.nextTimedLaserWidth = undefined;
+                b.attackCooldown = 0;
+              }
             } else if (!bossLasers.some((l) => l.owner === b)) {
+              b.nextTimedLaserWidth = undefined;
               pickBossPattern(b);
             }
           }
