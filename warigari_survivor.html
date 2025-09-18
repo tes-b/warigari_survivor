@@ -3423,6 +3423,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
                   dmg = Math.max(Math.floor(dmg * e.shieldMultiplier), 1);
                 }
                 e.hp -= dmg;
+                audio.play("attackHit");
 
                 if (lifeSteal > 0) {
                   const heal = Math.min(dmg * lifeSteal, playerHP - hp);
@@ -3496,6 +3497,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
                   dmg = Math.max(Math.floor(dmg * e.shieldMultiplier), 1);
                 }
                 e.hp -= dmg;
+                audio.play("attackHit");
 
                 if (lifeSteal > 0 && !y.returning) {
                   const heal = Math.min(dmg * lifeSteal, playerHP - hp);
