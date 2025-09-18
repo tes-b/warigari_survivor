@@ -168,10 +168,9 @@
       pointer-events: none;
     }
 
-    .pause-button {
+    .control-button {
       position: absolute;
       top: calc(12px * var(--ui-scale));
-      right: calc(12px * var(--ui-scale));
       z-index: 25;
       background: #0e1330cc;
       border: 1px solid #2b356e;
@@ -190,16 +189,24 @@
         filter 0.1s ease;
     }
 
-    .pause-button:hover:not(:disabled) {
+    .control-button:hover:not(:disabled) {
       transform: translateY(calc(-1px * var(--ui-scale)));
       filter: brightness(1.1);
     }
 
-    .pause-button:disabled {
+    .control-button:disabled {
       opacity: 0.6;
       cursor: default;
       filter: none;
       transform: none;
+    }
+
+    .pause-button {
+      right: calc(12px * var(--ui-scale));
+    }
+
+    .mute-button {
+      right: calc(12px * var(--ui-scale) + 42px * var(--ui-scale) + 8px * var(--ui-scale));
     }
 
     .hud .stat {
@@ -426,7 +433,24 @@
     <div id="canvasWrap">
       <canvas id="game" width="960" height="540"></canvas>
 
-      <button type="button" class="pause-button" id="pauseButton" aria-label="일시정지" title="일시정지">⏸</button>
+      <button
+        type="button"
+        class="control-button mute-button"
+        id="muteButton"
+        aria-label="음소거"
+        title="음소거"
+      >
+        🔊
+      </button>
+      <button
+        type="button"
+        class="control-button pause-button"
+        id="pauseButton"
+        aria-label="일시정지"
+        title="일시정지"
+      >
+        ⏸
+      </button>
 
       <div class="hud" id="hud">
         <div class="stat" id="hp">HP: 1000/1000</div>
@@ -1177,16 +1201,33 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
         const AudioContextClass =
           window.AudioContext || window.webkitAudioContext;
         if (!AudioContextClass) {
+          let muted = false;
+          const noop = () => { };
           return {
-            play: () => { },
-            resume: () => { },
+            play: noop,
+            resume: noop,
+            isMuted: () => muted,
+            setMuted: (value) => {
+              muted = !!value;
+            },
+            toggleMute: () => {
+              muted = !muted;
+              return muted;
+            },
           };
         }
 
         const context = new AudioContextClass();
         const masterGain = context.createGain();
-        masterGain.gain.value = 0.25;
+        const DEFAULT_VOLUME = 0.25;
+        let muted = false;
+        masterGain.gain.value = DEFAULT_VOLUME;
         masterGain.connect(context.destination);
+
+        function updateMasterGain() {
+          const gainValue = muted ? 0 : DEFAULT_VOLUME;
+          masterGain.gain.setValueAtTime(gainValue, context.currentTime);
+        }
 
         const soundDefs = {
           attack: [
@@ -1393,12 +1434,26 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
           }
         }
 
+        function setMuted(value) {
+          muted = !!value;
+          updateMasterGain();
+        }
+
+        function toggleMute() {
+          setMuted(!muted);
+          return muted;
+        }
+
+        function isMuted() {
+          return muted;
+        }
+
         const unlock = () => resume();
         window.addEventListener("pointerdown", unlock, { once: true });
         window.addEventListener("keydown", unlock, { once: true });
         window.addEventListener("touchstart", unlock, { once: true });
 
-        return { play, resume };
+        return { play, resume, setMuted, toggleMute, isMuted };
       })();
 
       // --- 게임 상태 ---
@@ -1424,13 +1479,17 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
       let spaceLocked = false;
 
       function updatePauseButton() {
-        if (!pauseButton) return;
+        if (!pauseButton) {
+          updateMuteButton();
+          return;
+        }
         if (!running) {
           pauseButton.style.display = "none";
           pauseButton.disabled = true;
           pauseButton.textContent = "⏸";
           pauseButton.setAttribute("aria-label", "일시정지");
           pauseButton.title = "일시정지";
+          updateMuteButton();
           return;
         }
         pauseButton.style.display = "flex";
@@ -1442,6 +1501,24 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
         pauseButton.setAttribute("aria-label", label);
         pauseButton.title = label;
         pauseButton.disabled = shouldDisable;
+        updateMuteButton();
+      }
+
+      function updateMuteButton() {
+        if (!muteButton) return;
+        const isMuted = typeof audio.isMuted === "function" ? audio.isMuted() : false;
+        const label = isMuted ? "음소거 해제" : "음소거";
+        muteButton.textContent = isMuted ? "🔇" : "🔊";
+        muteButton.setAttribute("aria-label", label);
+        muteButton.title = label;
+        muteButton.setAttribute("aria-pressed", isMuted ? "true" : "false");
+        if (!running) {
+          muteButton.style.display = "none";
+          muteButton.disabled = false;
+          return;
+        }
+        muteButton.style.display = "flex";
+        muteButton.disabled = false;
       }
 
       // 화면/맵
@@ -1746,6 +1823,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
       // --- 게임 제어 ---
       const overlay = document.getElementById("overlay");
       const pauseButton = document.getElementById("pauseButton");
+      const muteButton = document.getElementById("muteButton");
 
       const tipElem = document.getElementById("tip");
       const tips = [
@@ -1806,6 +1884,18 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
           e.stopPropagation();
           if (!running || levelupActive || pauseButton.disabled) return;
           togglePause();
+        });
+      }
+
+      if (muteButton) {
+        muteButton.addEventListener("click", (e) => {
+          e.stopPropagation();
+          const nextMuted = !audio.isMuted();
+          audio.setMuted(nextMuted);
+          if (!nextMuted) {
+            audio.resume();
+          }
+          updateMuteButton();
         });
       }
 
