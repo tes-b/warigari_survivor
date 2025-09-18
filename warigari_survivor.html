@@ -1280,6 +1280,16 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
 
       // --- 보스 레이저 ---
       const bossLasers = [];
+      const BOSS_LASER_SPEED = 600;
+      // Keep the timed laser pattern spaced evenly by accounting for the
+      // laser's width when calculating its cooldown. The base width uses the
+      // average of the random width range (2~6 player widths).
+      const TIMED_LASER_BASE_COOLDOWN = 500;
+      const TIMED_LASER_BASE_WIDTH = player.w * 4;
+      const TIMED_LASER_SPACING_DISTANCE = Math.max(
+        0,
+        BOSS_LASER_SPEED * (TIMED_LASER_BASE_COOLDOWN / 1000) - TIMED_LASER_BASE_WIDTH
+      );
       // --- 레이저 구슬 ---
       const lasers = [];
       let laserOrbs = [];
@@ -1957,7 +1967,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
       function fireBossLaser(boss, opts = {}) {
         const dir =
           player.x + player.w / 2 >= boss.x + boss.w / 2 ? 1 : -1;
-        const speed = 600;
+        const speed = BOSS_LASER_SPEED;
         const width = opts.width || player.w * 3;
         const travel = ((WORLD.w + boss.w + width) / speed) * 1000;
         bossLasers.push({
@@ -2092,7 +2102,9 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
                 damage: b.attackDamage.timedLaser,
               });
               b.laserCount++;
-              b.attackCooldown = 500;
+              const spacingDistance = TIMED_LASER_SPACING_DISTANCE;
+              const nextCooldown = ((width + spacingDistance) / BOSS_LASER_SPEED) * 1000;
+              b.attackCooldown = nextCooldown;
             } else if (!bossLasers.some((l) => l.owner === b)) {
               pickBossPattern(b);
             }
