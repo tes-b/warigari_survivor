@@ -1865,6 +1865,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
         b.rushing = false;
         b.rushDir = 0;
         b.rushColorTimer = 0;
+        b.rushColorThreshold = 1;
         b.color = "#ff6b9d";
       }
 
@@ -1935,6 +1936,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
           rushing: false,
           rushDir: 0,
           rushColorTimer: 0,
+          rushColorThreshold: 1,
           attackDamage: {
             contact: dmgBase * cfg.attacks.contact,
             laser: dmgBase * cfg.attacks.laser,
@@ -2104,12 +2106,14 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
               b.rushDir = -1;
               b.color = "#ff6b9d";
               b.rushColorTimer = 0;
+              b.rushColorThreshold = Math.random();
             }
 
             b.rushColorTimer += dt;
-            if (b.rushColorTimer >= 1) {
-              b.rushColorTimer -= 1;
+            if (b.rushColorTimer >= b.rushColorThreshold) {
+              b.rushColorTimer -= b.rushColorThreshold;
               b.color = b.color === "#ff6b9d" ? "#4ade80" : "#ff6b9d";
+              b.rushColorThreshold = 1;
             }
 
             const speed = player.speed * 2;
@@ -2127,6 +2131,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
               b.color = "#ff6b9d";
               b.rushDir = 0;
               b.rushColorTimer = 0;
+              b.rushColorThreshold = 1;
               pickBossPattern(b);
             }
           } else {
