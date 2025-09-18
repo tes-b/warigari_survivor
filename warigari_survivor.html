@@ -1260,6 +1260,36 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
               release: 0.3,
             },
           ],
+          bossDeath: [
+            {
+              wave: "sawtooth",
+              freq: 140,
+              freqEnd: 50,
+              duration: 0.6,
+              gain: 0.22,
+              attack: 0.01,
+              release: 0.45,
+              spread: 0.02,
+            },
+            {
+              noise: true,
+              duration: 0.5,
+              gain: 0.24,
+              attack: 0.02,
+              release: 0.5,
+            },
+            {
+              wave: "triangle",
+              freq: 360,
+              freqEnd: 160,
+              duration: 0.45,
+              gain: 0.14,
+              attack: 0.015,
+              release: 0.35,
+              delay: 0.05,
+              spread: 0.04,
+            },
+          ],
         };
 
         function applyEnvelope(gainNode, start, def) {
@@ -2366,6 +2396,10 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
           spawnExpOrb(x, y);
         }
         if (e.isBoss) {
+          if (!e._bossDeathSoundPlayed) {
+            audio.play("bossDeath");
+            e._bossDeathSoundPlayed = true;
+          }
           if (e._bigOrbDropped) return;
           e._bigOrbDropped = true;
           spawnExpOrb(x, y, {
