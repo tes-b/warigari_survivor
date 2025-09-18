@@ -1178,8 +1178,8 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
           window.AudioContext || window.webkitAudioContext;
         if (!AudioContextClass) {
           return {
-            play: () => {},
-            resume: () => {},
+            play: () => { },
+            resume: () => { },
           };
         }
 
@@ -1191,10 +1191,10 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
         const soundDefs = {
           attack: [
             {
-              wave: "square",
-              freq: 560,
-              freqEnd: 440,
-              duration: 0.12,
+              wave: "triangle",
+              freq: 660,
+              freqEnd: 540,
+              duration: 0.1,
               gain: 0.12,
               spread: 0.05,
             },
@@ -1224,13 +1224,13 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
               freq: 220,
               freqEnd: 120,
               duration: 0.25,
-              gain: 0.18,
+              gain: 0.12,
               spread: 0.08,
             },
             {
               noise: true,
               duration: 0.18,
-              gain: 0.2,
+              gain: 0.12,
               release: 0.15,
             },
           ],
@@ -1240,23 +1240,23 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
               freq: 900,
               freqEnd: 1400,
               duration: 0.18,
-              gain: 0.12,
+              gain: 0.1,
               spread: 0.04,
             },
           ],
           explosion: [
             {
               noise: true,
-              duration: 0.45,
-              gain: 0.28,
+              duration: 0.3,
+              gain: 0.05,
               release: 0.3,
             },
             {
               wave: "sawtooth",
               freq: 180,
               freqEnd: 40,
-              duration: 0.5,
-              gain: 0.16,
+              duration: 0.3,
+              gain: 0.08,
               release: 0.3,
             },
           ],
@@ -1326,7 +1326,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
           const def = soundDefs[name];
           if (!def) return;
           if (context.state === "suspended") {
-            context.resume().catch(() => {});
+            context.resume().catch(() => { });
           }
           const parts = Array.isArray(def) ? def : [def];
           for (const part of parts) {
@@ -1337,7 +1337,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
 
         function resume() {
           if (context.state === "suspended") {
-            context.resume().catch(() => {});
+            context.resume().catch(() => { });
           }
         }
 
