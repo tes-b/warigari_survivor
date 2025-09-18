@@ -1218,6 +1218,28 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
               release: 0.12,
             },
           ],
+          laser: [
+            {
+              wave: "sawtooth",
+              freq: 1400,
+              freqEnd: 500,
+              duration: 0.14,
+              gain: 0.09,
+              attack: 0.004,
+              release: 0.09,
+              spread: 0.03,
+            },
+            {
+              wave: "triangle",
+              freq: 900,
+              freqEnd: 400,
+              duration: 0.12,
+              gain: 0.06,
+              attack: 0.003,
+              release: 0.1,
+              delay: 0.015,
+            },
+          ],
           hit: [
             {
               wave: "sawtooth",
@@ -2495,6 +2517,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
           life: 1000,
           dmg: laserOrbDamage,
         });
+        audio.play("laser");
       }
 
       // 레벨업 후 주위 적들에게 피해와 넉백을 주는 임펄스
@@ -3598,6 +3621,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
                   dmg = Math.max(Math.floor(dmg * e.shieldMultiplier), 1);
                 }
                 e.hp -= dmg;
+                audio.play("attackHit");
                 spawnFloatText(e.x + e.w / 2, e.y - 12, -dmg, "#ff6b6b");
                 lasers.splice(j, 1);
                 if (e.hp <= 0) {
@@ -3630,6 +3654,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
                 const raw = orb.damage - (e.defense || 0);
                 const dmg = Math.min(Math.max(raw, 1), e.hp);
                 e.hp -= dmg;
+                audio.play("attackHit");
 
                 spawnFloatText(e.x + e.w / 2, e.y - 12, -dmg, "#ff6b6b");
                 if (e.hp <= 0) {
