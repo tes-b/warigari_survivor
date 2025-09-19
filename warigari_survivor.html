@@ -4336,25 +4336,21 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
             ctx.fill();
           }
 
-          // Wave 12 보스: jumper와 같은 스타일의 쌍뿔 추가
+          // Wave 12 보스: jumper와 동일한 단일 뿔 추가
           if (e.isBoss) {
             const bossWave = e.wave !== undefined ? e.wave : currentWave;
             if (bossWave === 11) {
               ctx.fillStyle = "#bfc7d5";
+              const hornW = e.w * 0.4;
               const hornH = e.h * 0.35;
-              const hornW = e.w * 0.28;
-              const spacing = e.w * 0.2;
+              const hx = e.x + e.w / 2;
               const baseY = e.y;
-              const centerX = e.x + e.w / 2;
-              for (const dir of [-1, 1]) {
-                const cx = centerX + spacing * dir;
-                ctx.beginPath();
-                ctx.moveTo(cx, baseY - hornH);
-                ctx.lineTo(cx - hornW / 2, baseY);
-                ctx.lineTo(cx + hornW / 2, baseY);
-                ctx.closePath();
-                ctx.fill();
-              }
+              ctx.beginPath();
+              ctx.moveTo(hx, baseY - hornH);
+              ctx.lineTo(hx - hornW / 2, baseY);
+              ctx.lineTo(hx + hornW / 2, baseY);
+              ctx.closePath();
+              ctx.fill();
             }
           }
 
