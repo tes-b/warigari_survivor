@@ -648,6 +648,8 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
           COOLDOWN: 1000, // 검 공격 간격 (ms)
           DAMAGE: 200, // 검 피해량
           RANGE: 120, // 검 공격 범위 (px)
+          MAXIMUM_DAMAGE_RANGE: 120, // 최대 데미지 범위 (px)
+          REDUCTION_PER_DIST: 0.00275, // 거리당 데미지 감소 배율
           KNOCKBACK: 0, // 검 넉백 거리 (px)
           COOLDOWN_MIN: 300, // 공격 속도 업그레이드 시 최소 쿨다운 (ms)
           DAMAGE_STEP: 0.2, // 공격력 업그레이드당 피해 증가율 (20%)
@@ -2778,7 +2780,20 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
           if (dist <= swordRange - handleLen) {
             const ang = Math.atan2(dy, dx * player.dir);
             if (ang >= -11 * Math.PI / 18 && ang <= Math.PI / 6) {
-              const raw = swordDamage - (e.defense || 0);
+              const playerDistance = Math.max(dist, 0);
+              const damageDistance = Math.max(
+                playerDistance - INIT.SWORD.MAXIMUM_DAMAGE_RANGE,
+                0,
+              );
+              const damageMultiplier = Math.max(
+                1 - damageDistance * INIT.SWORD.REDUCTION_PER_DIST,
+                0,
+              );
+              const adjustedSwordDamage = Math.max(
+                Math.floor(swordDamage * damageMultiplier),
+                0,
+              );
+              const raw = adjustedSwordDamage - (e.defense || 0);
               let dmg = Math.min(Math.max(raw, 1), e.hp);
               if (e.isBoss && e.hasShield && isBossFacingPlayer(e)) {
                 dmg = Math.max(Math.floor(dmg * e.shieldMultiplier), 1);
