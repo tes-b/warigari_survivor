@@ -1413,6 +1413,92 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
               spread: 0.04,
             },
           ],
+          bossTelegraph: [
+            {
+              wave: "sawtooth",
+              freq: 520,
+              freqEnd: 180,
+              duration: 0.35,
+              gain: 0.06,
+              attack: 0.01,
+              release: 0.28,
+              spread: 0.03,
+            },
+            {
+              wave: "triangle",
+              freq: 980,
+              freqEnd: 320,
+              duration: 0.32,
+              gain: 0.04,
+              delay: 0.06,
+              attack: 0.01,
+              release: 0.26,
+            },
+          ],
+          bossJump: [
+            {
+              wave: "triangle",
+              freq: 320,
+              freqEnd: 520,
+              duration: 0.18,
+              gain: 0.07,
+              attack: 0.005,
+              release: 0.18,
+              spread: 0.04,
+            },
+          ],
+          bossLand: [
+            {
+              noise: true,
+              duration: 0.12,
+              gain: 0.14,
+              attack: 0.003,
+              release: 0.26,
+            },
+            {
+              wave: "sawtooth",
+              freq: 160,
+              freqEnd: 60,
+              duration: 0.22,
+              gain: 0.1,
+              attack: 0.005,
+              release: 0.24,
+            },
+          ],
+          bossLaser: [
+            {
+              wave: "sawtooth",
+              freq: 1600,
+              freqEnd: 320,
+              duration: 0.18,
+              gain: 0.06,
+              attack: 0.004,
+              release: 0.18,
+              spread: 0.03,
+            },
+            {
+              wave: "triangle",
+              freq: 900,
+              freqEnd: 260,
+              duration: 0.2,
+              gain: 0.05,
+              delay: 0.02,
+              attack: 0.003,
+              release: 0.18,
+            },
+          ],
+          bossRushPulse: [
+            {
+              wave: "square",
+              freq: 520,
+              freqEnd: 280,
+              duration: 0.14,
+              gain: 0.05,
+              attack: 0.005,
+              release: 0.2,
+              spread: 0.05,
+            },
+          ],
         };
 
         function applyEnvelope(gainNode, start, def) {
@@ -2296,6 +2382,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
         b.rushColorTimer = 0;
         b.rushColorThreshold = 1;
         b.color = "#ff6b9d";
+        b.preEffectSoundPlayed = false;
       }
 
       const BOSS_PATTERN_DELAY = 3000;
@@ -2327,6 +2414,24 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
         if (b.attackState === "rush" && !b.rushing && b.attackCooldown <= effectTime)
           return true;
         return false;
+      }
+
+      function maybePlayBossPreEffectSound(b, prevCooldown) {
+        if (!b.isBoss) return;
+        const effectTime = BOSS_PRE_EFFECT_TIME[b.attackState] || 1000;
+        if (b.attackCooldown > effectTime) {
+          b.preEffectSoundPlayed = false;
+          return;
+        }
+        if (
+          !b.preEffectSoundPlayed &&
+          typeof prevCooldown === "number" &&
+          prevCooldown > effectTime &&
+          bossPreEffectActive(b)
+        ) {
+          audio.play("bossTelegraph");
+          b.preEffectSoundPlayed = true;
+        }
       }
 
       function spawnBoss() {
@@ -2380,6 +2485,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
           },
           hasShield: cfg.shield,
           shieldMultiplier: cfg.shieldMultiplier,
+          preEffectSoundPlayed: false,
         };
         pickBossPattern(boss);
         // 보스 스폰 후 5초후에 패턴 시작
@@ -2395,6 +2501,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
         const spawnLineX = dir > 0 ? boss.x + boss.w : boss.x;
         const x = dir > 0 ? (spawnLineX - width) : spawnLineX; // 레이저의 "앞면"이 spawnLineX에 오도록 정렬
         const travel = ((WORLD.w + boss.w + width) / speed) * 1000;
+        audio.play("bossLaser");
         bossLasers.push({
           owner: boss,
           x: x,
@@ -2427,6 +2534,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
             if (Math.abs(starts[i] - start) < 3) starts.splice(i, 1);
           }
         }
+        audio.play("bossLaser");
         for (const s of chosen) {
           bossLasers.push({
             owner: boss,
@@ -2454,6 +2562,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
           b.dir =
             player.x + player.w / 2 >= b.x + b.w / 2 ? 1 : -1;
         }
+        const prevCooldown = b.attackCooldown;
         if (b.attackState === "laser") {
           b.attackCooldown -= dt * 1000;
           if (b.attackCooldown <= 0) {
@@ -2475,6 +2584,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
               b.y = WORLD.groundY - b.h;
               b.vy = 0;
               b.jumping = false;
+              audio.play("bossLand");
               b.x = b.returning ? b.startX : b.x;
               b.attackCooldown = 1000;
             }
@@ -2488,12 +2598,14 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
                 b.vx = (targetX - b.x) / flight;
                 b.dir = Math.sign(b.vx);
                 b.vy = jumpVy;
+                audio.play("bossJump");
                 b.jumping = true;
                 b.jumpCount++;
               } else if (!b.returning) {
                 b.vx = (b.startX - b.x) / flight;
                 b.dir = Math.sign(b.vx);
                 b.vy = jumpVy;
+                audio.play("bossJump");
                 b.jumping = true;
                 b.returning = true;
               } else {
@@ -2550,6 +2662,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
               b.rushColorTimer -= b.rushColorThreshold;
               b.color = b.color === "#ff6b9d" ? "#4ade80" : "#ff6b9d";
               b.rushColorThreshold = 1;
+              audio.play("bossRushPulse");
             }
 
             const speed = player.speed * 2;
@@ -2574,6 +2687,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
             b.vx = 0;
           }
         }
+        maybePlayBossPreEffectSound(b, prevCooldown);
       }
 
       function updateAllBosses(dt) {
