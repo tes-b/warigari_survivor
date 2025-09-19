@@ -448,22 +448,10 @@
     <div id="canvasWrap">
       <canvas id="game" width="960" height="540"></canvas>
 
-      <button
-        type="button"
-        class="control-button mute-button"
-        id="muteButton"
-        aria-label="음소거"
-        title="음소거"
-      >
+      <button type="button" class="control-button mute-button" id="muteButton" aria-label="음소거" title="음소거">
         🔊
       </button>
-      <button
-        type="button"
-        class="control-button pause-button"
-        id="pauseButton"
-        aria-label="일시정지"
-        title="일시정지"
-      >
+      <button type="button" class="control-button pause-button" id="pauseButton" aria-label="일시정지" title="일시정지">
         ⏸
       </button>
 
@@ -576,7 +564,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
       </div>
 
       <div class="bottom-tip" id="tip">TIP: 팁을 보려면 팁을 내세요.</div>
-      <div class="version-label" aria-hidden="true">V25.09.19.10</div>
+      <div class="version-label" aria-hidden="true">V25.09.20.00</div>
       <div class="levelup-overlay" id="levelupOverlay">
         <div class="levelup-panel">
           <h1>🔶 업그레이드 🔶</h1>
@@ -1281,9 +1269,9 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
           upgradeOpen: [
             {
               wave: "triangle",
-              freq: 780,
-              freqEnd: 520,
-              duration: 0.24,
+              freq: 440,
+              freqEnd: 1760,
+              duration: 0.5,
               gain: 0.08,
               attack: 0.01,
               release: 0.22,
@@ -1291,9 +1279,9 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
             },
             {
               wave: "sine",
-              freq: 1040,
-              freqEnd: 880,
-              duration: 0.18,
+              freq: 880,
+              freqEnd: 3520,
+              duration: 0.5,
               gain: 0.05,
               delay: 0.04,
               attack: 0.008,
@@ -1441,7 +1429,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
               freq: 320,
               freqEnd: 520,
               duration: 0.18,
-              gain: 0.07,
+              gain: 0.1,
               attack: 0.005,
               release: 0.18,
               spread: 0.04,
@@ -1460,7 +1448,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
               freq: 160,
               freqEnd: 60,
               duration: 0.22,
-              gain: 0.1,
+              gain: 0.09,
               attack: 0.005,
               release: 0.24,
             },
@@ -2016,8 +2004,8 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
         "TIP: 이 게임은 물리 법칙을 존중하지 않습니다.",
         "TIP: 이 게임의 개발자는 랩틸리언 입니다.",
 
-        "속보: 열심히 일하던 A 씨 거북목이 된 채 발견.",        
-        "속보: ‘오늘은 진짜 일찍 자야지’라던 플레이어, 새벽 3시 눈뜬 채 발견.",        
+        "속보: 열심히 일하던 A 씨 거북목이 된 채 발견.",
+        "속보: ‘오늘은 진짜 일찍 자야지’라던 플레이어, 새벽 3시 눈뜬 채 발견.",
         "속보: 의자에 붙어있던 B 씨, 최종적으로 의자와 합체.",
         "속보: C 씨, 방 청소하다 경험치 0 획득.",
         "속보: 아이템 창을 정리하던 I 씨, 현실 방도 정리 필요.",
@@ -2031,7 +2019,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
         "세종: 조선의 궁궐에 당도한 것을 환영하오, 낯선이여... 아 여기 아닌가?",
         "이즈리얼: 많고 많은 마법사들 중 내가 제일... 아 여기 아닌가?",
 
-        "특가 세일! 지금 허리 펴지 않으면 디스크 수술비가 단돈 오백만 원!",        
+        "특가 세일! 지금 허리 펴지 않으면 디스크 수술비가 단돈 오백만 원!",
         "한정판! 수면 8시간 세트, 다크서클 제거 효과 포함!",
         "특별 패키지! 양치 안 하면 치과 정기권 자동 결제!",
         "전문가: 와리가리가 신체에 미치는 긍정적 영향 연구 착수.",
@@ -3900,7 +3888,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
                 const baseDamage = y.dmg;
                 const scaledDamage = Math.max(
                   baseDamage *
-                    (1 + damageDistance * INIT.YOYO.MAG_PER_DIST),
+                  (1 + damageDistance * INIT.YOYO.MAG_PER_DIST),
                   0,
                 );
                 const raw = scaledDamage - (e.defense || 0);
