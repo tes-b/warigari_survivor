@@ -2780,15 +2780,17 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
           if (dist <= swordRange - handleLen) {
             const ang = Math.atan2(dy, dx * player.dir);
             if (ang >= -11 * Math.PI / 18 && ang <= Math.PI / 6) {
-              const damageDistance = Math.min(
-                distToPlayer - INIT.SWORD.MAXIMUM_DAMAGE_RANGE,
+              const playerDistance = Math.max(dist, 0);
+              const damageDistance = Math.max(
+                playerDistance - INIT.SWORD.MAXIMUM_DAMAGE_RANGE,
+                0,
+              );
+              const damageMultiplier = Math.max(
+                1 - damageDistance * INIT.SWORD.REDUCTION_PER_DIST,
                 0,
               );
               const adjustedSwordDamage = Math.max(
-                Math.floor(
-                  swordDamage *
-                    (1 - damageDistance * INIT.SWORD.REDUCTION_PER_DIST),
-                ),
+                Math.floor(swordDamage * damageMultiplier),
                 0,
               );
               const raw = adjustedSwordDamage - (e.defense || 0);
