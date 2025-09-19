@@ -935,11 +935,17 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
           desc: "기본 공격의 공격력이 증가합니다.\n(+20%)",
           apply: () => {
             if (baseAttack === "gun") {
-              bulletDamage *= 1 + INIT.BULLET.DAMAGE_STEP;
+              bulletDamage = Math.floor(
+                bulletDamage * (1 + INIT.BULLET.DAMAGE_STEP),
+              );
             } else if (baseAttack === "sword") {
-              swordDamage *= 1 + INIT.SWORD.DAMAGE_STEP;
+              swordDamage = Math.floor(
+                swordDamage * (1 + INIT.SWORD.DAMAGE_STEP),
+              );
             } else {
-              yoyoDamage *= 1 + INIT.YOYO.DAMAGE_STEP;
+              yoyoDamage = Math.floor(
+                yoyoDamage * (1 + INIT.YOYO.DAMAGE_STEP),
+              );
             }
           },
         },
@@ -951,17 +957,19 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
           desc: "기본 공격의 속도가 증가합니다.\n(+15%)",
           apply: () => {
             if (baseAttack === "gun") {
-              bulletCooldown = Math.max(
-                INIT.BULLET.COOLDOWN_MIN,
+              const reduced = Math.floor(
                 bulletCooldown * (1 - INIT.BULLET.COOLDOWN_STEP),
               );
+              bulletCooldown = Math.max(INIT.BULLET.COOLDOWN_MIN, reduced);
             } else if (baseAttack === "sword") {
-              swordCooldown = Math.max(
-                INIT.SWORD.COOLDOWN_MIN,
+              const reduced = Math.floor(
                 swordCooldown * (1 - INIT.SWORD.COOLDOWN_STEP),
               );
+              swordCooldown = Math.max(INIT.SWORD.COOLDOWN_MIN, reduced);
             } else {
-              yoyoSpeed *= 1 + INIT.YOYO.SPEED_STEP;
+              yoyoSpeed = Math.floor(
+                yoyoSpeed * (1 + INIT.YOYO.SPEED_STEP),
+              );
             }
           },
         },
@@ -1001,11 +1009,17 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
           desc: "기본 공격의 사정거리가 증가합니다.\n(+20%)",
           apply: () => {
             if (baseAttack === "gun") {
-              bulletRange *= 1 + INIT.BULLET.RANGE_STEP;
+              bulletRange = Math.floor(
+                bulletRange * (1 + INIT.BULLET.RANGE_STEP),
+              );
             } else if (baseAttack === "sword") {
-              swordRange *= 1 + INIT.SWORD.RANGE_STEP;
+              swordRange = Math.floor(
+                swordRange * (1 + INIT.SWORD.RANGE_STEP),
+              );
             } else {
-              yoyoRange *= 1 + INIT.YOYO.RANGE_STEP;
+              yoyoRange = Math.floor(
+                yoyoRange * (1 + INIT.YOYO.RANGE_STEP),
+              );
             }
           },
         },
@@ -1072,7 +1086,9 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
           icon: "📘",
           desc: "경험치 획득량 30% 증가",
           apply: () => {
-            expOrbValue *= 1 + INIT.EXP.ORB_VALUE_STEP;
+            expOrbValue = Math.floor(
+              expOrbValue * (1 + INIT.EXP.ORB_VALUE_STEP),
+            );
           },
         },
         {
