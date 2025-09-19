@@ -1997,6 +1997,15 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
         swordEnabled = baseAttack === "sword";
 
         for (const id in acquiredUpgrades) delete acquiredUpgrades[id];
+
+        if (baseAttack === "sword") {
+          const knockbackUpgrade = UPGRADES.find(u => u.id === "knockback");
+          if (knockbackUpgrade) {
+            knockbackUpgrade.apply();
+            acquiredUpgrades[knockbackUpgrade.id] = 1;
+          }
+        }
+
         updateUpgradeHUD();
 
         updateHUD();
