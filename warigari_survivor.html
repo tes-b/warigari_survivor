@@ -823,6 +823,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
       };
       let infiniteMode = false; // 12웨이브 이후 무한 모드 여부
       let infiniteWaveCount = 0; // 무한 모드에서 경과한 웨이브 수
+      let infiniteMagnification = 1.5 // 무한 모드에서 웨이브당 적 파워 상승률
 
       // 치트
       let cheatInvincible = false;
@@ -2787,7 +2788,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
           currentSpawnInterval = initialSpawnInterval;
         } else {
           // 무한 모드에서는 웨이브마다 난이도 상승
-          enemyScale = 2 ** infiniteWaveCount;
+          enemyScale = infiniteMagnification ** infiniteWaveCount;
           currentSpawnInterval = Math.max(
             minSpawnInterval,
             initialSpawnInterval - infiniteWaveCount * 100,
