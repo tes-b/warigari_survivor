@@ -1278,6 +1278,28 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
               spread: 0.05,
             },
           ],
+          upgradeOpen: [
+            {
+              wave: "triangle",
+              freq: 780,
+              freqEnd: 520,
+              duration: 0.24,
+              gain: 0.08,
+              attack: 0.01,
+              release: 0.22,
+              spread: 0.02,
+            },
+            {
+              wave: "sine",
+              freq: 1040,
+              freqEnd: 880,
+              duration: 0.18,
+              gain: 0.05,
+              delay: 0.04,
+              attack: 0.008,
+              release: 0.16,
+            },
+          ],
           attackHit: [
             {
               wave: "sine",
@@ -3067,6 +3089,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
           levelupPanel.style.maxWidth = "";
         }
         levelupOverlay.style.display = "flex";
+        audio.play("upgradeOpen");
         selectionButtons = document.querySelectorAll("#upgradeGrid .upgrade-btn");
         focusedOptionIndex = 0;
         holdGaugeFill = document.getElementById("holdGaugeFill");
