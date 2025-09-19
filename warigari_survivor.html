@@ -1244,6 +1244,8 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
           return {
             play: noop,
             resume: noop,
+            startBackground: noop,
+            stopBackground: noop,
             isMuted: () => muted,
             setMuted: (value) => {
               muted = !!value;
@@ -1261,6 +1263,11 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
         let muted = false;
         masterGain.gain.value = DEFAULT_VOLUME;
         masterGain.connect(context.destination);
+
+        const backgroundGain = context.createGain();
+        backgroundGain.gain.value = 0.4;
+        backgroundGain.connect(masterGain);
+        let backgroundSource = null;
 
         function updateMasterGain() {
           const gainValue = muted ? 0 : DEFAULT_VOLUME;
@@ -1393,6 +1400,88 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
           ],
         };
 
+        const backgroundBuffer = createBackgroundLoop();
+
+        function createBackgroundLoop() {
+          const bpm = 112;
+          const beats = 8;
+          const secondsPerBeat = 60 / bpm;
+          const duration = beats * secondsPerBeat;
+          const frameCount = Math.floor(context.sampleRate * duration);
+          const buffer = context.createBuffer(2, frameCount, context.sampleRate);
+          const left = buffer.getChannelData(0);
+          const right = buffer.getChannelData(1);
+
+          const chordFreqs = [
+            [220, 261.63, 329.63],
+            [196, 246.94, 293.66],
+          ];
+          const bassFreqs = [110, 98];
+          const melodyFreqs = [
+            440,
+            392,
+            440,
+            523.25,
+            440,
+            392,
+            329.63,
+            392,
+          ];
+
+          for (let i = 0; i < frameCount; i++) {
+            const t = i / context.sampleRate;
+            const beatPosition = t / secondsPerBeat;
+            const beatIndex = Math.floor(beatPosition) % beats;
+            const chordIndex = beatIndex < 4 ? 0 : 1;
+            const beatPhase = beatPosition % 1;
+
+            let sample = 0;
+
+            const bassEnv = Math.min(1, beatPhase * 2);
+            sample +=
+              Math.sin(2 * Math.PI * bassFreqs[chordIndex] * t) *
+              0.18 *
+              bassEnv;
+
+            const chordEnv = Math.pow(Math.sin(Math.PI * beatPhase), 2);
+            let chordSample = 0;
+            for (const freq of chordFreqs[chordIndex]) {
+              chordSample += Math.sin(2 * Math.PI * freq * t);
+            }
+            sample += (chordSample / chordFreqs[chordIndex].length) * 0.12 * chordEnv;
+
+            if (beatPhase < 0.7) {
+              const normalized = beatPhase / 0.7;
+              const melodyEnv = Math.pow(Math.sin(Math.PI * normalized), 2);
+              const melodyFreq = melodyFreqs[beatIndex % melodyFreqs.length];
+              sample += Math.sin(2 * Math.PI * melodyFreq * t) * 0.14 * melodyEnv;
+            }
+
+            if (beatPhase < 0.18) {
+              const hatEnv = 1 - beatPhase / 0.18;
+              const hat =
+                Math.sin(2 * Math.PI * 6000 * t) * 0.06 +
+                Math.sin(2 * Math.PI * 9100 * t) * 0.04;
+              sample += hat * hatEnv;
+            }
+
+            const loopProgress = t / duration;
+            if (loopProgress < 0.02) {
+              sample *= loopProgress / 0.02;
+            } else if (loopProgress > 0.98) {
+              sample *= (1 - loopProgress) / 0.02;
+            }
+
+            const pan = Math.sin((2 * Math.PI * t) / duration) * 0.15;
+            const leftSample = sample * (1 - pan);
+            const rightSample = sample * (1 + pan);
+            left[i] = leftSample * 0.45;
+            right[i] = rightSample * 0.45;
+          }
+
+          return buffer;
+        }
+
         function applyEnvelope(gainNode, start, def) {
           const level = def.gain ?? 0.15;
           const attack = Math.max(0.001, def.attack ?? 0.01);
@@ -1466,6 +1555,36 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
           }
         }
 
+        function startBackground() {
+          if (!backgroundBuffer) return;
+          if (backgroundSource) return;
+          if (context.state === "suspended") {
+            context.resume().catch(() => { });
+          }
+          const source = context.createBufferSource();
+          source.buffer = backgroundBuffer;
+          source.loop = true;
+          source.connect(backgroundGain);
+          source.onended = () => {
+            if (backgroundSource === source) backgroundSource = null;
+          };
+          source.start();
+          backgroundSource = source;
+        }
+
+        function stopBackground() {
+          if (!backgroundSource) return;
+          const source = backgroundSource;
+          backgroundSource = null;
+          source.onended = null;
+          try {
+            source.stop();
+          } catch (err) {
+            // ignore
+          }
+          source.disconnect();
+        }
+
         function resume() {
           if (context.state === "suspended") {
             context.resume().catch(() => { });
@@ -1491,7 +1610,15 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
         window.addEventListener("keydown", unlock, { once: true });
         window.addEventListener("touchstart", unlock, { once: true });
 
-        return { play, resume, setMuted, toggleMute, isMuted };
+        return {
+          play,
+          resume,
+          setMuted,
+          toggleMute,
+          isMuted,
+          startBackground,
+          stopBackground,
+        };
       })();
 
       // --- 게임 상태 ---
@@ -2069,6 +2196,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
 
       function startGame(attack = "gun") {
         audio.resume();
+        audio.startBackground();
         baseAttack = attack;
         reset();
         overlay.style.display = "none";
@@ -3077,6 +3205,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
       }
 
       function showWeaponSelectScreen() {
+        audio.startBackground();
         const weaponOverlay = document.getElementById("weaponOverlay");
         const weaponPanel = document.getElementById("weaponPanel");
         weaponPanel.innerHTML = `
