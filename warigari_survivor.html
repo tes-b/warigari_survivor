@@ -273,11 +273,26 @@
       transition:
         opacity 0.4s ease,
         transform 0.4s ease;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: calc(6px * var(--ui-scale));
+      text-align: center;
     }
 
     .wave-display.show {
       opacity: 1;
       transform: translate(-50%, -50%) scale(1);
+    }
+
+    .wave-display .wave-main {
+      line-height: 1.1;
+    }
+
+    .wave-display .wave-subtext {
+      font-size: calc(22px * var(--ui-scale));
+      font-weight: 700;
+      line-height: 1.1;
     }
 
     .levelup-overlay {
@@ -778,6 +793,8 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
       let currentWave = 0;
       let waveTimer = 0;
       const bossWaves = [3, 7, 11]; // 4,8,12 웨이브는 보스 스테이지
+      const BOSS_THEME_COLOR = "#ff6b9d";
+      const INFINITE_CHALLENGE_COLOR = "#ff3b30";
       const BOSS_SPAWN_DELAY = 5000; // 보스 스폰 지연(ms)
       let bossSpawnTimer = 0;
       let bossSpawnPos = null;
@@ -2103,12 +2120,35 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
         return currentWave + 1;
       }
 
+      function getWaveDisplaySubtext(waveNumber) {
+        if (waveNumber === 4 || waveNumber === 8) {
+          return { text: "Boss", color: BOSS_THEME_COLOR };
+        }
+        if (waveNumber === 12) {
+          return { text: "Final Boss", color: BOSS_THEME_COLOR };
+        }
+        if (waveNumber >= 13) {
+          return { text: "Infinite Challenge", color: INFINITE_CHALLENGE_COLOR };
+        }
+        return null;
+      }
+
       function isBossWave(w = currentWave) {
         return bossWaves.includes(w);
       }
 
       function updateWaveDisplay() {
-        waveEl.textContent = `Wave ${getWaveLabel()}`;
+        const waveNumber = getWaveLabel();
+        const subtext = getWaveDisplaySubtext(waveNumber);
+
+        waveEl.innerHTML = `<div class="wave-main">Wave ${waveNumber}</div>`;
+        if (subtext) {
+          const subEl = document.createElement("div");
+          subEl.className = "wave-subtext";
+          subEl.textContent = subtext.text;
+          subEl.style.color = subtext.color;
+          waveEl.appendChild(subEl);
+        }
         waveEl.classList.add("show");
         clearTimeout(waveDisplayTimeout);
         waveDisplayTimeout = setTimeout(() => {
