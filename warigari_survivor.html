@@ -1232,6 +1232,8 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
           return {
             play: noop,
             resume: noop,
+            startHoldTone: noop,
+            stopHoldTone: noop,
             isMuted: () => muted,
             setMuted: (value) => {
               muted = !!value;
@@ -1286,6 +1288,39 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
               delay: 0.04,
               attack: 0.008,
               release: 0.16,
+            },
+          ],
+          uiSelect: [
+            {
+              wave: "triangle",
+              freq: 660,
+              freqEnd: 1180,
+              duration: 0.14,
+              gain: 0.09,
+              attack: 0.004,
+              release: 0.12,
+              spread: 0.01,
+            },
+            {
+              wave: "sine",
+              freq: 990,
+              freqEnd: 1480,
+              duration: 0.12,
+              gain: 0.06,
+              delay: 0.02,
+              attack: 0.004,
+              release: 0.1,
+            },
+          ],
+          uiFocus: [
+            {
+              wave: "square",
+              freq: 1600,
+              freqEnd: 1280,
+              duration: 0.07,
+              gain: 0.05,
+              attack: 0.002,
+              release: 0.08,
             },
           ],
           attackHit: [
@@ -1489,6 +1524,8 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
           ],
         };
 
+        let holdSound = null;
+
         function applyEnvelope(gainNode, start, def) {
           const level = def.gain ?? 0.15;
           const attack = Math.max(0.001, def.attack ?? 0.01);
@@ -1549,6 +1586,40 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
           source.stop(stop + 0.01);
         }
 
+        function startHoldTone() {
+          if (muted) return;
+          if (context.state === "suspended") {
+            context.resume().catch(() => { });
+          }
+          stopHoldTone(true);
+          const osc = context.createOscillator();
+          osc.type = "triangle";
+          const gainNode = context.createGain();
+          const now = context.currentTime;
+          const startFreq = 420;
+          osc.frequency.setValueAtTime(startFreq, now);
+          osc.frequency.linearRampToValueAtTime(1480, now + 0.9);
+          gainNode.gain.setValueAtTime(0.0001, now);
+          gainNode.gain.linearRampToValueAtTime(0.08, now + 0.05);
+          osc.connect(gainNode);
+          gainNode.connect(masterGain);
+          osc.start(now);
+          holdSound = { osc, gainNode };
+        }
+
+        function stopHoldTone(immediate = false) {
+          if (!holdSound) return;
+          const { osc, gainNode } = holdSound;
+          holdSound = null;
+          const now = context.currentTime;
+          const endTime = immediate ? now + 0.01 : now + 0.1;
+          gainNode.gain.cancelScheduledValues(now);
+          const currentGain = gainNode.gain.value || 0.0001;
+          gainNode.gain.setValueAtTime(currentGain, now);
+          gainNode.gain.linearRampToValueAtTime(0.0001, endTime);
+          osc.stop(endTime + 0.05);
+        }
+
         function play(name) {
           const def = soundDefs[name];
           if (!def) return;
@@ -1587,7 +1658,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
         window.addEventListener("keydown", unlock, { once: true });
         window.addEventListener("touchstart", unlock, { once: true });
 
-        return { play, resume, setMuted, toggleMute, isMuted };
+        return { play, resume, setMuted, toggleMute, isMuted, startHoldTone, stopHoldTone };
       })();
 
       // --- 게임 상태 ---
@@ -1791,6 +1862,8 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
           } else if (!spaceLocked) {
             spaceLocked = true;
             if (!running) {
+              audio.resume();
+              audio.play("uiSelect");
               overlay.style.display = "none";
               showWeaponSelectScreen();
             } else if (!paused) {
@@ -3085,9 +3158,13 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
 
       function moveFocus(delta) {
         if (!selectionButtons.length) return;
+        const previousIndex = focusedOptionIndex;
         focusedOptionIndex =
           (focusedOptionIndex + delta + selectionButtons.length) % selectionButtons.length;
         highlightFocusedOption();
+        if (focusedOptionIndex !== previousIndex) {
+          audio.play("uiFocus");
+        }
       }
 
       function selectCurrentOption() {
@@ -3110,6 +3187,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
 
       function startHold() {
         spaceHoldStart = performance.now();
+        audio.startHoldTone();
         updateHoldGauge();
         holdTimeout = setTimeout(() => {
           endHold(false);
@@ -3118,6 +3196,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
       }
 
       function endHold(moveNext) {
+        audio.stopHoldTone();
         clearTimeout(holdTimeout);
         holdTimeout = null;
         cancelAnimationFrame(holdGaugeRAF);
@@ -3150,7 +3229,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
         }
 
         upgradeGrid.innerHTML = "";
-        selected.forEach(upgrade => {
+        selected.forEach((upgrade, index) => {
           const btn = document.createElement("div");
           btn.className = "upgrade-btn";
           const current = acquiredUpgrades[upgrade.id] || 0;
@@ -3160,6 +3239,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
         `;
           btn.onclick = () => {
             endHold(false);
+            audio.play("uiSelect");
             acquireUpgrade(upgrade);
             levelUpImpulse();
             levelupOverlay.style.display = "none";
@@ -3181,6 +3261,13 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
               }
             }
           };
+          btn.addEventListener("mouseenter", () => {
+            if (focusedOptionIndex !== index) {
+              focusedOptionIndex = index;
+              highlightFocusedOption();
+              audio.play("uiFocus");
+            }
+          });
           upgradeGrid.appendChild(btn);
         });
         if (all) {
@@ -3217,7 +3304,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
           { id: "yoyo", icon: "🪀", title: "요요", desc: "장난감 같지만, 장난 아닙니다." },
         ];
         weaponGrid.innerHTML = "";
-        weapons.forEach(w => {
+        weapons.forEach((w, index) => {
           const btn = document.createElement("div");
           btn.className = "upgrade-btn";
           btn.innerHTML = `
@@ -3226,11 +3313,19 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
         `;
           btn.onclick = () => {
             endHold(false);
+            audio.play("uiSelect");
             weaponOverlay.style.display = "none";
             levelupActive = false;
             updatePauseButton();
             startGame(w.id);
           };
+          btn.addEventListener("mouseenter", () => {
+            if (focusedOptionIndex !== index) {
+              focusedOptionIndex = index;
+              highlightFocusedOption();
+              audio.play("uiFocus");
+            }
+          });
           weaponGrid.appendChild(btn);
         });
         weaponOverlay.style.display = "flex";
@@ -3253,11 +3348,16 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
           <div class="row"><button id="btnStart">게임 시작<br>(SPACE)</button></div>
         </div>`;
         overlay.style.display = "flex";
-        document.getElementById("btnStart").onclick = () => {
+        const btnStart = document.getElementById("btnStart");
+        btnStart.onclick = () => {
           audio.resume();
+          audio.play("uiSelect");
           overlay.style.display = "none";
           showWeaponSelectScreen();
         };
+        btnStart.addEventListener("mouseenter", () => {
+          audio.play("uiFocus");
+        });
       }
 
       function showGameOverScreen(stats) {
@@ -3271,11 +3371,16 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
           <div class="row"><button id="btnRestart">다시 하기<br>(SPACE)</button></div>
         </div>`;
         overlay.style.display = "flex";
-        document.getElementById("btnRestart").onclick = () => {
+        const btnRestart = document.getElementById("btnRestart");
+        btnRestart.onclick = () => {
           audio.resume();
+          audio.play("uiSelect");
           overlay.style.display = "none";
           showWeaponSelectScreen();
         };
+        btnRestart.addEventListener("mouseenter", () => {
+          audio.play("uiFocus");
+        });
       }
 
       // --- 업데이트 ---
