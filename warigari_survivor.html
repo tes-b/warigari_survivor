@@ -1514,6 +1514,32 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
           ],
         };
 
+        const soundVariations = {
+          attack(parts) {
+            const randomOffset = () => Math.random() * 2 - 1;
+            const pitchShift = 1 + randomOffset() * 0.05;
+            const durationShift = 1 + randomOffset() * 0.12;
+            const gainShift = 1 + randomOffset() * 0.1;
+
+            for (const part of parts) {
+              if (typeof part.freq === "number") {
+                part.freq = Math.max(0, part.freq * pitchShift);
+              }
+              if (typeof part.freqEnd === "number") {
+                part.freqEnd = Math.max(0, part.freqEnd * pitchShift);
+              }
+              if (typeof part.duration === "number") {
+                part.duration = Math.max(0.04, part.duration * durationShift);
+              }
+              if (typeof part.gain === "number") {
+                part.gain = Math.max(0, part.gain * gainShift);
+              }
+            }
+
+            return parts;
+          },
+        };
+
         let holdSound = null;
 
         function applyEnvelope(gainNode, start, def) {
@@ -1616,8 +1642,11 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
           if (context.state === "suspended") {
             context.resume().catch(() => { });
           }
-          const parts = Array.isArray(def) ? def : [def];
-          for (const part of parts) {
+          const originalParts = Array.isArray(def) ? def : [def];
+          const parts = originalParts.map((part) => ({ ...part }));
+          const variation = soundVariations[name];
+          const processedParts = variation ? variation(parts) : parts;
+          for (const part of processedParts) {
             if (part.noise) playNoise(part);
             else playOsc(part);
           }
