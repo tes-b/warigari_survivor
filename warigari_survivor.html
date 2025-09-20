@@ -1238,6 +1238,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
             setMuted: (value) => {
               muted = !!value;
             },
+            setAttackMelody: noop,
             toggleMute: () => {
               muted = !muted;
               return muted;
@@ -1512,70 +1513,77 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
           ],
         };
 
-        const ATTACK_SCALE = {
+        const ATTACK_SCALES = {
           /*
-          261.63, // C4 (도)		
-          277.18, // C#4 / Db4	
-          293.66, // D4 (레)	    
-          311.13, // D#4 / Eb4	
-          329.63, // E4 (미)		
-          349.23, // F4 (파)		
-          369.99, // F#4 / Gb4	
-          392.00, // G4 (솔)	    
-          415.30, // G#4 / Ab4	
-          440.00, // A4 (라)		
-          466.16, // A#4 / Bb4	
-          493.88, // B4 (시)	    
-          523.25, // C5 (높은 도)	
+          261.63, // C4 (도)
+          277.18, // C#4 / Db4
+          293.66, // D4 (레)
+          311.13, // D#4 / Eb4
+          329.63, // E4 (미)
+          349.23, // F4 (파)
+          369.99, // F#4 / Gb4
+          392.00, // G4 (솔)
+          415.30, // G#4 / Ab4
+          440.00, // A4 (라)
+          466.16, // A#4 / Bb4
+          493.88, // B4 (시)
+          523.25, // C5 (높은 도)
           */
           GUN: [
-            440.00, // A4 (라)		
-            493.88, // B4 (시)	    	
+            440.0, // A4 (라)
+            493.88, // B4 (시)
             392, // 솔
-            196.00, // G4 (솔)	    
-            293.66, // D4 (레)	    
-            293.66, // D4 (레)	    
-            293.66, // D4 (레)	    
-            293.66, // D4 (레)	    
-            440.00, // A4 (라)		
-            493.88, // B4 (시)	    	
+            196.0, // G4 (솔)
+            293.66, // D4 (레)
+            293.66, // D4 (레)
+            293.66, // D4 (레)
+            293.66, // D4 (레)
+            440.0, // A4 (라)
+            493.88, // B4 (시)
             392, // 솔
-            587.32, // D4 (레)	    
-            440.00, // A4 (라)		
-            493.88, // B4 (시)	    	
+            587.32, // D4 (레)
+            440.0, // A4 (라)
+            493.88, // B4 (시)
             392, // 솔
             392, // 솔
           ],
           SWORD: [
-            440.00, // A4 (라)		
-            493.88, // B4 (시)	    	
+            440.0, // A4 (라)
+            493.88, // B4 (시)
             392, // 솔
-            196.00, // G4 (솔)	    
-            293.66, // D4 (레)	    
-            293.66, // D4 (레)	    
-            293.66, // D4 (레)	    
-            293.66, // D4 (레)	    
-            440.00, // A4 (라)		
-            493.88, // B4 (시)	    	
+            196.0, // G4 (솔)
+            293.66, // D4 (레)
+            293.66, // D4 (레)
+            293.66, // D4 (레)
+            293.66, // D4 (레)
+            440.0, // A4 (라)
+            493.88, // B4 (시)
             392, // 솔
-            587.32, // D4 (레)	    
-            440.00, // A4 (라)		
-            493.88, // B4 (시)	    	
+            587.32, // D4 (레)
+            440.0, // A4 (라)
+            493.88, // B4 (시)
             392, // 솔
             392, // 솔
           ],
           YOYO: [
-            261.63, // C4 (도)		
-            293.66, // D4 (레)	    
-            329.63, // E4 (미)		
-            349.23, // F4 (파)		
-            392.00, // G4 (솔)	    
-            440.00, // A4 (라)		
-            493.88, // B4 (시)	    
-            523.25, // C5 (높은 도)	
+            261.63, // C4 (도)
+            293.66, // D4 (레)
+            329.63, // E4 (미)
+            349.23, // F4 (파)
+            392.0, // G4 (솔)
+            440.0, // A4 (라)
+            493.88, // B4 (시)
+            523.25, // C5 (높은 도)
           ],
         };
+        let currentAttackScale = ATTACK_SCALES.GUN;
         let attackNoteIndex = 0;
+
+        function setAttackMelody(weapon) {
+          const key = (weapon || "GUN").toUpperCase();
+          currentAttackScale = ATTACK_SCALES[key] || ATTACK_SCALES.GUN;
+          attackNoteIndex = 0;
+        }
 
         let holdSound = null;
 
@@ -1682,8 +1690,12 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
           let parts = Array.isArray(def) ? def : [def];
           parts = parts.map((part) => ({ ...part }));
           if (name === "attack") {
-            const freq = ATTACK_SCALE[attackNoteIndex];
-            attackNoteIndex = (attackNoteIndex + 1) % ATTACK_SCALE.length;
+            const scale =
+              currentAttackScale && currentAttackScale.length
+                ? currentAttackScale
+                : ATTACK_SCALES.GUN;
+            const freq = scale[attackNoteIndex % scale.length];
+            attackNoteIndex = (attackNoteIndex + 1) % scale.length;
             for (const part of parts) {
               if (part.noise) continue;
               part.freq = freq;
@@ -1722,7 +1734,16 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
         window.addEventListener("keydown", unlock, { once: true });
         window.addEventListener("touchstart", unlock, { once: true });
 
-        return { play, resume, setMuted, toggleMute, isMuted, startHoldTone, stopHoldTone };
+        return {
+          play,
+          resume,
+          setMuted,
+          toggleMute,
+          isMuted,
+          startHoldTone,
+          stopHoldTone,
+          setAttackMelody,
+        };
       })();
 
       // --- 게임 상태 ---
@@ -2192,6 +2213,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
         running = false;
         paused = false;
         levelupActive = false;
+        audio.setAttackMelody(baseAttack);
         updatePauseButton();
         lastTime = performance.now();
         elapsed = 0;
@@ -2303,6 +2325,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
       function startGame(attack = "gun") {
         audio.resume();
         baseAttack = attack;
+        audio.setAttackMelody(attack);
         reset();
         overlay.style.display = "none";
         running = true;
