@@ -1301,23 +1301,13 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
               release: 0.12,
               spread: 0.01,
             },
-            {
-              wave: "sine",
-              freq: 990,
-              freqEnd: 1480,
-              duration: 0.12,
-              gain: 0.06,
-              delay: 0.02,
-              attack: 0.004,
-              release: 0.1,
-            },
           ],
           uiFocus: [
             {
-              wave: "square",
-              freq: 1600,
-              freqEnd: 1280,
-              duration: 0.07,
+              wave: "triangle",
+              freq: 420,
+              freqEnd: 500,
+              duration: 0.03,
               gain: 0.05,
               attack: 0.002,
               release: 0.08,
@@ -1370,13 +1360,13 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
               freq: 220,
               freqEnd: 120,
               duration: 0.25,
-              gain: 0.12,
+              gain: 0.10,
               spread: 0.08,
             },
             {
               noise: true,
               duration: 0.18,
-              gain: 0.12,
+              gain: 0.08,
               release: 0.15,
             },
           ],
@@ -1596,11 +1586,11 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
           osc.type = "triangle";
           const gainNode = context.createGain();
           const now = context.currentTime;
-          const startFreq = 420;
+          const startFreq = 220;
           osc.frequency.setValueAtTime(startFreq, now);
-          osc.frequency.linearRampToValueAtTime(1480, now + 0.9);
-          gainNode.gain.setValueAtTime(0.0001, now);
-          gainNode.gain.linearRampToValueAtTime(0.08, now + 0.05);
+          osc.frequency.linearRampToValueAtTime(880, now + 0.9);
+          gainNode.gain.setValueAtTime(0.0000, now);
+          gainNode.gain.linearRampToValueAtTime(0.04, now + 0.00);
           osc.connect(gainNode);
           gainNode.connect(masterGain);
           osc.start(now);
