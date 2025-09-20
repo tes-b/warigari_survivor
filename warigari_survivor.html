@@ -1261,11 +1261,9 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
           attack: [
             {
               wave: "triangle",
-              freq: 760,
-              freqEnd: 640,
+              freq: 261.63,
               duration: 0.1,
               gain: 0.12,
-              spread: 0.05,
             },
           ],
           upgradeOpen: [
@@ -1514,6 +1512,18 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
           ],
         };
 
+        const ATTACK_SCALE = [
+          261.63,
+          293.66,
+          329.63,
+          349.23,
+          392,
+          440,
+          493.88,
+          523.25,
+        ];
+        let attackNoteIndex = 0;
+
         let holdSound = null;
 
         function applyEnvelope(gainNode, start, def) {
@@ -1616,7 +1626,18 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
           if (context.state === "suspended") {
             context.resume().catch(() => { });
           }
-          const parts = Array.isArray(def) ? def : [def];
+          let parts = Array.isArray(def) ? def : [def];
+          parts = parts.map((part) => ({ ...part }));
+          if (name === "attack") {
+            const freq = ATTACK_SCALE[attackNoteIndex];
+            attackNoteIndex = (attackNoteIndex + 1) % ATTACK_SCALE.length;
+            for (const part of parts) {
+              if (part.noise) continue;
+              part.freq = freq;
+              part.freqEnd = freq;
+              part.spread = 0;
+            }
+          }
           for (const part of parts) {
             if (part.noise) playNoise(part);
             else playOsc(part);
