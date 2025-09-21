@@ -2577,6 +2577,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
         b.rushColorTimer = 0;
         b.rushColorThreshold = 1;
         b.color = "#ff6b9d";
+        b.rushGhost = false;
         b.preEffectSoundPlayed = false;
       }
 
@@ -2589,6 +2590,8 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
         timedLaser: 300,
         rush: 1000,
       };
+
+      const BOSS_RUSH_GHOST_COLOR = "rgba(255, 107, 157, 0.5)";
 
       function bossPreEffectActive(b) {
         if (!b.isBoss) return false;
@@ -2670,6 +2673,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
           rushDir: 0,
           rushColorTimer: 0,
           rushColorThreshold: 1,
+          rushGhost: false,
           attackDamage: {
             contact: dmgBase * cfg.attacks.contact,
             laser: dmgBase * cfg.attacks.laser,
@@ -2848,6 +2852,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
               b.rushing = true;
               b.rushDir = -1;
               b.color = "#ff6b9d";
+              b.rushGhost = false;
               b.rushColorTimer = 0;
               b.rushColorThreshold = Math.random();
             }
@@ -2855,7 +2860,8 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
             b.rushColorTimer += dt;
             if (b.rushColorTimer >= b.rushColorThreshold) {
               b.rushColorTimer -= b.rushColorThreshold;
-              b.color = b.color === "#ff6b9d" ? "#4ade80" : "#ff6b9d";
+              b.rushGhost = !b.rushGhost;
+              b.color = b.rushGhost ? BOSS_RUSH_GHOST_COLOR : "#ff6b9d";
               b.rushColorThreshold = 1;
               audio.play("bossRushPulse");
             }
@@ -2876,6 +2882,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
               b.rushDir = 0;
               b.rushColorTimer = 0;
               b.rushColorThreshold = 1;
+              b.rushGhost = false;
               pickBossPattern(b);
             }
           } else {
@@ -4263,7 +4270,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
 
             // 플레이어와 충돌/공격 처리
             const playerCollide = aabb(e, player);
-            const bossGreen = e.isBoss && e.color === "#4ade80";
+            const bossRushGhost = e.isBoss && e.rushGhost;
             let attackRect = { x: e.x, y: e.y, w: e.w, h: e.h };
             if (e.type && e.type.id === "offense") {
               const extra = e.range - e.w;
@@ -4276,7 +4283,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
             }
 
             let enemyRemovedByReflect = false;
-            if (!bossGreen && (playerCollide || aabb(attackRect, player))) {
+            if (!bossRushGhost && (playerCollide || aabb(attackRect, player))) {
               if (player.iframes <= 0 && !cheatInvincible) {
                 let baseDamage = e.damage;
                 if (e.isBoss) {
@@ -4315,7 +4322,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
               continue;
             }
 
-            if (!bossGreen && playerCollide) {
+            if (!bossRushGhost && playerCollide) {
               const playerLeft = player.x;
               const playerRight = player.x + player.w;
               const eLeft = e.x;
