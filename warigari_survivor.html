@@ -688,14 +688,14 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
           DURATION_STEP: 1000, // 업그레이드당 지속 시간 증가량 (ms)
           SLOW_STEP: 0.1, // 업그레이드당 이동 속도 추가 감소율
         },
-        // 냉기 효과 관련
+        // 중독 효과 관련
         FROST: {
           DURATION: 1000, // 기본 지속 시간 (ms)
           TICK: 500, // 피해 간격 (ms)
-          DAMAGE: 20, // 기본 틱 당 피해량
+          DAMAGE_RATIO: 0.1, // 기본 틱 당 피해량 (최대 체력 비례)
           SLOW: 1, // 기본 이동 속도 배율 (0.7 = 30% 감소)
           DURATION_STEP: 1000, // 업그레이드당 지속 시간 증가량 (ms)
-          DAMAGE_STEP: 20, // 업그레이드당 틱 피해 증가량
+          DAMAGE_RATIO_STEP: 0, // 업그레이드당 틱 피해 증가 비율
           SLOW_STEP: 0.1, // 업그레이드당 추가 이동 속도 감소율
         },
         // 폭발 관련
@@ -766,7 +766,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
       let frostEnabled = false;
       let frostDuration = INIT.FROST.DURATION;
       let frostTickInterval = INIT.FROST.TICK;
-      let frostDamage = INIT.FROST.DAMAGE;
+      let frostDamageRatio = INIT.FROST.DAMAGE_RATIO;
       let frostSlow = INIT.FROST.SLOW;
 
       let baseAttack = "gun";
@@ -1039,10 +1039,10 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
         {
           id: "frost",
           limit: 4,
-          title: "냉기",
-          icon: "❄️",
+          title: "중독",
+          icon: "☠️",
           desc:
-            "기본 공격이 적을 둔화시키고 피해를 줍니다.\n(지속시간 +1초, 피해 +20, 둔화 +10%)",
+            "기본 공격이 적을 중독시켜 지속 피해를 주고 둔화시킵니다.\n(지속시간 +1초, 틱당 피해: 최대 체력의 10%, 둔화 +10%)",
           apply: () => {
             const level = (acquiredUpgrades.frost || 0) + 1;
             frostEnabled = true;
@@ -1050,9 +1050,9 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
               INIT.FROST.DURATION +
               INIT.FROST.DURATION_STEP * (level - 1);
             frostTickInterval = INIT.FROST.TICK;
-            frostDamage =
-              INIT.FROST.DAMAGE +
-              INIT.FROST.DAMAGE_STEP * (level - 1);
+            frostDamageRatio =
+              INIT.FROST.DAMAGE_RATIO +
+              INIT.FROST.DAMAGE_RATIO_STEP * (level - 1);
             //frostSlow = Math.max(0,INIT.FROST.SLOW - INIT.FROST.SLOW_STEP * (level - 1),);
           },
         },
@@ -2267,7 +2267,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
         frostEnabled = false;
         frostDuration = INIT.FROST.DURATION;
         frostTickInterval = INIT.FROST.TICK;
-        frostDamage = INIT.FROST.DAMAGE;
+        frostDamageRatio = INIT.FROST.DAMAGE_RATIO;
         frostSlow = INIT.FROST.SLOW;
         laserOrbCooldown = INIT.LASERORB.COOLDOWN;
         laserOrbDamage = INIT.LASERORB.DAMAGE;
@@ -3875,10 +3875,11 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
               e.frost.accum = (e.frost.accum || 0) + activeTime;
               while (e.frost.accum >= frostTickInterval && !e._killed) {
                 e.frost.accum -= frostTickInterval;
-                const raw = frostDamage - (e.defense || 0);
-                const dmg = Math.min(Math.max(raw, 1), e.hp);
+                const maxHp = Math.max(e.hpMax || e.hp || 0, 0);
+                const base = Math.max(Math.floor(maxHp * frostDamageRatio), 1);
+                const dmg = Math.min(base, e.hp);
                 e.hp -= dmg;
-                spawnFloatText(e.x + e.w / 2, e.y - 12, -dmg, "#93c5fd");
+                spawnFloatText(e.x + e.w / 2, e.y - 12, -dmg, "#d8b4fe");
                 if (e.hp <= 0) {
                   dropExpOrbs(e);
                   enemies.splice(i, 1);
@@ -4596,15 +4597,15 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
             ctx.save();
             ctx.globalAlpha = baseAlpha * (0.35 + 0.25 * frostPulse);
             ctx.globalCompositeOperation = "lighter";
-            ctx.fillStyle = "#7dd3fc";
+            ctx.fillStyle = "#c084fc";
             ctx.fillRect(e.x, e.y, e.w, e.h);
             ctx.restore();
 
             ctx.save();
             ctx.globalAlpha = baseAlpha * (0.55 + 0.25 * frostPulse);
-            ctx.strokeStyle = `rgba(125, 211, 252, ${0.55 + 0.3 * (1 - frostProgress)})`;
+            ctx.strokeStyle = `rgba(192, 132, 252, ${0.55 + 0.3 * (1 - frostProgress)})`;
             ctx.lineWidth = 2;
-            ctx.shadowColor = "rgba(191, 219, 254, 0.5)";
+            ctx.shadowColor = "rgba(216, 180, 254, 0.5)";
             ctx.shadowBlur = 10 + 6 * frostProgress;
             ctx.strokeRect(
               e.x - auraPadding,
@@ -4617,7 +4618,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
             ctx.save();
             ctx.globalAlpha = baseAlpha * (0.25 + 0.2 * frostPulse);
             const shineHeight = Math.max(4, e.h * 0.35);
-            ctx.fillStyle = "rgba(224, 242, 254, 1)";
+            ctx.fillStyle = "rgba(243, 232, 255, 1)";
             ctx.fillRect(e.x, e.y, e.w, shineHeight);
             ctx.restore();
           }
