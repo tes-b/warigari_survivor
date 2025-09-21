@@ -322,6 +322,10 @@
       animation: levelupPulse 0.6s ease-out;
     }
 
+    #levelupOverlay .levelup-panel {
+      max-width: calc(860px * var(--ui-scale));
+    }
+
     @keyframes levelupPulse {
       0% {
         transform: scale(0.8);
@@ -336,9 +340,16 @@
 
     .upgrade-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(calc(180px * var(--ui-scale)), 1fr));
+      grid-template-columns: repeat(
+        auto-fit,
+        minmax(calc(180px * var(--ui-scale)), 1fr)
+      );
       gap: calc(12px * var(--ui-scale));
       margin-top: calc(20px * var(--ui-scale));
+    }
+
+    #upgradeGrid {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
     }
 
     .upgrade-btn {
@@ -597,7 +608,6 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
           IFRAMES: 500, // 피격 후 무적 시간 (ms)
           HITFLASH: 200, // 피격 시 시각 효과 지속 시간 (ms)
           DEFENSE: 0, // 플레이어 방어력
-          HP_STEP: 500, // 체력 증가 업그레이드당 최대 HP 증가량
           LEVEL_HP_STEP: 100, // 레벨업 시 증가할 최대 HP
           DEFENSE_STEP: 50, // 방어력 업그레이드당 증가량
           DEFENSE_REFLECT_MULT: 2, // 방어로 반사되는 피해 배수
@@ -1081,12 +1091,11 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
         },
         {
           id: "health",
-          limit: 10,
-          title: "체력 증가",
+          limit: Infinity,
+          title: "체력 회복",
           icon: "❤️",
-          desc: "최대 체력이 증가하고 체력을 모두 회복합니다.\n(+500)",
+          desc: "체력을 모두 회복합니다.",
           apply: () => {
-            playerHP += INIT.PLAYER.HP_STEP;
             const healed = playerHP - hp;
             hp = playerHP;
             if (healed > 0)
@@ -3369,12 +3378,20 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
             (acquiredUpgrades[u.id] || 0) < u.limit,
         );
 
+        const healthUpgrade = availableUpgrades.find((u) => u.id === "health");
+        const otherUpgrades = availableUpgrades.filter((u) => u.id !== "health");
+
         let selected;
         if (all) {
-          selected = availableUpgrades;
+          selected = [];
+          if (healthUpgrade) selected.push(healthUpgrade);
+          selected.push(...otherUpgrades);
         } else {
-          const shuffled = [...availableUpgrades].sort(() => Math.random() - 0.5);
-          selected = shuffled.slice(0, 3);
+          const shuffled = [...otherUpgrades].sort(() => Math.random() - 0.5);
+          selected = [
+            ...(healthUpgrade ? [healthUpgrade] : []),
+            ...shuffled.slice(0, 3),
+          ];
         }
 
         upgradeGrid.innerHTML = "";
@@ -3382,8 +3399,9 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
           const btn = document.createElement("div");
           btn.className = "upgrade-btn";
           const current = acquiredUpgrades[upgrade.id] || 0;
+          const limitText = Number.isFinite(upgrade.limit) ? upgrade.limit : "∞";
           btn.innerHTML = `
-            <div class="upgrade-title">${upgrade.icon} ${upgrade.title} (${current}/${upgrade.limit})</div>
+            <div class="upgrade-title">${upgrade.icon} ${upgrade.title} (${current}/${limitText})</div>
             <div class="upgrade-desc">${upgrade.desc}</div>
         `;
           btn.onclick = () => {
@@ -3420,7 +3438,8 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
           upgradeGrid.appendChild(btn);
         });
         if (all) {
-          upgradeGrid.style.gridTemplateColumns = "repeat(5, 1fr)";
+          upgradeGrid.style.gridTemplateColumns =
+            "repeat(5, minmax(0, 1fr))";
           levelupPanel.style.maxWidth = "calc(1000px * var(--ui-scale))";
         } else {
           upgradeGrid.style.gridTemplateColumns = "";
