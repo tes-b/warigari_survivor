@@ -2934,7 +2934,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
       }
 
       function applyFrostEffect(enemy) {
-        if (!frostEnabled) return;
+        if (!frostEnabled || enemy.isBoss) return;
         if (!enemy.frost) {
           enemy.frost = {
             timer: frostDuration,
@@ -3864,33 +3864,37 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
           let slowMul = 1;
           let iceDamage = 0;
           if (e.frost) {
-            if (e.frost.duration == null) e.frost.duration = frostDuration;
-            if (e.frost.seed == null) e.frost.seed = Math.random() * Math.PI * 2;
-            const remaining = e.frost.timer;
-            if (remaining > 0) {
-              slowMul *= frostSlow;
-              const elapsedMs = dt * 1000;
-              const activeTime = Math.min(remaining, elapsedMs);
-              e.frost.timer = Math.max(0, remaining - elapsedMs);
-              e.frost.accum = (e.frost.accum || 0) + activeTime;
-              while (e.frost.accum >= frostTickInterval && !e._killed) {
-                e.frost.accum -= frostTickInterval;
-                const maxHp = Math.max(e.hpMax || e.hp || 0, 0);
-                const base = Math.max(Math.floor(maxHp * frostDamageRatio), 1);
-                const dmg = Math.min(base, e.hp);
-                e.hp -= dmg;
-                spawnFloatText(e.x + e.w / 2, e.y - 12, -dmg, "#d8b4fe");
-                if (e.hp <= 0) {
-                  dropExpOrbs(e);
-                  enemies.splice(i, 1);
-                  score += e.reward;
-                  e._killed = true;
-                  break;
+            if (e.isBoss) {
+              delete e.frost;
+            } else {
+              if (e.frost.duration == null) e.frost.duration = frostDuration;
+              if (e.frost.seed == null) e.frost.seed = Math.random() * Math.PI * 2;
+              const remaining = e.frost.timer;
+              if (remaining > 0) {
+                slowMul *= frostSlow;
+                const elapsedMs = dt * 1000;
+                const activeTime = Math.min(remaining, elapsedMs);
+                e.frost.timer = Math.max(0, remaining - elapsedMs);
+                e.frost.accum = (e.frost.accum || 0) + activeTime;
+                while (e.frost.accum >= frostTickInterval && !e._killed) {
+                  e.frost.accum -= frostTickInterval;
+                  const maxHp = Math.max(e.hpMax || e.hp || 0, 0);
+                  const base = Math.max(Math.floor(maxHp * frostDamageRatio), 1);
+                  const dmg = Math.min(base, e.hp);
+                  e.hp -= dmg;
+                  spawnFloatText(e.x + e.w / 2, e.y - 12, -dmg, "#d8b4fe");
+                  if (e.hp <= 0) {
+                    dropExpOrbs(e);
+                    enemies.splice(i, 1);
+                    score += e.reward;
+                    e._killed = true;
+                    break;
+                  }
                 }
               }
-            }
-            if (!e._killed && e.frost.timer <= 0) {
-              delete e.frost;
+              if (!e._killed && e.frost.timer <= 0) {
+                delete e.frost;
+              }
             }
           }
           if (e._killed) continue;
