@@ -691,8 +691,8 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
         // 중독 효과 관련
         FROST: {
           DURATION: 1000, // 기본 지속 시간 (ms)
-          TICK: 500, // 피해 간격 (ms)
-          DAMAGE_RATIO: 0.1, // 기본 틱 당 피해량 (최대 체력 비례)
+          TICK: 250, // 피해 간격 (ms)
+          DAMAGE_RATIO: 0.025, // 기본 틱 당 피해량 (최대 체력 비례)
           SLOW: 1, // 기본 이동 속도 배율 (0.7 = 30% 감소)
           DURATION_STEP: 1000, // 업그레이드당 지속 시간 증가량 (ms)
           DAMAGE_RATIO_STEP: 0, // 업그레이드당 틱 피해 증가 비율
@@ -1042,7 +1042,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
           title: "중독",
           icon: "☠️",
           desc:
-            "기본 공격이 적을 중독시켜 지속 피해를 주고 둔화시킵니다.\n(지속시간 +1초, 틱당 피해: 최대 체력의 10%, 둔화 +10%)",
+            "기본 공격이 적을 중독시킵니다.\n지속해서 최대체력에 비례한 피해를 줍니다.\n(틱당 피해 +5%)",
           apply: () => {
             const level = (acquiredUpgrades.frost || 0) + 1;
             frostEnabled = true;
