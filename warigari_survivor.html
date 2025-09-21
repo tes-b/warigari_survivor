@@ -681,7 +681,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
         },
         // 얼음 바닥 관련
         ICEFLOOR: {
-          DAMAGE: 20, // 초당 피해량
+          DAMAGE: 0, // 초당 피해량
           DURATION: 3000, // 기본 지속 시간 (ms)
           SLOW: 0.7, // 이동 속도 감소 비율
           DAMAGE_STEP: 20, // 업그레이드당 초당 피해 증가량
@@ -693,7 +693,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
           DURATION: 1000, // 기본 지속 시간 (ms)
           TICK: 500, // 피해 간격 (ms)
           DAMAGE: 20, // 기본 틱 당 피해량
-          SLOW: 0.7, // 기본 이동 속도 배율 (0.7 = 30% 감소)
+          SLOW: 1, // 기본 이동 속도 배율 (0.7 = 30% 감소)
           DURATION_STEP: 1000, // 업그레이드당 지속 시간 증가량 (ms)
           DAMAGE_STEP: 20, // 업그레이드당 틱 피해 증가량
           SLOW_STEP: 0.1, // 업그레이드당 추가 이동 속도 감소율
@@ -1053,10 +1053,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
             frostDamage =
               INIT.FROST.DAMAGE +
               INIT.FROST.DAMAGE_STEP * (level - 1);
-            frostSlow = Math.max(
-              0,
-              INIT.FROST.SLOW - INIT.FROST.SLOW_STEP * (level - 1),
-            );
+            //frostSlow = Math.max(0,INIT.FROST.SLOW - INIT.FROST.SLOW_STEP * (level - 1),);
           },
         },
         {
@@ -1172,21 +1169,21 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
             }
           },
         },
-        // {
-        //   id: "iceFloor",
-        //   limit: 5,
-        //   title: "얼음 바닥",
-        //   icon: "❄️",
-        //   enabled: false,
-        //   desc: "바닥에 얼음을 생성해 적을 둔화시킵니다.\n(지속 시간 +1초, 피해 +20, 둔화 +10%)",
-        //   apply: () => {
-        //     const level = acquiredUpgrades["iceFloor"] || 0;
-        //     if (level === 0) iceFloorEnabled = true;
-        //     iceFloorDuration += INIT.ICEFLOOR.DURATION_STEP;
-        //     iceFloorDamage += INIT.ICEFLOOR.DAMAGE_STEP;
-        //     iceFloorSlow -= INIT.ICEFLOOR.SLOW_STEP;
-        //   },
-        // },
+        {
+          id: "iceFloor",
+          limit: 5,
+          title: "얼음 바닥",
+          icon: "❄️",
+          enabled: true,
+          desc: "바닥에 얼음을 생성해 적을 둔화시킵니다.\n(지속 시간 +1초, 피해 +20, 둔화 +10%)",
+          apply: () => {
+            const level = acquiredUpgrades["iceFloor"] || 0;
+            if (level === 0) iceFloorEnabled = true;
+            iceFloorDuration += INIT.ICEFLOOR.DURATION_STEP;
+            //iceFloorDamage += INIT.ICEFLOOR.DAMAGE_STEP;
+            iceFloorSlow -= INIT.ICEFLOOR.SLOW_STEP;
+          },
+        },
       ];
 
       const UPGRADE_LIMITS = Object.fromEntries(
