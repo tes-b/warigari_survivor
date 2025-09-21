@@ -2924,11 +2924,11 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
         let count = (e.tier && e.tier.exp) ? e.tier.exp : 1;
         if (e.isBoss) {
           if (currentWave === 3) {
-            count = 20;
+            count = 30;
           } else if (currentWave === 7) {
-            count = 40;
+            count = 60;
           } else if (currentWave === 11) {
-            count = 80;
+            count = 120;
           }
         }
         for (let i = 0; i < count; i++) {
