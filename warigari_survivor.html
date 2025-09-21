@@ -322,6 +322,10 @@
       animation: levelupPulse 0.6s ease-out;
     }
 
+    #levelupOverlay .levelup-panel {
+      max-width: calc(860px * var(--ui-scale));
+    }
+
     @keyframes levelupPulse {
       0% {
         transform: scale(0.8);
@@ -336,9 +340,16 @@
 
     .upgrade-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(calc(180px * var(--ui-scale)), 1fr));
+      grid-template-columns: repeat(
+        auto-fit,
+        minmax(calc(180px * var(--ui-scale)), 1fr)
+      );
       gap: calc(12px * var(--ui-scale));
       margin-top: calc(20px * var(--ui-scale));
+    }
+
+    #upgradeGrid {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
     }
 
     .upgrade-btn {
@@ -3427,7 +3438,8 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
           upgradeGrid.appendChild(btn);
         });
         if (all) {
-          upgradeGrid.style.gridTemplateColumns = "repeat(5, 1fr)";
+          upgradeGrid.style.gridTemplateColumns =
+            "repeat(5, minmax(0, 1fr))";
           levelupPanel.style.maxWidth = "calc(1000px * var(--ui-scale))";
         } else {
           upgradeGrid.style.gridTemplateColumns = "";
