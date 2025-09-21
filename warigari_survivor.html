@@ -340,10 +340,8 @@
 
     .upgrade-grid {
       display: grid;
-      grid-template-columns: repeat(
-        auto-fit,
-        minmax(calc(180px * var(--ui-scale)), 1fr)
-      );
+      grid-template-columns: repeat(auto-fit,
+          minmax(calc(180px * var(--ui-scale)), 1fr));
       gap: calc(12px * var(--ui-scale));
       margin-top: calc(20px * var(--ui-scale));
     }
@@ -1124,7 +1122,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
         },
         {
           id: "defense",
-          limit: 7,
+          limit: 8,
           title: "방어",
           icon: "🛡️",
           desc: "방어력을 얻고 감소시킨 피해를 2배로 반사합니다.\n(+50)",
@@ -1185,7 +1183,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
           title: "얼음 바닥",
           icon: "❄️",
           enabled: true,
-          desc: "바닥에 얼음을 생성해 적을 둔화시킵니다.\n(지속 시간 +1초, 피해 +20, 둔화 +10%)",
+          desc: "바닥에 얼음을 생성해 적을 둔화시킵니다.\n(지속 시간 +1초, 둔화 +10%)",
           apply: () => {
             const level = acquiredUpgrades["iceFloor"] || 0;
             if (level === 0) iceFloorEnabled = true;
