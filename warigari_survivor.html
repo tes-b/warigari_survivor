@@ -598,6 +598,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
           HITFLASH: 200, // 피격 시 시각 효과 지속 시간 (ms)
           DEFENSE: 0, // 플레이어 방어력
           HP_STEP: 500, // 체력 증가 업그레이드당 최대 HP 증가량
+          LEVEL_HP_STEP: 100, // 레벨업 시 증가할 최대 HP
           DEFENSE_STEP: 50, // 방어력 업그레이드당 증가량
           DEFENSE_REFLECT_MULT: 2, // 방어로 반사되는 피해 배수
         },
@@ -3286,6 +3287,11 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
             exp -= expToNextLevel;
             level++;
             levelsGained++;
+            const hpIncrease = INIT.PLAYER.LEVEL_HP_STEP || 0;
+            if (hpIncrease > 0) {
+              playerHP += hpIncrease;
+              hp = Math.min(hp + hpIncrease, playerHP);
+            }
             expToNextLevel = Math.floor(expToNextLevel * expGrowthRate);
           }
           // 큐에 레벨업 추가
