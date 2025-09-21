@@ -1038,11 +1038,11 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
         },
         {
           id: "frost",
-          limit: 4,
+          limit: 5,
           title: "중독",
           icon: "☠️",
           desc:
-            "기본 공격이 적을 중독시킵니다.\n지속해서 최대체력에 비례한 피해를 줍니다.\n(틱당 피해 +5%)",
+            "기본 공격이 적을 중독시킵니다.\n지속해서 최대체력에 비례한 피해를 줍니다.\n(지속시간 +1초)",
           apply: () => {
             const level = (acquiredUpgrades.frost || 0) + 1;
             frostEnabled = true;
@@ -2583,7 +2583,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
 
       const BOSS_PATTERN_DELAY = 3000;
       const BOSS_LASER_SPEED = 600; // px per second
-      const BOSS_TIMED_LASER_GAP = 200; // ms delay after a laser fully passes
+      const BOSS_TIMED_LASER_GAP = 250; // ms delay after a laser fully passes
 
       const BOSS_PRE_EFFECT_TIME = {
         laser: 500,
