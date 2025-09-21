@@ -361,6 +361,14 @@
       text-align: left;
     }
 
+    .upgrade-btn.double {
+      background: linear-gradient(135deg, #ff7a2a, #ff2a6b);
+      border-color: #ffb347;
+      box-shadow: 0 0 calc(14px * var(--ui-scale)) rgba(255, 122, 42, 0.35);
+      position: relative;
+      overflow: hidden;
+    }
+
     .upgrade-btn:hover {
       background: linear-gradient(135deg, #3558e0, #2441b8);
       border-color: #6b88ff;
@@ -368,9 +376,38 @@
       box-shadow: 0 6px 20px rgba(74, 107, 255, 0.3);
     }
 
+    .upgrade-btn.double:hover {
+      background: linear-gradient(135deg, #ff8d3f, #ff3c7d);
+      border-color: #ffd280;
+      box-shadow: 0 8px 24px rgba(255, 122, 42, 0.45);
+    }
+
     .upgrade-btn.focused {
       outline: 3px solid #fff;
       outline-offset: -3px;
+    }
+
+    .upgrade-badge {
+      position: absolute;
+      top: calc(8px * var(--ui-scale));
+      right: calc(8px * var(--ui-scale));
+      background: rgba(14, 19, 48, 0.4);
+      border: 1px solid rgba(255, 235, 205, 0.6);
+      color: #fff5d7;
+      font-size: calc(10px * var(--ui-scale));
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      padding: calc(2px * var(--ui-scale)) calc(6px * var(--ui-scale));
+      border-radius: calc(999px * var(--ui-scale));
+      text-transform: uppercase;
+      pointer-events: none;
+    }
+
+    .upgrade-double-desc {
+      margin-top: calc(6px * var(--ui-scale));
+      font-size: calc(11px * var(--ui-scale));
+      color: #ffe3a3;
+      font-weight: 600;
     }
 
     .upgrade-title {
@@ -3392,21 +3429,61 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
           ];
         }
 
+        const options = selected.map((upgrade) => {
+          const option = { ...upgrade };
+          const current = acquiredUpgrades[option.id] || 0;
+          const limitValue = Number.isFinite(option.limit)
+            ? option.limit
+            : Infinity;
+          const remaining = Math.max(0, limitValue - current);
+          const canDouble =
+            option.id !== "health" &&
+            remaining >= 2;
+          option.isDouble = false;
+          if (canDouble && Math.random() < 0.1) {
+            option.isDouble = true;
+          }
+          return option;
+        });
+
         upgradeGrid.innerHTML = "";
-        selected.forEach((upgrade, index) => {
+        options.forEach((option, index) => {
           const btn = document.createElement("div");
           btn.className = "upgrade-btn";
-          const current = acquiredUpgrades[upgrade.id] || 0;
-          const limitText = Number.isFinite(upgrade.limit) ? upgrade.limit : "∞";
+          if (option.isDouble) btn.classList.add("double");
+          const current = acquiredUpgrades[option.id] || 0;
+          const limitText = Number.isFinite(option.limit) ? option.limit : "∞";
+          const doubleBadge = option.isDouble
+            ? `<div class="upgrade-badge">더블 ×2</div>`
+            : "";
+          const doubleDesc = option.isDouble
+            ? `<div class="upgrade-double-desc">선택 시 <b>${option.title}</b>을 2번 획득합니다!</div>`
+            : "";
           btn.innerHTML = `
-            <div class="upgrade-title">${upgrade.icon} ${upgrade.title} (${current}/${limitText})</div>
-            <div class="upgrade-desc">${upgrade.desc}</div>
+            ${doubleBadge}
+            <div class="upgrade-title">${option.icon} ${option.title} (${current}/${limitText})</div>
+            <div class="upgrade-desc">${option.desc}</div>
+            ${doubleDesc}
         `;
           btn.onclick = () => {
             endHold(false);
             audio.play("uiSelect");
-            acquireUpgrade(upgrade);
-            levelUpImpulse();
+            const limitValue = Number.isFinite(option.limit)
+              ? option.limit
+              : Infinity;
+            const repeat = option.isDouble ? 2 : 1;
+            const currentCount = acquiredUpgrades[option.id] || 0;
+            const maxAdditional =
+              limitValue === Infinity
+                ? repeat
+                : Math.max(0, limitValue - currentCount);
+            const times = Math.min(repeat, maxAdditional);
+            for (let i = 0; i < times; i++) {
+              acquireUpgrade(option);
+            }
+            if (times > 0) {
+              levelUpImpulse();
+            }
             levelupOverlay.style.display = "none";
             levelupActive = false;
             updatePauseButton();
