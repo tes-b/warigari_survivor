@@ -610,7 +610,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
       </div>
 
       <div class="bottom-tip" id="tip">TIP: 팁을 보려면 팁을 내세요.</div>
-      <div class="version-label" aria-hidden="true">V25.09.21.00</div>
+      <div class="version-label" aria-hidden="true">V25.09.22.00</div>
       <div class="levelup-overlay" id="levelupOverlay">
         <div class="levelup-panel">
           <h1>🔶 업그레이드 🔶</h1>
@@ -643,8 +643,8 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
           IFRAMES: 500, // 피격 후 무적 시간 (ms)
           HITFLASH: 200, // 피격 시 시각 효과 지속 시간 (ms)
           DEFENSE: 0, // 플레이어 방어력
-          LEVEL_HP_STEP: 100, // 레벨업 시 증가할 최대 HP
-          DEFENSE_STEP: 50, // 방어력 업그레이드당 증가량
+          LEVEL_HP_STEP: 50, // 레벨업 시 증가할 최대 HP
+          DEFENSE_STEP: 30, // 방어력 업그레이드당 증가량
           DEFENSE_REFLECT_MULT: 2, // 방어로 반사되는 피해 배수
         },
         // 총 관련
@@ -1162,7 +1162,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
           limit: 8,
           title: "방어",
           icon: "🛡️",
-          desc: "방어력을 얻고 감소시킨 피해를 2배로 반사합니다.\n(+50)",
+          desc: "방어력을 얻고 감소시킨 피해를 2배로 반사합니다.\n(+30)",
           apply: () => {
             playerDefense += INIT.PLAYER.DEFENSE_STEP;
           },
