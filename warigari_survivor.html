@@ -3212,7 +3212,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
                   !explosionSoundPlayed,
                 );
                 explosionSoundPlayed = true;
-                if (i >= enemies.length || enemies[i].id !== e.id) {
+                if (!enemies.includes(e)) {
                   spawnFloatText(ex, e.y - 12, -(dmg + extra), "#ff6b6b");
                   continue;
                 }
@@ -4237,7 +4237,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
                   extra = triggerExplosion(ex, ey, distP, e.id);
                 }
                 spawnFloatText(ex, e.y - 12, -(dmg + extra), "#ff6b6b");
-                if (explosionEnabled && (i >= enemies.length || enemies[i].id !== e.id)) {
+                if (explosionEnabled && !enemies.includes(e)) {
                   e._killed = true;
                   break;
                 }
@@ -4320,7 +4320,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
                   extra = triggerExplosion(ex, ey, distP, e.id);
                 }
                 spawnFloatText(ex, e.y - 12, -(dmg + extra), "#ff6b6b");
-                if (explosionEnabled && !y.returning && (i >= enemies.length || enemies[i].id !== e.id)) {
+                if (explosionEnabled && !y.returning && !enemies.includes(e)) {
                   e._killed = true;
                   break;
                 }
