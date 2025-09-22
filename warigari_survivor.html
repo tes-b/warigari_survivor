@@ -3449,7 +3449,8 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
           const remaining = Math.max(0, limitValue - current);
           const canDouble =
             option.id !== "health" &&
-            remaining >= 2;
+            remaining >= 2 &&
+            !all;
           option.isDouble = false;
           if (canDouble && Math.random() < 0.1) {
             option.isDouble = true;
