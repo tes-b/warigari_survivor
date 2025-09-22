@@ -815,6 +815,12 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
       let frostDamageRatio = INIT.FROST.DAMAGE_RATIO;
       let frostSlow = INIT.FROST.SLOW;
 
+      const WEAPON_DISPLAY = {
+        gun: { icon: "🔫", name: "총" },
+        sword: { icon: "🗡️", name: "검" },
+        yoyo: { icon: "🪀", name: "요요" },
+      };
+
       let baseAttack = "gun";
 
       let enemyContactDamage = INIT.ENEMY.CONTACT_DAMAGE;
@@ -2466,6 +2472,8 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
             wave: getWaveLabel(),
             time: `${Math.floor(elapsed / 60)}분 ${(elapsed % 60).toFixed(2).padStart(5, "0")}초`,
             score,
+            weapon: baseAttack,
+            level,
           });
         }, 1000);
       }
@@ -3606,14 +3614,31 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
         });
       }
 
+      function getWeaponDisplay(weaponId) {
+        return (
+          WEAPON_DISPLAY[weaponId] || {
+            icon: "",
+            name: weaponId || "-",
+          }
+        );
+      }
+
       function showGameOverScreen(stats) {
         updatePauseButton();
+        const { icon, name } = getWeaponDisplay(stats.weapon);
+        const weaponLabel = `${icon ? `${icon} ` : ""}${name}`.trim();
+        const levelLabel =
+          stats.level !== undefined && stats.level !== null
+            ? `Lv ${stats.level}`
+            : "-";
         overlay.innerHTML = `
         <div class="panel">
           <h1>전쟁이 끝났습니다.</h1>
           <p>웨이브: <b>${stats.wave}</b></p>
           <p>생존 시간: <b>${stats.time}</b></p>
           <p>처치 수: <b>${stats.score}</b></p>
+          <p>사용 무기: <b>${weaponLabel}</b></p>
+          <p>최종 레벨: <b>${levelLabel}</b></p>
           <div class="row"><button id="btnRestart">다시 하기<br>(SPACE)</button></div>
         </div>`;
         overlay.style.display = "flex";
