@@ -670,6 +670,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
           RANGE: 140, // 요요 사정거리 (px)
           KNOCKBACK: 0, // 요요 넉백 거리 (px)
           SPEED: 300, // 요요 던지는 속도 (px/s)
+          ACCEL: 0.5, // 요요 이동 거리당 속도 증가량
           MINIMUM_DAMAGE_RANGE: 40, // 최소 데미지 범위
           MAG_PER_DIST: 0.01, // 거리당 데미지 배율
           DAMAGE_STEP: 0.2, // 공격력 업그레이드당 피해 증가율 (20%)
@@ -804,6 +805,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
       let yoyoRange = INIT.YOYO.RANGE;
       let yoyoKnockback = INIT.YOYO.KNOCKBACK;
       let yoyoSpeed = INIT.YOYO.SPEED;
+      let yoyoAccel = INIT.YOYO.ACCEL;
       let lifeSteal = INIT.LIFESTEAL.BASE;
       let explosionEnabled = false;
       let explosionRadius = INIT.EXPLOSION.RADIUS;
@@ -2374,6 +2376,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
         yoyoRange = INIT.YOYO.RANGE;
         yoyoKnockback = INIT.YOYO.KNOCKBACK;
         yoyoSpeed = INIT.YOYO.SPEED;
+        yoyoAccel = INIT.YOYO.ACCEL;
         yoyoSize = INIT.YOYO.SIZE;
         yoyos.length = 0;
         lifeSteal = INIT.LIFESTEAL.BASE;
@@ -3787,6 +3790,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
             range: yoyoRange,
             returning: false,
             travel: 0,
+            distance: 0,
             hitSet: new Set(),
           });
           audio.play("attack");
@@ -3873,9 +3877,19 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
         for (let i = yoyos.length - 1; i >= 0; i--) {
           const y = yoyos[i];
           const targetY = player.y + player.h * 0.5 - y.h / 2;
+          const targetX = player.x + player.w / 2 - y.w / 2;
           y.y = targetY;
+          if (typeof y.distance !== "number") y.distance = 0;
+          const prevDir =
+            Math.sign(y.vx) ||
+            (y.returning
+              ? Math.sign(targetX - y.x) || 1
+              : player.dir || 1);
+          const currentSpeed = yoyoSpeed + y.distance * yoyoAccel;
+          y.vx = prevDir * currentSpeed;
           const step = y.vx * dt;
           y.x += step;
+          y.distance += Math.abs(step);
           if (!y.returning) {
             // 플레이어가 방향을 바꾸면 즉시 되돌아오도록
             if (player.dir !== Math.sign(y.vx)) {
@@ -3890,10 +3904,10 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
             }
           }
           if (y.returning) {
-            const targetX = player.x + player.w / 2 - y.w / 2;
             const dir = Math.sign(targetX - y.x);
-            y.vx = dir * yoyoSpeed;
-            if (Math.abs(targetX - y.x) <= Math.abs(y.vx * dt)) {
+            const returnSpeed = yoyoSpeed + y.distance * yoyoAccel;
+            y.vx = dir * returnSpeed;
+            if (dir === 0 || Math.abs(targetX - y.x) <= Math.abs(y.vx * dt)) {
               yoyos.splice(i, 1);
               continue;
             }
