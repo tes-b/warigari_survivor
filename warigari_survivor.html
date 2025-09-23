@@ -660,7 +660,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
           DAMAGE_STEP: 0.2, // 공격력 업그레이드당 피해 증가율 (20%)
           COOLDOWN_STEP: 0.15, // 공격 속도 업그레이드당 쿨다운 감소율 (15%)
           KNOCKBACK_STEP: 40, // 넉백 업그레이드당 거리 증가량 (px)
-          PENETRATION_STEP: 1, // 관통 업그레이드당 증가 수치
+          PENETRATION_STEPS: [1, 2, 3, 4, 5], // 관통 업그레이드 단계별 증가 수치
           RANGE_STEP: 0.2, // 사거리 업그레이드당 증가율 (20%)
         },
         // 요요 관련
@@ -1033,14 +1033,18 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
         },
         {
           id: "penetration",
-          limit: 10,
+          limit: 5,
           weapon: "gun",
           title: "관통 공격",
           icon: "🎯",
-          desc: "기본 공격이 적을 관통합니다.\n(+1명)",
+          desc:
+            "기본 공격이 적을 관통합니다.\n(1회 +1명, 이후 +2/+3/+4/+5명)",
           apply: () => {
-            if (baseAttack === "gun")
-              bulletPenetration += INIT.BULLET.PENETRATION_STEP;
+            if (baseAttack === "gun") {
+              const level = acquiredUpgrades["penetration"] || 0;
+              const step = INIT.BULLET.PENETRATION_STEPS[level] || 0;
+              bulletPenetration += step;
+            }
           },
         },
         {
