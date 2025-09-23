@@ -4280,15 +4280,13 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
                 const ey = e.y + e.h / 2;
                 const px = player.x + player.w / 2;
                 const py = player.y + player.h / 2;
-                const distanceToPlayer = Math.hypot(ex - px, ey - py);
-                const damageDistance = Math.min(
-                  distanceToPlayer - INIT.YOYO.MINIMUM_DAMAGE_RANGE,
-                  0,
-                );
+                const traveledDistance = y.distance;
+                const damageDistance =
+                  traveledDistance - INIT.YOYO.MINIMUM_DAMAGE_RANGE;
                 const baseDamage = y.dmg;
                 const scaledDamage = Math.max(
                   baseDamage *
-                  (1 + damageDistance * INIT.YOYO.MAG_PER_DIST),
+                    (1 + damageDistance * INIT.YOYO.MAG_PER_DIST),
                   0,
                 );
                 const raw = scaledDamage - (e.defense || 0);
@@ -4333,8 +4331,6 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
 
                 let extra = 0;
                 if (explosionEnabled && !y.returning) {
-                  const px = player.x + player.w / 2;
-                  const py = player.y + player.h / 2;
                   const distP = Math.hypot(ex - px, ey - py);
                   extra = triggerExplosion(ex, ey, distP, e.id);
                 }
