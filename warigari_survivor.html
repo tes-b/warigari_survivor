@@ -735,7 +735,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
           SLOW_STEP: 0.1, // 업그레이드당 이동 속도 추가 감소율
         },
         // 중독 효과 관련
-        FROST: {
+        POISON: {
           DURATION: 1000, // 기본 지속 시간 (ms)
           TICK: 250, // 피해 간격 (ms)
           DAMAGE_RATIO: 0.025, // 기본 틱 당 피해량 (최대 체력 비례)
@@ -809,11 +809,11 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
       let explosionRadius = INIT.EXPLOSION.RADIUS;
       let explosionMinDamage = INIT.EXPLOSION.MIN_DAMAGE;
 
-      let frostEnabled = false;
-      let frostDuration = INIT.FROST.DURATION;
-      let frostTickInterval = INIT.FROST.TICK;
-      let frostDamageRatio = INIT.FROST.DAMAGE_RATIO;
-      let frostSlow = INIT.FROST.SLOW;
+      let poisonEnabled = false;
+      let poisonDuration = INIT.POISON.DURATION;
+      let poisonTickInterval = INIT.POISON.TICK;
+      let poisonDamageRatio = INIT.POISON.DAMAGE_RATIO;
+      let poisonSlow = INIT.POISON.SLOW;
 
       const WEAPON_DISPLAY = {
         gun: { icon: "🔫", name: "총" },
@@ -1089,23 +1089,23 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
           },
         },
         {
-          id: "frost",
+          id: "poison",
           limit: 5,
           title: "중독",
           icon: "☠️",
           desc:
             "기본 공격이 적을 중독시킵니다.\n지속해서 최대체력에 비례한 피해를 줍니다.\n(지속시간 +1초)",
           apply: () => {
-            const level = (acquiredUpgrades.frost || 0) + 1;
-            frostEnabled = true;
-            frostDuration =
-              INIT.FROST.DURATION +
-              INIT.FROST.DURATION_STEP * (level - 1);
-            frostTickInterval = INIT.FROST.TICK;
-            frostDamageRatio =
-              INIT.FROST.DAMAGE_RATIO +
-              INIT.FROST.DAMAGE_RATIO_STEP * (level - 1);
-            //frostSlow = Math.max(0,INIT.FROST.SLOW - INIT.FROST.SLOW_STEP * (level - 1),);
+            const level = (acquiredUpgrades.poison || 0) + 1;
+            poisonEnabled = true;
+            poisonDuration =
+              INIT.POISON.DURATION +
+              INIT.POISON.DURATION_STEP * (level - 1);
+            poisonTickInterval = INIT.POISON.TICK;
+            poisonDamageRatio =
+              INIT.POISON.DAMAGE_RATIO +
+              INIT.POISON.DAMAGE_RATIO_STEP * (level - 1);
+            //poisonSlow = Math.max(0,INIT.POISON.SLOW - INIT.POISON.SLOW_STEP * (level - 1),);
           },
         },
         {
@@ -2376,11 +2376,11 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
         explosionEnabled = false;
         explosionRadius = INIT.EXPLOSION.RADIUS;
         explosionMinDamage = INIT.EXPLOSION.MIN_DAMAGE;
-        frostEnabled = false;
-        frostDuration = INIT.FROST.DURATION;
-        frostTickInterval = INIT.FROST.TICK;
-        frostDamageRatio = INIT.FROST.DAMAGE_RATIO;
-        frostSlow = INIT.FROST.SLOW;
+        poisonEnabled = false;
+        poisonDuration = INIT.POISON.DURATION;
+        poisonTickInterval = INIT.POISON.TICK;
+        poisonDamageRatio = INIT.POISON.DAMAGE_RATIO;
+        poisonSlow = INIT.POISON.SLOW;
         laserOrbCooldown = INIT.LASERORB.COOLDOWN;
         laserOrbDamage = INIT.LASERORB.DAMAGE;
         laserOrbSpeed = INIT.LASERORB.SPEED;
@@ -3055,19 +3055,19 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
         return primaryExtra;
       }
 
-      function applyFrostEffect(enemy) {
-        if (!frostEnabled || enemy.isBoss) return;
-        if (!enemy.frost) {
-          enemy.frost = {
-            timer: frostDuration,
+      function applyPoisonEffect(enemy) {
+        if (!poisonEnabled || enemy.isBoss) return;
+        if (!enemy.poison) {
+          enemy.poison = {
+            timer: poisonDuration,
             accum: 0,
-            duration: frostDuration,
+            duration: poisonDuration,
             seed: Math.random() * Math.PI * 2,
           };
         } else {
-          enemy.frost.timer = frostDuration;
-          enemy.frost.accum = Math.min(enemy.frost.accum || 0, frostTickInterval);
-          enemy.frost.duration = frostDuration;
+          enemy.poison.timer = poisonDuration;
+          enemy.poison.accum = Math.min(enemy.poison.accum || 0, poisonTickInterval);
+          enemy.poison.duration = poisonDuration;
         }
       }
 
@@ -3200,7 +3200,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
                 hitSoundPlayed = true;
               }
 
-              applyFrostEffect(e);
+              applyPoisonEffect(e);
 
               let extra = 0;
               if (explosionEnabled) {
@@ -4058,23 +4058,23 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
 
           let slowMul = 1;
           let iceDamage = 0;
-          if (e.frost) {
+          if (e.poison) {
             if (e.isBoss) {
-              delete e.frost;
+              delete e.poison;
             } else {
-              if (e.frost.duration == null) e.frost.duration = frostDuration;
-              if (e.frost.seed == null) e.frost.seed = Math.random() * Math.PI * 2;
-              const remaining = e.frost.timer;
+              if (e.poison.duration == null) e.poison.duration = poisonDuration;
+              if (e.poison.seed == null) e.poison.seed = Math.random() * Math.PI * 2;
+              const remaining = e.poison.timer;
               if (remaining > 0) {
-                slowMul *= frostSlow;
+                slowMul *= poisonSlow;
                 const elapsedMs = dt * 1000;
                 const activeTime = Math.min(remaining, elapsedMs);
-                e.frost.timer = Math.max(0, remaining - elapsedMs);
-                e.frost.accum = (e.frost.accum || 0) + activeTime;
-                while (e.frost.accum >= frostTickInterval && !e._killed) {
-                  e.frost.accum -= frostTickInterval;
+                e.poison.timer = Math.max(0, remaining - elapsedMs);
+                e.poison.accum = (e.poison.accum || 0) + activeTime;
+                while (e.poison.accum >= poisonTickInterval && !e._killed) {
+                  e.poison.accum -= poisonTickInterval;
                   const maxHp = Math.max(e.hpMax || e.hp || 0, 0);
-                  const base = Math.max(Math.floor(maxHp * frostDamageRatio), 1);
+                  const base = Math.max(Math.floor(maxHp * poisonDamageRatio), 1);
                   const dmg = Math.min(base, e.hp);
                   e.hp -= dmg;
                   spawnFloatText(e.x + e.w / 2, e.y - 12, -dmg, "#d8b4fe");
@@ -4087,8 +4087,8 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
                   }
                 }
               }
-              if (!e._killed && e.frost.timer <= 0) {
-                delete e.frost;
+              if (!e._killed && e.poison.timer <= 0) {
+                delete e.poison;
               }
             }
           }
@@ -4221,7 +4221,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
                   e.vy = -enemyKnockbackLift;
                 }
 
-                applyFrostEffect(e);
+                applyPoisonEffect(e);
 
                 b.hitSet.add(e.id);
                 if (b.penetration === 0) {
@@ -4308,7 +4308,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
                 }
 
                 if (!y.returning) {
-                  applyFrostEffect(e);
+                  applyPoisonEffect(e);
                 }
 
                 y.hitSet.add(e.id);
@@ -4783,29 +4783,29 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
           ctx.lineWidth = 0.5;
           ctx.strokeRect(e.x + 0.5, e.y + 0.5, e.w - 1, e.h - 1);
 
-          const frostStatus = e.frost;
-          if (frostStatus) {
-            const frostTotal = frostStatus.duration || frostDuration;
-            const frostProgress = frostTotal
-              ? clamp(1 - frostStatus.timer / frostTotal, 0, 1)
+          const poisonStatus = e.poison;
+          if (poisonStatus) {
+            const poisonTotal = poisonStatus.duration || poisonDuration;
+            const poisonProgress = poisonTotal
+              ? clamp(1 - poisonStatus.timer / poisonTotal, 0, 1)
               : 1;
-            const frostSeed = frostStatus.seed || 0;
-            const frostPulse = 0.5 + 0.5 * Math.sin(elapsed * 8 + frostSeed);
-            const auraPadding = 2 + 2 * frostProgress;
+            const poisonSeed = poisonStatus.seed || 0;
+            const poisonPulse = 0.5 + 0.5 * Math.sin(elapsed * 8 + poisonSeed);
+            const auraPadding = 2 + 2 * poisonProgress;
 
             ctx.save();
-            ctx.globalAlpha = baseAlpha * (0.35 + 0.25 * frostPulse);
+            ctx.globalAlpha = baseAlpha * (0.35 + 0.25 * poisonPulse);
             ctx.globalCompositeOperation = "lighter";
             ctx.fillStyle = "#c084fc";
             ctx.fillRect(e.x, e.y, e.w, e.h);
             ctx.restore();
 
             ctx.save();
-            ctx.globalAlpha = baseAlpha * (0.55 + 0.25 * frostPulse);
-            ctx.strokeStyle = `rgba(192, 132, 252, ${0.55 + 0.3 * (1 - frostProgress)})`;
+            ctx.globalAlpha = baseAlpha * (0.55 + 0.25 * poisonPulse);
+            ctx.strokeStyle = `rgba(192, 132, 252, ${0.55 + 0.3 * (1 - poisonProgress)})`;
             ctx.lineWidth = 2;
             ctx.shadowColor = "rgba(216, 180, 254, 0.5)";
-            ctx.shadowBlur = 10 + 6 * frostProgress;
+            ctx.shadowBlur = 10 + 6 * poisonProgress;
             ctx.strokeRect(
               e.x - auraPadding,
               e.y - auraPadding,
@@ -4815,7 +4815,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
             ctx.restore();
 
             ctx.save();
-            ctx.globalAlpha = baseAlpha * (0.25 + 0.2 * frostPulse);
+            ctx.globalAlpha = baseAlpha * (0.25 + 0.2 * poisonPulse);
             const shineHeight = Math.max(4, e.h * 0.35);
             ctx.fillStyle = "rgba(243, 232, 255, 1)";
             ctx.fillRect(e.x, e.y, e.w, shineHeight);
