@@ -150,6 +150,7 @@
       letter-spacing: 0.08em;
       text-transform: uppercase;
       outline: none;
+      width: calc(6ch + (24px * var(--ui-scale)));
     }
 
     .leaderboard-form input::placeholder {
@@ -3821,7 +3822,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
                 required
               />
             </label>
-            <button type="submit" id="submitScoreButton">리더보드 전송</button>
+            <button type="submit" id="submitScoreButton">기록 하기</button>
             <div id="leaderboardStatus" class="leaderboard-status" aria-live="polite"></div>
           </form>
           <div class="hold-gauge"><div class="fill" id="gameOverHoldGaugeFill"></div></div>
