@@ -2560,6 +2560,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
             level,
             elapsedSeconds: elapsed,
             upgrades: upgradeSnapshot,
+            version: GAME_VERSION,
           });
         }, 1000);
       }
@@ -3779,15 +3780,32 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
 
             const rawElapsed = Number(stats.elapsedSeconds ?? 0);
             const elapsedSeconds = Number.isFinite(rawElapsed) ? rawElapsed : 0;
+            const rawWave = Number(stats.wave);
+            const waveValue = Number.isFinite(rawWave) ? rawWave : 0;
+            const rawScore = Number(stats.score);
+            const scoreValue = Number.isFinite(rawScore) ? rawScore : 0;
+            const rawLevel = Number(stats.level);
+            const levelValue = Number.isFinite(rawLevel) ? rawLevel : 1;
+            const weaponValue =
+              typeof stats.weapon === "string" && stats.weapon.trim()
+                ? stats.weapon
+                : "gun";
+            const upgradesValue =
+              stats.upgrades && typeof stats.upgrades === "object"
+                ? { ...stats.upgrades }
+                : {};
+            const submissionDate = new Date().toISOString();
+            const versionValue = `${stats.version || GAME_VERSION || ""}`.trim();
             const payload = {
               name: nickname,
-              wave: stats.wave ?? null,
-              weapon: stats.weapon ?? "",
-              score: stats.score ?? 0,
+              wave: waveValue,
+              weapon: weaponValue,
+              score: scoreValue,
               time: Number(elapsedSeconds.toFixed(2)),
-              level: stats.level ?? null,
-              upgrades: stats.upgrades ?? {},
-              version: stats.version || GAME_VERSION,
+              level: levelValue,
+              upgrades: upgradesValue,
+              version: versionValue,
+              date: submissionDate,
             };
 
             try {
