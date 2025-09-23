@@ -1981,6 +1981,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
       const bossLasers = [];
       // --- 레이저 구슬 ---
       const lasers = [];
+      const explosionHitSet = new Set();
       let laserOrbs = [];
       let laserOrbTimer = 0;
       let laserOrbCooldown = INIT.LASERORB.COOLDOWN; // ms
@@ -3045,6 +3046,10 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
               // 적이 자신의 폭발 효과로 추가 피해를 받지 않도록 제외
               continue;
             }
+            if (explosionHitSet.has(e.id)) {
+              continue;
+            }
+            explosionHitSet.add(e.id);
             const raw = base - (e.defense || 0);
             let dmg = Math.min(Math.max(raw, 1), e.hp);
             if (e.isBoss && e.hasShield && isBossFacingPlayer(e)) {
@@ -3674,6 +3679,8 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
           player.deathAnim.rotation += dt * 8; // 회전
           return; // 다른 업데이트는 중지
         }
+
+        explosionHitSet.clear();
 
         elapsed += dt;
         if (!isBossWave()) {
