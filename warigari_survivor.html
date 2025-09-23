@@ -664,7 +664,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
       </div>
 
       <div class="bottom-tip" id="tip">TIP: 팁을 보려면 팁을 내세요.</div>
-      <div class="version-label" aria-hidden="true">V25.09.23.00</div>
+      <div class="version-label" aria-hidden="true"></div>
       <div class="levelup-overlay" id="levelupOverlay">
         <div class="levelup-panel">
           <h1>🔶 업그레이드 🔶</h1>
@@ -690,6 +690,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
 
       const APPS_SCRIPT_URL = ""; // 배포된 앱스 스크립트 웹 앱 URL을 여기에 입력하세요
       const LEADERBOARD_NAME_LENGTH = 3;
+      const GAME_VERSION = "V25.09.23.00";
 
       // 게임 초기 상수 값들 (변경이 필요한 경우 여기서만 수정하면 됩니다)
       const INIT = {
@@ -2292,9 +2293,9 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
       const muteButton = document.getElementById("muteButton");
 
       const versionLabelEl = document.querySelector(".version-label");
-      const GAME_VERSION = versionLabelEl
-        ? versionLabelEl.textContent.trim()
-        : "";
+      if (versionLabelEl) {
+        versionLabelEl.textContent = GAME_VERSION;
+      }
 
       const tipElem = document.getElementById("tip");
       const tips = [
