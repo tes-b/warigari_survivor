@@ -122,6 +122,60 @@
       color: #cfd6ff;
     }
 
+    .leaderboard-form {
+      margin-top: calc(18px * var(--ui-scale));
+      display: flex;
+      flex-direction: column;
+      gap: calc(10px * var(--ui-scale));
+      align-items: stretch;
+      text-align: left;
+    }
+
+    .leaderboard-form label {
+      display: flex;
+      flex-direction: column;
+      gap: calc(6px * var(--ui-scale));
+      font-weight: 600;
+      color: #cfd6ff;
+    }
+
+    .leaderboard-form input {
+      padding: calc(10px * var(--ui-scale)) calc(12px * var(--ui-scale));
+      border-radius: calc(10px * var(--ui-scale));
+      border: 1px solid #2b356e;
+      background: #0e1330;
+      color: #fff;
+      font-size: inherit;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      outline: none;
+    }
+
+    .leaderboard-form input::placeholder {
+      color: #4a5286;
+      font-weight: 500;
+    }
+
+    .leaderboard-form button {
+      align-self: center;
+    }
+
+    .leaderboard-status {
+      min-height: calc(18px * var(--ui-scale));
+      font-size: calc(12px * var(--ui-scale));
+      color: #cfd6ff;
+      text-align: center;
+    }
+
+    .leaderboard-status.success {
+      color: #8fffd1;
+    }
+
+    .leaderboard-status.error {
+      color: #ff9c9c;
+    }
+
     .kbd {
       background: #0e1330;
       border: 1px solid #2b356e;
@@ -633,6 +687,9 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
       // ========================================
       // 게임 밸런스 변수 (수정 편의성을 위해 상단 집중 배치)
       // ========================================
+
+      const APPS_SCRIPT_URL = ""; // 배포된 앱스 스크립트 웹 앱 URL을 여기에 입력하세요
+      const LEADERBOARD_NAME_LENGTH = 3;
 
       // 게임 초기 상수 값들 (변경이 필요한 경우 여기서만 수정하면 됩니다)
       const INIT = {
@@ -2035,6 +2092,16 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
         if (running) toggleDirection();
       });
       window.addEventListener("keydown", (e) => {
+        const target = e.target;
+        if (
+          target instanceof HTMLElement &&
+          (target.tagName === "INPUT" ||
+            target.tagName === "TEXTAREA" ||
+            target.isContentEditable)
+        ) {
+          if (e.code === "Escape") target.blur();
+          return;
+        }
         if (e.code === "Space") {
           e.preventDefault();
           if (levelupActive) {
@@ -2097,6 +2164,15 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
         }
       });
       window.addEventListener("keyup", (e) => {
+        const target = e.target;
+        if (
+          target instanceof HTMLElement &&
+          (target.tagName === "INPUT" ||
+            target.tagName === "TEXTAREA" ||
+            target.isContentEditable)
+        ) {
+          return;
+        }
         if (e.code === "Space") {
           if (levelupActive) {
             e.preventDefault();
@@ -2214,6 +2290,11 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
       const overlay = document.getElementById("overlay");
       const pauseButton = document.getElementById("pauseButton");
       const muteButton = document.getElementById("muteButton");
+
+      const versionLabelEl = document.querySelector(".version-label");
+      const GAME_VERSION = versionLabelEl
+        ? versionLabelEl.textContent.trim()
+        : "";
 
       const tipElem = document.getElementById("tip");
       const tips = [
@@ -2468,12 +2549,17 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
         setTimeout(() => {
           running = false;
           updatePauseButton();
+          const minutes = Math.floor(elapsed / 60);
+          const secondsLabel = (elapsed % 60).toFixed(2).padStart(5, "0");
+          const upgradeSnapshot = { ...acquiredUpgrades };
           showGameOverScreen({
             wave: getWaveLabel(),
-            time: `${Math.floor(elapsed / 60)}분 ${(elapsed % 60).toFixed(2).padStart(5, "0")}초`,
+            time: `${minutes}분 ${secondsLabel}초`,
             score,
             weapon: baseAttack,
             level,
+            elapsedSeconds: elapsed,
+            upgrades: upgradeSnapshot,
           });
         }, 1000);
       }
@@ -3640,9 +3726,98 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
           <p>처치 수: <b>${stats.score}</b></p>
           <p>사용 무기: <b>${weaponLabel}</b></p>
           <p>최종 레벨: <b>${levelLabel}</b></p>
+          <form id="leaderboardForm" class="leaderboard-form" autocomplete="off">
+            <label for="nicknameInput">닉네임 (영문 ${LEADERBOARD_NAME_LENGTH}글자)
+              <input
+                id="nicknameInput"
+                name="nickname"
+                type="text"
+                inputmode="latin"
+                autocapitalize="characters"
+                spellcheck="false"
+                maxlength="${LEADERBOARD_NAME_LENGTH}"
+                pattern="[A-Za-z]{${LEADERBOARD_NAME_LENGTH}}"
+                placeholder="AAA"
+                required
+              />
+            </label>
+            <button type="submit" id="submitScoreButton">리더보드 전송</button>
+            <div id="leaderboardStatus" class="leaderboard-status" aria-live="polite"></div>
+          </form>
           <div class="row"><button id="btnRestart">다시 하기<br>(SPACE)</button></div>
         </div>`;
         overlay.style.display = "flex";
+        const leaderboardForm = document.getElementById("leaderboardForm");
+        const nicknameInput = document.getElementById("nicknameInput");
+        const submitScoreButton = document.getElementById("submitScoreButton");
+        const leaderboardStatus = document.getElementById("leaderboardStatus");
+        let leaderboardSubmitted = false;
+        let leaderboardSubmitting = false;
+
+        if (
+          leaderboardForm &&
+          nicknameInput &&
+          submitScoreButton &&
+          leaderboardStatus
+        ) {
+          nicknameInput.addEventListener("input", () => {
+            const sanitized = sanitizeLeaderboardName(nicknameInput.value);
+            if (nicknameInput.value !== sanitized) nicknameInput.value = sanitized;
+          });
+
+          leaderboardForm.addEventListener("submit", async (event) => {
+            event.preventDefault();
+            if (leaderboardSubmitting || leaderboardSubmitted) return;
+
+            const nickname = sanitizeLeaderboardName(nicknameInput.value);
+            if (nickname.length !== LEADERBOARD_NAME_LENGTH) {
+              leaderboardStatus.textContent = `닉네임은 영문 ${LEADERBOARD_NAME_LENGTH}글자로 입력해주세요.`;
+              leaderboardStatus.className = "leaderboard-status error";
+              nicknameInput.focus();
+              return;
+            }
+
+            const rawElapsed = Number(stats.elapsedSeconds ?? 0);
+            const elapsedSeconds = Number.isFinite(rawElapsed) ? rawElapsed : 0;
+            const payload = {
+              name: nickname,
+              wave: stats.wave ?? null,
+              weapon: stats.weapon ?? "",
+              score: stats.score ?? 0,
+              time: Number(elapsedSeconds.toFixed(2)),
+              level: stats.level ?? null,
+              upgrades: stats.upgrades ?? {},
+              version: stats.version || GAME_VERSION,
+            };
+
+            try {
+              leaderboardSubmitting = true;
+              submitScoreButton.disabled = true;
+              nicknameInput.disabled = true;
+              leaderboardStatus.textContent = "전송 중...";
+              leaderboardStatus.className = "leaderboard-status";
+              await submitLeaderboardScore(payload);
+              leaderboardSubmitted = true;
+              leaderboardStatus.textContent = "리더보드 전송 완료!";
+              leaderboardStatus.className = "leaderboard-status success";
+            } catch (error) {
+              console.error("리더보드 전송 실패:", error);
+              const message = APPS_SCRIPT_URL
+                ? "전송에 실패했습니다. 잠시 후 다시 시도해주세요."
+                : "리더보드 URL이 설정되지 않았습니다.";
+              leaderboardStatus.textContent = message;
+              leaderboardStatus.className = "leaderboard-status error";
+              submitScoreButton.disabled = false;
+              nicknameInput.disabled = false;
+            } finally {
+              leaderboardSubmitting = false;
+            }
+          });
+
+          requestAnimationFrame(() => {
+            nicknameInput.focus();
+          });
+        }
         const btnRestart = document.getElementById("btnRestart");
         btnRestart.onclick = () => {
           audio.resume();
@@ -3652,6 +3827,33 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
         };
         btnRestart.addEventListener("mouseenter", () => {
           audio.play("uiFocus");
+        });
+      }
+
+      function sanitizeLeaderboardName(value) {
+        return (value || "")
+          .toUpperCase()
+          .replace(/[^A-Z]/g, "")
+          .slice(0, LEADERBOARD_NAME_LENGTH);
+      }
+
+      async function submitLeaderboardScore(payload) {
+        if (!APPS_SCRIPT_URL || !APPS_SCRIPT_URL.trim()) {
+          throw new Error("Apps Script URL is not configured.");
+        }
+
+        const body = JSON.stringify({
+          ...payload,
+          upgrades: payload.upgrades ?? {},
+        });
+
+        await fetch(APPS_SCRIPT_URL, {
+          method: "POST",
+          mode: "no-cors",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body,
         });
       }
 
