@@ -181,6 +181,38 @@
 
     .ranking-table td {
       font-weight: 500;
+      vertical-align: middle;
+    }
+
+    .ranking-table th.rank-cell,
+    .ranking-table td.rank-cell {
+      width: calc(56px * var(--ui-scale));
+      text-align: center;
+    }
+
+    .ranking-table td.upgrades-cell,
+    .ranking-table th.upgrades-cell {
+      white-space: normal;
+    }
+
+    .ranking-upgrades {
+      display: flex;
+      flex-wrap: wrap;
+      gap: calc(4px * var(--ui-scale));
+      align-items: center;
+    }
+
+    .ranking-upgrade-icon {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: calc(2px * var(--ui-scale)) calc(4px * var(--ui-scale));
+      border-radius: calc(6px * var(--ui-scale));
+      border: 1px solid #2b356e;
+      background: rgba(14, 19, 48, 0.85);
+      font-size: calc(12px * var(--ui-scale));
+      line-height: 1.1;
+      min-width: calc(20px * var(--ui-scale));
     }
 
     .kbd {
@@ -713,13 +745,25 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
       const RANKING_API_URL =
         "https://script.google.com/macros/s/AKfycbxtgg1ITzAtiOwmiHFkrl1nXTU4LqMQVRR2w_9ki7sf0-rQXftJCwR_uzwoBSZCF49Q/exec";
       const RANKING_COLUMNS = [
+        {
+          header: "RANK",
+          headerClass: "rank-cell",
+          cellClass: "rank-cell",
+          render: (_value, _row, rowIndex) => rowIndex + 1,
+        },
         { header: "NAME", index: 0 },
         { header: "WAVE", index: 1 },
         { header: "WEAPON", index: 2 },
         { header: "SCORE", index: 3 },
         { header: "TIME", index: 4 },
         { header: "LEVEL", index: 5 },
-        { header: "UPGRADES", index: 6 },
+        {
+          header: "UPGRADES",
+          index: 6,
+          headerClass: "upgrades-cell",
+          cellClass: "upgrades-cell",
+          render: (value) => buildRankingUpgradesElement(value),
+        },
         { header: "REGDATE", index: 7 },
       ];
 
@@ -3824,10 +3868,270 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
         }
       }
 
+      const resolveRankingUpgradeInfo = (() => {
+        let cachedList = null;
+        return (rawId) => {
+          if (!rawId || !UPGRADE_MAP) {
+            return null;
+          }
+          const idText = String(rawId).trim();
+          if (!idText) {
+            return null;
+          }
+          if (UPGRADE_MAP[idText]) {
+            return UPGRADE_MAP[idText];
+          }
+          if (!cachedList) {
+            cachedList = Object.values(UPGRADE_MAP);
+          }
+          const lower = idText.toLowerCase();
+          let match = cachedList.find(
+            (upgrade) => upgrade.id && upgrade.id.toLowerCase() === lower,
+          );
+          if (match) {
+            return match;
+          }
+          match = cachedList.find(
+            (upgrade) =>
+              upgrade.title && upgrade.title.toLowerCase() === lower,
+          );
+          if (match) {
+            return match;
+          }
+          return cachedList.find(
+            (upgrade) => upgrade.icon && upgrade.icon === idText,
+          );
+        };
+      })();
+
+      const normalizeRankingUpgrades = (rawValue) => {
+        const aggregated = new Map();
+
+        const addUpgrade = (id, count = 1) => {
+          const info = resolveRankingUpgradeInfo(id);
+          if (!info) {
+            return;
+          }
+          const numeric =
+            typeof count === "string" ? parseInt(count, 10) : Number(count);
+          const normalizedCount = Number.isFinite(numeric)
+            ? Math.max(1, Math.floor(numeric))
+            : 1;
+          if (normalizedCount <= 0) {
+            return;
+          }
+          const key = info.id || String(id).trim();
+          const label = info.title || key;
+          const icon = info.icon || label.charAt(0) || "";
+          if (aggregated.has(key)) {
+            aggregated.get(key).count += normalizedCount;
+          } else {
+            aggregated.set(key, { icon, count: normalizedCount, label });
+          }
+        };
+
+        const parseToken = (token) => {
+          if (token === null || token === undefined) {
+            return;
+          }
+          const text = String(token).trim();
+          if (!text) {
+            return;
+          }
+          const normalizedText = text.replace(/\s+/g, " ");
+
+          const separators = ["×", "x", "X", "*", ":", "="];
+          for (const separator of separators) {
+            if (normalizedText.includes(separator)) {
+              const parts = normalizedText.split(separator);
+              if (parts.length >= 2) {
+                const rawId = parts[0].trim();
+                const rawCount = parts.slice(1).join(separator).trim();
+                if (rawId) {
+                  const digitsOnly = rawCount.match(/^\d+$/);
+                  if (digitsOnly) {
+                    addUpgrade(rawId, digitsOnly[0]);
+                    return;
+                  }
+                }
+              }
+            }
+          }
+
+          const pairPattern = /([A-Za-z0-9_-]+)\s*(?:×|x|X|\*|:|=)?\s*(\d+)/g;
+          let pairMatched = false;
+          let match;
+          while ((match = pairPattern.exec(normalizedText)) !== null) {
+            pairMatched = true;
+            const [, idPart, countPart] = match;
+            if (idPart) {
+              addUpgrade(idPart, countPart);
+            }
+          }
+          if (pairMatched) {
+            return;
+          }
+
+          const whitespaceParts = normalizedText.split(" ");
+          if (
+            whitespaceParts.length === 2 &&
+            /^\d+$/.test(whitespaceParts[1].trim())
+          ) {
+            addUpgrade(whitespaceParts[0], whitespaceParts[1]);
+            return;
+          }
+
+          addUpgrade(normalizedText, 1);
+        };
+
+        const processValue = (value) => {
+          if (value === null || value === undefined) {
+            return;
+          }
+          if (Array.isArray(value)) {
+            if (
+              value.length === 2 &&
+              typeof value[0] === "string" &&
+              (typeof value[1] === "number" || typeof value[1] === "string")
+            ) {
+              addUpgrade(value[0], value[1]);
+              return;
+            }
+            value.forEach((entry) => {
+              if (
+                Array.isArray(entry) &&
+                entry.length === 2 &&
+                typeof entry[0] === "string"
+              ) {
+                addUpgrade(entry[0], entry[1]);
+              } else {
+                processValue(entry);
+              }
+            });
+            return;
+          }
+          if (typeof value === "object") {
+            const candidateId =
+              value.id ||
+              value.key ||
+              value.name ||
+              value.type ||
+              value.code ||
+              value.slug ||
+              value.upgrade ||
+              value.upgradeId ||
+              value.icon ||
+              value.label;
+            if (candidateId) {
+              const count =
+                value.count ||
+                value.value ||
+                value.amount ||
+                value.qty ||
+                value.quantity ||
+                value.num ||
+                value.times ||
+                value.n ||
+                value.level ||
+                value.rank ||
+                1;
+              addUpgrade(candidateId, count);
+              return;
+            }
+            Object.entries(value).forEach(([key, val]) => {
+              if (val === null || val === undefined || val === "") {
+                return;
+              }
+              if (typeof val === "number" || typeof val === "string") {
+                addUpgrade(key, val);
+                return;
+              }
+              if (Array.isArray(val)) {
+                if (
+                  val.length === 2 &&
+                  typeof val[0] === "string" &&
+                  (typeof val[1] === "number" || typeof val[1] === "string")
+                ) {
+                  addUpgrade(val[0], val[1]);
+                  return;
+                }
+                processValue(val);
+                return;
+              }
+              if (typeof val === "object") {
+                processValue({ ...val, id: val.id || key });
+              }
+            });
+            return;
+          }
+          if (typeof value === "string") {
+            const trimmed = value.trim();
+            if (!trimmed) {
+              return;
+            }
+            if (/^[\[{]/.test(trimmed)) {
+              try {
+                const parsed = JSON.parse(trimmed);
+                processValue(parsed);
+                return;
+              } catch (_error) {
+                // Ignore JSON parse errors and fall back to token parsing
+              }
+            }
+            if (trimmed.includes("|")) {
+              trimmed.split("|").forEach((token) => parseToken(token));
+              return;
+            }
+            if (trimmed.includes(",")) {
+              trimmed.split(",").forEach((token) => parseToken(token));
+              return;
+            }
+            parseToken(trimmed);
+          }
+        };
+
+        processValue(rawValue);
+        return Array.from(aggregated.values());
+      };
+
+      const buildRankingUpgradesElement = (rawValue) => {
+        const upgrades = normalizeRankingUpgrades(rawValue);
+        if (!upgrades.length) {
+          return null;
+        }
+        const container = document.createElement("div");
+        container.className = "ranking-upgrades";
+        const tooltip = upgrades
+          .map(
+            (upgrade) =>
+              `${upgrade.label}${upgrade.count > 1 ? ` ×${upgrade.count}` : ""}`,
+          )
+          .join(", ");
+        if (tooltip) {
+          container.title = tooltip;
+        }
+        upgrades.forEach((upgrade) => {
+          const badge = document.createElement("span");
+          badge.className = "ranking-upgrade-icon";
+          badge.textContent = `${upgrade.icon}${
+            upgrade.count > 1 ? `×${upgrade.count}` : ""
+          }`;
+          badge.setAttribute(
+            "aria-label",
+            `${upgrade.label}${upgrade.count > 1 ? ` ${upgrade.count}회` : ""}`,
+          );
+          container.appendChild(badge);
+        });
+        return container;
+      };
+
       function showRankingScreen() {
-        const headerHTML = RANKING_COLUMNS.map((column) =>
-          `<th>${column.header}</th>`
-        ).join("");
+        const headerHTML = RANKING_COLUMNS.map((column) => {
+          const className = column.headerClass
+            ? ` class="${column.headerClass}"`
+            : "";
+          return `<th${className}>${column.header}</th>`;
+        }).join("");
         overlay.innerHTML = `
         <div class="panel ranking-panel">
           <h1>랭킹</h1>
@@ -3874,7 +4178,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
         }
 
         const formatRankingValue = (value) => {
-          if (value === null || value === undefined || value === "") {
+          if (value === null || value === undefined) {
             return "-";
           }
           if (Array.isArray(value)) {
@@ -3882,6 +4186,13 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
           }
           if (typeof value === "number") {
             return value.toLocaleString("ko-KR");
+          }
+          if (typeof value === "string") {
+            const trimmed = value.trim();
+            if (!trimmed || trimmed === "[]" || trimmed === "{}") {
+              return "-";
+            }
+            return trimmed;
           }
           return String(value);
         };
@@ -3916,12 +4227,31 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
             }
 
             rankingTableBody.innerHTML = "";
-            validRows.forEach((row) => {
+            validRows.forEach((row, rowIndex) => {
               const tr = document.createElement("tr");
               RANKING_COLUMNS.forEach((column) => {
                 const td = document.createElement("td");
-                const value = column.index < row.length ? row[column.index] : undefined;
-                td.textContent = formatRankingValue(value);
+                if (column.cellClass) {
+                  td.classList.add(column.cellClass);
+                }
+                const hasIndex = typeof column.index === "number";
+                const value =
+                  hasIndex && column.index < row.length
+                    ? row[column.index]
+                    : undefined;
+                const rendered =
+                  typeof column.render === "function"
+                    ? column.render(value, row, rowIndex)
+                    : value;
+                if (rendered instanceof Node) {
+                  td.appendChild(rendered);
+                } else {
+                  const fallbackValue =
+                    rendered === null || rendered === undefined
+                      ? value
+                      : rendered;
+                  td.textContent = formatRankingValue(fallbackValue);
+                }
                 tr.appendChild(td);
               });
               rankingTableBody.appendChild(tr);
