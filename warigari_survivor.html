@@ -2136,6 +2136,12 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
           if (running && !levelupActive) {
             queueBossOrb();
           }
+        } else if (e.code === "Digit0") {
+          e.preventDefault();
+          if (running && hp > 0 && !player.deathAnim.active) {
+            hp = 0;
+            gameOver();
+          }
         }
       });
       window.addEventListener("keyup", (e) => {
