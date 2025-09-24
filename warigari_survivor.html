@@ -116,6 +116,60 @@
       max-width: calc(760px * var(--ui-scale));
     }
 
+    .ranking-table-container {
+      border: 1px solid #1c2452;
+      border-radius: calc(12px * var(--ui-scale));
+      overflow: auto;
+      max-height: calc(360px * var(--ui-scale));
+      background: rgba(8, 12, 32, 0.65);
+    }
+
+    .ranking-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: calc(14px * var(--ui-scale));
+    }
+
+    .ranking-table th,
+    .ranking-table td {
+      padding: calc(8px * var(--ui-scale)) calc(10px * var(--ui-scale));
+      border-bottom: 1px solid #1c2452;
+      text-align: center;
+      white-space: nowrap;
+    }
+
+    .ranking-table th {
+      background: #141a3a;
+      color: #9fb3ff;
+      font-weight: 700;
+      letter-spacing: calc(0.5px * var(--ui-scale));
+    }
+
+    .ranking-table tbody tr:nth-child(odd) {
+      background: rgba(17, 22, 49, 0.6);
+    }
+
+    .ranking-table tbody tr:nth-child(even) {
+      background: rgba(12, 16, 38, 0.6);
+    }
+
+    .ranking-table td {
+      color: #e4e9ff;
+    }
+
+    .ranking-table .col-name {
+      text-align: left;
+      max-width: calc(160px * var(--ui-scale));
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .ranking-table-placeholder {
+      padding: calc(24px * var(--ui-scale));
+      text-align: center;
+      color: #9fa8d8;
+    }
+
     .panel h1 {
       margin: 0 0 calc(8px * var(--ui-scale));
       font-weight: 800;
@@ -651,6 +705,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
   <script>
     (() => {
       const GAME_VERSION = "V25.09.24.01";
+      const RANKING_API_URL = "https://script.google.com/macros/s/AKfycbzUjrfjVekxS7TV4hxSFoljwbZ-hKyXnG93J2roTyidNrsBRHOb-lboPMsk1BYzv88b/exec";
       const versionLabelEl = document.getElementById("versionLabel");
       if (versionLabelEl) {
         versionLabelEl.textContent = GAME_VERSION;
@@ -3779,7 +3834,29 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
       function showRankingScreen() {
         overlay.innerHTML = `
         <div class="panel ranking-panel">
-          <h1>게임 다시 하기</h1>
+          <h1>랭킹</h1>
+          <div class="ranking-table-container">
+            <table class="ranking-table">
+              <thead>
+                <tr>
+                  <th>RANK</th>
+                  <th>NAME</th>
+                  <th>WAVE</th>
+                  <th>WEAPON</th>
+                  <th>SCORE</th>
+                  <th>TIME</th>
+                  <th>LEVEL</th>
+                  <th>UPGRADES</th>
+                  <th>DATE</th>
+                </tr>
+              </thead>
+              <tbody id="rankingTableBody">
+                <tr>
+                  <td class="ranking-table-placeholder" colspan="9">랭킹 데이터를 불러오는 중...</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
           <div class="row" id="rankingActions">
             <button id="btnRankingRestart">다시 하기<br>(SPACE)</button>
           </div>
@@ -3803,6 +3880,8 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
         levelupActive = true;
         updatePauseButton();
 
+        loadRankingData();
+
         if (btnRankingRestart) {
           btnRankingRestart.addEventListener("mouseenter", () => {
             if (focusedOptionIndex !== 0) {
@@ -3822,6 +3901,129 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
             showWeaponSelectScreen();
           };
         }
+      }
+
+      async function loadRankingData() {
+        const tableBody = document.getElementById("rankingTableBody");
+        if (!tableBody) return;
+
+        tableBody.innerHTML = `
+          <tr>
+            <td class="ranking-table-placeholder" colspan="9">랭킹 데이터를 불러오는 중...</td>
+          </tr>
+        `;
+
+        try {
+          const response = await fetch(RANKING_API_URL, { cache: "no-store" });
+          if (!response.ok) {
+            throw new Error(`Failed to load: ${response.status}`);
+          }
+
+          const data = await response.json();
+
+          if (!Array.isArray(data) || data.length === 0) {
+            tableBody.innerHTML = `
+              <tr>
+                <td class="ranking-table-placeholder" colspan="9">등록된 랭킹 데이터가 없습니다.</td>
+              </tr>
+            `;
+            return;
+          }
+
+          tableBody.innerHTML = "";
+          data.forEach(entry => {
+            const row = document.createElement("tr");
+            appendRankingCell(row, formatRankingValue(entry.rank));
+            appendRankingCell(row, formatRankingValue(entry.name), "col-name");
+            appendRankingCell(row, formatRankingValue(entry.wave));
+            appendRankingCell(row, formatRankingValue(entry.weapon));
+            appendRankingCell(row, formatRankingNumber(entry.score));
+            appendRankingCell(row, formatRankingValue(entry.time));
+            appendRankingCell(row, formatRankingValue(entry.level));
+            appendRankingCell(row, formatRankingValue(entry.upgrades));
+            appendRankingCell(row, formatRankingDate(entry.regdate));
+            tableBody.appendChild(row);
+          });
+        } catch (error) {
+          console.error(error);
+          tableBody.innerHTML = `
+            <tr>
+              <td class="ranking-table-placeholder" colspan="9">랭킹을 불러오지 못했습니다.</td>
+            </tr>
+          `;
+        }
+      }
+
+      function appendRankingCell(row, value, className) {
+        const cell = document.createElement("td");
+        if (className) {
+          cell.classList.add(className);
+        }
+        cell.textContent = value;
+        row.appendChild(cell);
+      }
+
+      function formatRankingValue(value) {
+        if (value === null || value === undefined) return "-";
+        const str = String(value).trim();
+        return str.length > 0 ? str : "-";
+      }
+
+      function formatRankingNumber(value) {
+        const num = Number(value);
+        if (!Number.isNaN(num)) {
+          return num.toLocaleString();
+        }
+        return formatRankingValue(value);
+      }
+
+      function formatRankingDate(regdate) {
+        if (regdate === null || regdate === undefined) return "-";
+        const str = String(regdate).trim();
+        if (!str) return "-";
+
+        const match = str.match(/(\d{2,4})[./-](\d{1,2})[./-](\d{1,2})/);
+        if (match) {
+          let [, year, month, day] = match;
+          if (year.length === 4) {
+            year = year.slice(2);
+          } else if (year.length > 2) {
+            year = year.slice(-2);
+          }
+          month = month.padStart(2, "0");
+          day = day.padStart(2, "0");
+          return `${year}.${month}.${day}`;
+        }
+
+        const numeric = Number(str);
+        if (!Number.isNaN(numeric)) {
+          if (numeric > 1e12) {
+            return formatDateFromTimestamp(numeric);
+          }
+          if (numeric > 1e9) {
+            return formatDateFromTimestamp(numeric * 1000);
+          }
+          if (numeric > 1000) {
+            const excelEpoch = Date.UTC(1899, 11, 30);
+            return formatDateFromTimestamp(excelEpoch + numeric * 86400000);
+          }
+        }
+
+        const parsed = new Date(str);
+        if (!Number.isNaN(parsed.getTime())) {
+          return formatDateFromTimestamp(parsed.getTime());
+        }
+
+        return str;
+      }
+
+      function formatDateFromTimestamp(timestamp) {
+        const date = new Date(timestamp);
+        if (Number.isNaN(date.getTime())) return "-";
+        const year = String(date.getFullYear()).slice(-2);
+        const month = String(date.getMonth() + 1).padStart(2, "0");
+        const day = String(date.getDate()).padStart(2, "0");
+        return `${year}.${month}.${day}`;
       }
 
       // --- 업데이트 ---
