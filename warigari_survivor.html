@@ -156,6 +156,11 @@
       filter: brightness(1.05);
     }
 
+    button.focused {
+      outline: calc(3px * var(--ui-scale)) solid #fff;
+      outline-offset: calc(-3px * var(--ui-scale));
+    }
+
     .hud {
       position: absolute;
       left: calc(12px * var(--ui-scale));
@@ -3672,8 +3677,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
 
       function showGameOverScreen(stats) {
         updatePauseButton();
-        const { icon, name } = getWeaponDisplay(stats.weapon);
-        //const weaponLabel = `${icon ? `${icon} ` : ""}${name}`.trim();
+        const { icon } = getWeaponDisplay(stats.weapon);
         const weaponLabel = `${icon ? `${icon} ` : ""}`.trim();
         const levelLabel =
           stats.level !== undefined && stats.level !== null
@@ -3691,19 +3695,101 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
           <p>Lv: <b>${levelLabel}</b></p>
           <p>TIME: <b>${stats.time}</b></p>
           ${upgradeSectionHTML}
-          <div class="row"><button id="btnRestart">다시 하기<br>(SPACE)</button></div>
+          <div class="row" id="gameoverActions">
+            <button id="btnRestart">다시 하기<br>(SPACE)</button>
+            <button id="btnShowRanking">순위 확인<br>(SPACE)</button>
+          </div>
+          <div class="hold-gauge">
+            <div class="fill" id="gameoverHoldGaugeFill"></div>
+          </div>
         </div>`;
         overlay.style.display = "flex";
+
         const btnRestart = document.getElementById("btnRestart");
-        btnRestart.onclick = () => {
-          audio.resume();
-          audio.play("uiSelect");
-          overlay.style.display = "none";
-          showWeaponSelectScreen();
-        };
-        btnRestart.addEventListener("mouseenter", () => {
-          audio.play("uiFocus");
+        const btnShowRanking = document.getElementById("btnShowRanking");
+        const actionButtons = [btnRestart, btnShowRanking].filter(Boolean);
+
+        selectionButtons = actionButtons;
+        focusedOptionIndex = 0;
+        holdGaugeFill = document.getElementById("gameoverHoldGaugeFill");
+        highlightFocusedOption();
+        holdGaugeFill.style.width = "0%";
+        levelupActive = true;
+        updatePauseButton();
+
+        actionButtons.forEach((btn, index) => {
+          btn.addEventListener("mouseenter", () => {
+            if (focusedOptionIndex !== index) {
+              focusedOptionIndex = index;
+              highlightFocusedOption();
+              audio.play("uiFocus");
+            }
+          });
         });
+
+        if (btnRestart) {
+          btnRestart.onclick = () => {
+            endHold(false);
+            audio.resume();
+            audio.play("uiSelect");
+            overlay.style.display = "none";
+            levelupActive = false;
+            updatePauseButton();
+            showWeaponSelectScreen();
+          };
+        }
+
+        if (btnShowRanking) {
+          btnShowRanking.onclick = () => {
+            endHold(false);
+            audio.resume();
+            audio.play("uiSelect");
+            levelupActive = false;
+            showRankingScreen();
+          };
+        }
+      }
+
+      function showRankingScreen() {
+        overlay.innerHTML = `
+        <div class="panel">
+          <div class="row" id="rankingActions">
+            <button id="btnRankingRestart">다시 하기<br>(SPACE)</button>
+          </div>
+          <div class="hold-gauge">
+            <div class="fill" id="rankingHoldGaugeFill"></div>
+          </div>
+        </div>`;
+        overlay.style.display = "flex";
+
+        const btnRankingRestart = document.getElementById("btnRankingRestart");
+        selectionButtons = btnRankingRestart ? [btnRankingRestart] : [];
+        focusedOptionIndex = 0;
+        holdGaugeFill = document.getElementById("rankingHoldGaugeFill");
+        highlightFocusedOption();
+        holdGaugeFill.style.width = "0%";
+        levelupActive = true;
+        updatePauseButton();
+
+        if (btnRankingRestart) {
+          btnRankingRestart.addEventListener("mouseenter", () => {
+            if (focusedOptionIndex !== 0) {
+              focusedOptionIndex = 0;
+              highlightFocusedOption();
+              audio.play("uiFocus");
+            }
+          });
+
+          btnRankingRestart.onclick = () => {
+            endHold(false);
+            audio.resume();
+            audio.play("uiSelect");
+            overlay.style.display = "none";
+            levelupActive = false;
+            updatePauseButton();
+            showWeaponSelectScreen();
+          };
+        }
       }
 
       // --- 업데이트 ---
