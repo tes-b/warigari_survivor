@@ -196,23 +196,25 @@
     }
 
     .ranking-upgrades {
-      display: flex;
-      flex-wrap: wrap;
-      gap: calc(4px * var(--ui-scale));
+      display: grid;
+      grid-template-columns: repeat(4, minmax(calc(18px * var(--ui-scale)), 1fr));
+      gap: calc(3px * var(--ui-scale));
       align-items: center;
+      justify-items: center;
     }
 
     .ranking-upgrade-icon {
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      padding: calc(2px * var(--ui-scale)) calc(4px * var(--ui-scale));
+      padding: calc(2px * var(--ui-scale));
       border-radius: calc(6px * var(--ui-scale));
       border: 1px solid #2b356e;
       background: rgba(14, 19, 48, 0.85);
-      font-size: calc(12px * var(--ui-scale));
-      line-height: 1.1;
-      min-width: calc(20px * var(--ui-scale));
+      font-size: calc(10px * var(--ui-scale));
+      line-height: 1;
+      min-width: calc(18px * var(--ui-scale));
+      min-height: calc(18px * var(--ui-scale));
     }
 
     .kbd {
@@ -744,6 +746,60 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
 
       const RANKING_API_URL =
         "https://script.google.com/macros/s/AKfycbxtgg1ITzAtiOwmiHFkrl1nXTU4LqMQVRR2w_9ki7sf0-rQXftJCwR_uzwoBSZCF49Q/exec";
+
+      const formatRankingDateParts = (date) => {
+        if (!(date instanceof Date) || Number.isNaN(date.getTime())) {
+          return null;
+        }
+        const year = `${date.getFullYear()}`.slice(-2);
+        const month = `${date.getMonth() + 1}`.padStart(2, "0");
+        const day = `${date.getDate()}`.padStart(2, "0");
+        return `${year}.${month}.${day}`;
+      };
+
+      const formatRankingDateValue = (value) => {
+        if (value === null || value === undefined) {
+          return "-";
+        }
+
+        if (value instanceof Date) {
+          const formatted = formatRankingDateParts(value);
+          return formatted || "-";
+        }
+
+        const stringValue = String(value).trim();
+        if (!stringValue) {
+          return "-";
+        }
+
+        const directMatch = stringValue.match(/^([0-9]{4})[-/.]([0-9]{1,2})[-/.]([0-9]{1,2})/);
+        if (directMatch) {
+          const [, year, month, day] = directMatch;
+          return `${year.slice(-2)}.${month.padStart(2, "0")}.${day.padStart(2, "0")}`;
+        }
+
+        if (/^[0-9]{8}$/.test(stringValue)) {
+          const year = stringValue.slice(0, 4);
+          const month = stringValue.slice(4, 6).padStart(2, "0");
+          const day = stringValue.slice(6, 8).padStart(2, "0");
+          return `${year.slice(-2)}.${month}.${day}`;
+        }
+
+        if (/^[0-9]+$/.test(stringValue)) {
+          const numeric = Number(stringValue);
+          if (!Number.isNaN(numeric) && numeric > 0) {
+            const timestamp = stringValue.length > 10 ? numeric : numeric * 1000;
+            const formatted = formatRankingDateParts(new Date(timestamp));
+            if (formatted) {
+              return formatted;
+            }
+          }
+        }
+
+        const parsed = formatRankingDateParts(new Date(stringValue));
+        return parsed || stringValue;
+      };
+
       const RANKING_COLUMNS = [
         {
           header: "RANK",
@@ -764,7 +820,11 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
           cellClass: "upgrades-cell",
           render: (value) => buildRankingUpgradesElement(value),
         },
-        { header: "REGDATE", index: 7 },
+        {
+          header: "DATE",
+          index: 7,
+          render: (value) => formatRankingDateValue(value),
+        },
       ];
 
       // ========================================
