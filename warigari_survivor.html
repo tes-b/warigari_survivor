@@ -164,6 +164,11 @@
       text-overflow: ellipsis;
     }
 
+    .ranking-table .col-weapon {
+      font-size: calc(18px * var(--ui-scale));
+      line-height: 1;
+    }
+
     .ranking-table-placeholder {
       padding: calc(24px * var(--ui-scale));
       text-align: center;
@@ -3936,7 +3941,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
             appendRankingCell(row, formatRankingValue(entry.rank));
             appendRankingCell(row, formatRankingValue(entry.name), "col-name");
             appendRankingCell(row, formatRankingValue(entry.wave));
-            appendRankingCell(row, formatRankingValue(entry.weapon));
+            appendRankingWeaponCell(row, entry.weapon);
             appendRankingCell(row, formatRankingNumber(entry.score));
             appendRankingCell(row, formatRankingValue(entry.time));
             appendRankingCell(row, formatRankingValue(entry.level));
@@ -3960,6 +3965,23 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
           cell.classList.add(className);
         }
         cell.textContent = value;
+        row.appendChild(cell);
+      }
+
+      function appendRankingWeaponCell(row, weaponId) {
+        const cell = document.createElement("td");
+        cell.classList.add("col-weapon");
+        const display = getWeaponDisplay(weaponId);
+        if (display.icon) {
+          cell.textContent = display.icon;
+          if (display.name && display.name !== "-") {
+            cell.title = display.name;
+            cell.setAttribute("aria-label", display.name);
+            cell.setAttribute("role", "img");
+          }
+        } else {
+          cell.textContent = formatRankingValue(display.name);
+        }
         row.appendChild(cell);
       }
 
