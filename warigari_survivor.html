@@ -818,13 +818,35 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
           header: "RANK",
           headerClass: "rank-cell",
           cellClass: "rank-cell",
-          render: (_value, _row, rowIndex) => rowIndex + 1,
+          field: "rank",
+          render: (value, _row, rowIndex) => {
+            if (value !== null && value !== undefined && value !== "") {
+              if (typeof value === "number" && Number.isFinite(value)) {
+                return value;
+              }
+              if (typeof value === "string") {
+                const trimmed = value.trim();
+                if (trimmed) {
+                  const numeric = Number(trimmed);
+                  if (!Number.isNaN(numeric)) {
+                    return numeric;
+                  }
+                  const parsedInt = parseInt(trimmed, 10);
+                  if (!Number.isNaN(parsedInt)) {
+                    return parsedInt;
+                  }
+                  return trimmed;
+                }
+              }
+            }
+            return rowIndex + 1;
+          },
         },
-        { header: "NAME", index: 0 },
-        { header: "WAVE", index: 1 },
+        { header: "NAME", field: "name" },
+        { header: "WAVE", field: "wave" },
         {
           header: "WEAPON",
-          index: 2,
+          field: "weapon",
           headerClass: "weapon-cell",
           cellClass: "weapon-cell",
           render: (value) => {
@@ -847,19 +869,19 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
             return weapon;
           },
         },
-        { header: "SCORE", index: 3 },
-        { header: "TIME", index: 4 },
-        { header: "LEVEL", index: 5 },
+        { header: "SCORE", field: "score" },
+        { header: "TIME", field: "time" },
+        { header: "LEVEL", field: "level" },
         {
           header: "UPGRADES",
-          index: 6,
+          field: "upgrades",
           headerClass: "upgrades-cell",
           cellClass: "upgrades-cell",
           render: (value) => buildRankingUpgradesElement(value),
         },
         {
           header: "DATE",
-          index: 7,
+          field: "regdate",
           render: (value) => formatRankingDateValue(value),
         },
       ];
@@ -4327,7 +4349,12 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
               throw new Error("Invalid ranking payload");
             }
 
-            const validRows = rows.filter((row) => Array.isArray(row)).slice(0, 100);
+            const validRows = rows
+              .filter(
+                (row) =>
+                  row && typeof row === "object" && !Array.isArray(row),
+              )
+              .slice(0, 100);
             if (validRows.length === 0) {
               rankingStatus.hidden = false;
               rankingStatus.textContent = "랭킹 데이터가 없습니다.";
@@ -4344,11 +4371,10 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
                 if (column.cellClass) {
                   td.classList.add(column.cellClass);
                 }
-                const hasIndex = typeof column.index === "number";
-                const value =
-                  hasIndex && column.index < row.length
-                    ? row[column.index]
-                    : undefined;
+                let value;
+                if (typeof column.field === "string") {
+                  value = row ? row[column.field] : undefined;
+                }
                 const rendered =
                   typeof column.render === "function"
                     ? column.render(value, row, rowIndex)
