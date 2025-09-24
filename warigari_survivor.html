@@ -195,16 +195,16 @@
       gap: calc(3px * var(--ui-scale));
       padding: calc(4px * var(--ui-scale)) calc(6px * var(--ui-scale));
       line-height: 1;
-      min-width: calc(28px * var(--ui-scale));
+      min-width: calc(22px * var(--ui-scale));
     }
 
     .ranking-table .col-upgrades .ranking-upgrade-icon {
-      font-size: calc(16px * var(--ui-scale));
+      font-size: calc(10px * var(--ui-scale));
       line-height: 1;
     }
 
     .ranking-table .col-upgrades .ranking-upgrade-count {
-      font-size: calc(11px * var(--ui-scale));
+      font-size: calc(10px * var(--ui-scale));
       color: #cfd6ff;
       line-height: 1;
     }
@@ -4151,10 +4151,10 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
               ? parsedJSON.upgrades
               : typeof parsedJSON === "object"
                 ? Object.entries(parsedJSON).map(([id, value]) =>
-                    typeof value === "object" && value !== null
-                      ? { id, ...value }
-                      : { id, count: value },
-                  )
+                  typeof value === "object" && value !== null
+                    ? { id, ...value }
+                    : { id, count: value },
+                )
                 : [];
           return candidate
             .map((entry) => convertRankingUpgradeEntry(entry))
