@@ -231,13 +231,41 @@
       pointer-events: none;
     }
 
-    .upgrade-hud .upgrade-icon {
+    .upgrade-hud .upgrade-icon,
+    .gameover-upgrades .upgrade-icon {
       background: #0e1330aa;
       border: 1px solid #2b356e;
       padding: calc(6px * var(--ui-scale)) calc(8px * var(--ui-scale));
       border-radius: calc(10px * var(--ui-scale));
       font-size: calc(18px * var(--ui-scale));
       line-height: 1;
+    }
+
+    .gameover-upgrades-section {
+      margin-top: calc(18px * var(--ui-scale));
+      padding-top: calc(16px * var(--ui-scale));
+      border-top: 1px solid #2e3a7a;
+      text-align: center;
+    }
+
+    .gameover-upgrades-title {
+      margin: 0 0 calc(10px * var(--ui-scale));
+      font-size: calc(16px * var(--ui-scale));
+      font-weight: 700;
+      color: #e2e7ff;
+    }
+
+    .gameover-upgrades {
+      display: flex;
+      flex-wrap: wrap;
+      gap: calc(8px * var(--ui-scale));
+      justify-content: center;
+    }
+
+    .gameover-upgrades-empty {
+      margin: 0;
+      font-size: calc(14px * var(--ui-scale));
+      color: #b4bcf1;
     }
 
     .bottom-tip {
@@ -1252,6 +1280,9 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
       const UPGRADE_LIMITS = Object.fromEntries(
         UPGRADES.map((u) => [u.id, u.limit])
       );
+      const UPGRADE_MAP = Object.fromEntries(
+        UPGRADES.map((u) => [u.id, u])
+      );
 
       const acquiredUpgrades = {};
 
@@ -1259,13 +1290,19 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
         const hud = document.getElementById("upgradeHud");
         hud.innerHTML = "";
         for (const id in acquiredUpgrades) {
-          const up = UPGRADES.find((u) => u.id === id);
+          const up = UPGRADE_MAP[id];
           if (!up) continue;
           const div = document.createElement("div");
           div.className = "upgrade-icon";
           div.textContent = `${up.icon}×${acquiredUpgrades[id]}`;
           hud.appendChild(div);
         }
+      }
+
+      function getAcquiredUpgradesSnapshot() {
+        return Object.entries(acquiredUpgrades)
+          .filter(([, count]) => count > 0)
+          .map(([id, count]) => ({ id, count }));
       }
 
       function acquireUpgrade(upgrade) {
@@ -2488,6 +2525,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
             score,
             weapon: baseAttack,
             level,
+            upgrades: getAcquiredUpgradesSnapshot(),
           });
         }, 1000);
       }
@@ -3642,6 +3680,21 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
         );
       }
 
+      function buildGameOverUpgradeSection(upgradeList = []) {
+        const icons = upgradeList
+          .map(({ id, count }) => {
+            const up = UPGRADE_MAP[id];
+            if (!up || !count) return "";
+            return `<div class="upgrade-icon">${up.icon}×${count}</div>`;
+          })
+          .filter(Boolean);
+        const title = `<p class="gameover-upgrades-title">획득한 업그레이드</p>`;
+        if (icons.length === 0) {
+          return `<div class="gameover-upgrades-section">${title}<p class="gameover-upgrades-empty">획득한 업그레이드가 없습니다.</p></div>`;
+        }
+        return `<div class="gameover-upgrades-section">${title}<div class="gameover-upgrades">${icons.join("")}</div></div>`;
+      }
+
       function showGameOverScreen(stats) {
         updatePauseButton();
         const { icon, name } = getWeaponDisplay(stats.weapon);
@@ -3650,6 +3703,9 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
           stats.level !== undefined && stats.level !== null
             ? `Lv ${stats.level}`
             : "-";
+        const upgradeSectionHTML = buildGameOverUpgradeSection(
+          stats.upgrades || []
+        );
         overlay.innerHTML = `
         <div class="panel">
           <h1>🕊️ 전쟁이 끝났습니다 🕊️</h1>
@@ -3658,6 +3714,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
           <p>처치 수: <b>${stats.score}</b></p>
           <p>사용 무기: <b>${weaponLabel}</b></p>
           <p>최종 레벨: <b>${levelLabel}</b></p>
+          ${upgradeSectionHTML}
           <div class="row"><button id="btnRestart">다시 하기<br>(SPACE)</button></div>
         </div>`;
         overlay.style.display = "flex";
