@@ -190,6 +190,11 @@
       text-align: center;
     }
 
+    .ranking-table th.weapon-cell,
+    .ranking-table td.weapon-cell {
+      text-align: center;
+    }
+
     .ranking-table td.upgrades-cell,
     .ranking-table th.upgrades-cell {
       white-space: normal;
@@ -215,6 +220,14 @@
       line-height: 1;
       min-width: calc(18px * var(--ui-scale));
       min-height: calc(18px * var(--ui-scale));
+    }
+
+    .ranking-weapon {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: calc(18px * var(--ui-scale));
+      line-height: 1;
     }
 
     .kbd {
@@ -809,7 +822,31 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
         },
         { header: "NAME", index: 0 },
         { header: "WAVE", index: 1 },
-        { header: "WEAPON", index: 2 },
+        {
+          header: "WEAPON",
+          index: 2,
+          headerClass: "weapon-cell",
+          cellClass: "weapon-cell",
+          render: (value) => {
+            const display = getWeaponDisplay(value);
+            const weapon = document.createElement("span");
+            weapon.className = "ranking-weapon";
+            const icon = display.icon || "❔";
+            const fallbackLabel =
+              value === null || value === undefined
+                ? ""
+                : String(value).trim();
+            const label =
+              (display.name && display.name !== "-" && display.name) ||
+              fallbackLabel ||
+              "알 수 없음";
+            weapon.textContent = icon;
+            weapon.setAttribute("role", "img");
+            weapon.setAttribute("aria-label", label);
+            weapon.title = label;
+            return weapon;
+          },
+        },
         { header: "SCORE", index: 3 },
         { header: "TIME", index: 4 },
         { header: "LEVEL", index: 5 },
@@ -3831,12 +3868,25 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
       }
 
       function getWeaponDisplay(weaponId) {
-        return (
-          WEAPON_DISPLAY[weaponId] || {
-            icon: "",
-            name: weaponId || "-",
-          }
+        if (weaponId === null || weaponId === undefined) {
+          return { icon: "", name: "-" };
+        }
+        const rawId = String(weaponId).trim();
+        if (!rawId) {
+          return { icon: "", name: "-" };
+        }
+        const normalized = rawId.toLowerCase();
+        const directDisplay = WEAPON_DISPLAY[normalized] || WEAPON_DISPLAY[rawId];
+        if (directDisplay) {
+          return directDisplay;
+        }
+        const nameMatch = Object.values(WEAPON_DISPLAY).find(
+          (display) => display.name === rawId,
         );
+        if (nameMatch) {
+          return nameMatch;
+        }
+        return { icon: "", name: rawId };
       }
 
       function buildGameOverUpgradeSection(upgradeList = []) {
