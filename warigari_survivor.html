@@ -241,20 +241,6 @@
       line-height: 1;
     }
 
-    .gameover-upgrades-section {
-      margin-top: calc(18px * var(--ui-scale));
-      padding-top: calc(16px * var(--ui-scale));
-      border-top: 1px solid #2e3a7a;
-      text-align: center;
-    }
-
-    .gameover-upgrades-title {
-      margin: 0 0 calc(10px * var(--ui-scale));
-      font-size: calc(16px * var(--ui-scale));
-      font-weight: 700;
-      color: #e2e7ff;
-    }
-
     .gameover-upgrades {
       display: flex;
       flex-wrap: wrap;
@@ -3688,20 +3674,20 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
             return `<div class="upgrade-icon">${up.icon}×${count}</div>`;
           })
           .filter(Boolean);
-        const title = `<p class="gameover-upgrades-title">획득한 업그레이드</p>`;
         if (icons.length === 0) {
-          return `<div class="gameover-upgrades-section">${title}<p class="gameover-upgrades-empty">획득한 업그레이드가 없습니다.</p></div>`;
+          return ``;
         }
-        return `<div class="gameover-upgrades-section">${title}<div class="gameover-upgrades">${icons.join("")}</div></div>`;
+        return `<div class="gameover-upgrades">${icons.join("")}</div>`;
       }
 
       function showGameOverScreen(stats) {
         updatePauseButton();
         const { icon, name } = getWeaponDisplay(stats.weapon);
-        const weaponLabel = `${icon ? `${icon} ` : ""}${name}`.trim();
+        //const weaponLabel = `${icon ? `${icon} ` : ""}${name}`.trim();
+        const weaponLabel = `${icon ? `${icon} ` : ""}`.trim();
         const levelLabel =
           stats.level !== undefined && stats.level !== null
-            ? `Lv ${stats.level}`
+            ? `${stats.level}`
             : "-";
         const upgradeSectionHTML = buildGameOverUpgradeSection(
           stats.upgrades || []
@@ -3709,11 +3695,11 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
         overlay.innerHTML = `
         <div class="panel">
           <h1>🕊️ 전쟁이 끝났습니다 🕊️</h1>
-          <p>웨이브: <b>${stats.wave}</b></p>
-          <p>생존 시간: <b>${stats.time}</b></p>
-          <p>처치 수: <b>${stats.score}</b></p>
-          <p>사용 무기: <b>${weaponLabel}</b></p>
-          <p>최종 레벨: <b>${levelLabel}</b></p>
+          <p><b>${weaponLabel}</b></p>
+          <p>WAVE: <b>${stats.wave}</b></p>
+          <p>SCORE: <b>${stats.score}</b></p>
+          <p>Lv: <b>${levelLabel}</b></p>
+          <p>TIME: <b>${stats.time}</b></p>
           ${upgradeSectionHTML}
           <div class="row"><button id="btnRestart">다시 하기<br>(SPACE)</button></div>
         </div>`;
