@@ -4089,6 +4089,33 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
         row.appendChild(cell);
       }
 
+      function stripRankingCurlyBraces(value) {
+        if (value === null || value === undefined) {
+          return "";
+        }
+        let result = String(value).trim();
+        if (!result) {
+          return "";
+        }
+
+        while (
+          result.length > 1 &&
+          result.startsWith("{") &&
+          result.endsWith("}")
+        ) {
+          const inner = result.slice(1, -1).trim();
+          if (!inner) {
+            return inner;
+          }
+          if (tryParseRankingJSON(inner)) {
+            return inner;
+          }
+          result = inner;
+        }
+
+        return result;
+      }
+
       function normalizeRankingUpgrades(rawValue) {
         if (rawValue === null || rawValue === undefined) {
           return [];
@@ -4113,7 +4140,8 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
           .replace(/&quot;/g, "\"")
           .replace(/&#34;/g, "\"")
           .replace(/&apos;/g, "'")
-          .replace(/&#39;/g, "'");
+          .replace(/&#39;/g, "'")
+          .trim();
 
         const parsedJSON = tryParseRankingJSON(sanitized);
         if (parsedJSON) {
@@ -4133,14 +4161,16 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
             .filter(Boolean);
         }
 
-        const tokens = sanitized
+        const tokenSource = stripRankingCurlyBraces(sanitized);
+
+        const tokens = tokenSource
           .split(/[|;,]/)
           .map((token) => token.trim())
           .filter(Boolean);
 
         if (tokens.length === 0) {
           const single = convertRankingUpgradeEntry(
-            parseStringRankingUpgradeToken(sanitized),
+            parseStringRankingUpgradeToken(tokenSource),
           );
           return single ? [single] : [];
         }
