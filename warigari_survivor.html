@@ -109,6 +109,13 @@
         inset 0 0 60px rgba(49, 86, 212, 0.08);
     }
 
+    .panel.ranking-panel {
+      display: flex;
+      flex-direction: column;
+      gap: calc(12px * var(--ui-scale));
+      max-width: calc(760px * var(--ui-scale));
+    }
+
     .panel h1 {
       margin: 0 0 calc(8px * var(--ui-scale));
       font-weight: 800;
@@ -120,6 +127,60 @@
       margin: calc(6px * var(--ui-scale)) 0;
       line-height: 1.5;
       color: #cfd6ff;
+    }
+
+    .ranking-status {
+      margin: 0;
+      font-size: calc(14px * var(--ui-scale));
+      color: #cfd6ff;
+    }
+
+    .ranking-table-wrapper {
+      border: 1px solid #2e3a7a;
+      border-radius: calc(12px * var(--ui-scale));
+      background: rgba(14, 19, 48, 0.9);
+      max-height: calc(360px * var(--ui-scale));
+      overflow: hidden;
+      overflow-y: auto;
+    }
+
+    .ranking-table-wrapper[hidden] {
+      display: none;
+    }
+
+    .ranking-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: calc(13px * var(--ui-scale));
+      min-width: 100%;
+    }
+
+    .ranking-table thead th {
+      background: #1c2246;
+      font-weight: 700;
+      position: sticky;
+      top: 0;
+      z-index: 1;
+    }
+
+    .ranking-table th,
+    .ranking-table td {
+      padding: calc(8px * var(--ui-scale)) calc(10px * var(--ui-scale));
+      text-align: left;
+      border-bottom: 1px solid #1b2040;
+      white-space: nowrap;
+    }
+
+    .ranking-table tbody tr:nth-child(odd) {
+      background: rgba(28, 34, 70, 0.35);
+    }
+
+    .ranking-table tbody tr:hover {
+      background: rgba(82, 107, 199, 0.35);
+    }
+
+    .ranking-table td {
+      font-weight: 500;
     }
 
     .kbd {
@@ -648,6 +709,19 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
       if (versionLabelEl) {
         versionLabelEl.textContent = GAME_VERSION;
       }
+
+      const RANKING_API_URL =
+        "https://script.google.com/macros/s/AKfycbxtgg1ITzAtiOwmiHFkrl1nXTU4LqMQVRR2w_9ki7sf0-rQXftJCwR_uzwoBSZCF49Q/exec";
+      const RANKING_COLUMNS = [
+        { header: "NAME", index: 0 },
+        { header: "WAVE", index: 1 },
+        { header: "WEAPON", index: 2 },
+        { header: "SCORE", index: 3 },
+        { header: "TIME", index: 4 },
+        { header: "LEVEL", index: 5 },
+        { header: "UPGRADES", index: 6 },
+        { header: "REGDATE", index: 7 },
+      ];
 
       // ========================================
       // 게임 밸런스 변수 (수정 편의성을 위해 상단 집중 배치)
@@ -3751,8 +3825,21 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
       }
 
       function showRankingScreen() {
+        const headerHTML = RANKING_COLUMNS.map((column) =>
+          `<th>${column.header}</th>`
+        ).join("");
         overlay.innerHTML = `
-        <div class="panel">
+        <div class="panel ranking-panel">
+          <h1>랭킹</h1>
+          <p class="ranking-status" id="rankingStatus">랭킹을 불러오는 중...</p>
+          <div class="ranking-table-wrapper" id="rankingTableWrapper" hidden>
+            <table class="ranking-table">
+              <thead>
+                <tr>${headerHTML}</tr>
+              </thead>
+              <tbody id="rankingTableBody"></tbody>
+            </table>
+          </div>
           <div class="row" id="rankingActions">
             <button id="btnRankingRestart">다시 하기<br>(SPACE)</button>
           </div>
@@ -3763,6 +3850,10 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
         overlay.style.display = "flex";
 
         const btnRankingRestart = document.getElementById("btnRankingRestart");
+        const rankingStatus = document.getElementById("rankingStatus");
+        const rankingTableWrapper = document.getElementById("rankingTableWrapper");
+        const rankingTableBody = document.getElementById("rankingTableBody");
+
         selectionButtons = btnRankingRestart ? [btnRankingRestart] : [];
         focusedOptionIndex = 0;
         holdGaugeFill = document.getElementById("rankingHoldGaugeFill");
@@ -3770,6 +3861,88 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
         holdGaugeFill.style.width = "0%";
         levelupActive = true;
         updatePauseButton();
+
+        if (rankingStatus) {
+          rankingStatus.hidden = false;
+          rankingStatus.textContent = "랭킹을 불러오는 중...";
+        }
+        if (rankingTableWrapper) {
+          rankingTableWrapper.hidden = true;
+        }
+        if (rankingTableBody) {
+          rankingTableBody.innerHTML = "";
+        }
+
+        const formatRankingValue = (value) => {
+          if (value === null || value === undefined || value === "") {
+            return "-";
+          }
+          if (Array.isArray(value)) {
+            return value.join(", ");
+          }
+          if (typeof value === "number") {
+            return value.toLocaleString("ko-KR");
+          }
+          return String(value);
+        };
+
+        fetch(RANKING_API_URL, { cache: "no-store" })
+          .then((response) => {
+            if (!response.ok) {
+              throw new Error(`HTTP ${response.status}`);
+            }
+            return response.json();
+          })
+          .then((rows) => {
+            if (
+              !rankingStatus ||
+              !rankingTableWrapper ||
+              !rankingTableBody ||
+              !overlay.contains(rankingStatus)
+            ) {
+              return;
+            }
+            if (!Array.isArray(rows)) {
+              throw new Error("Invalid ranking payload");
+            }
+
+            const validRows = rows.filter((row) => Array.isArray(row)).slice(0, 100);
+            if (validRows.length === 0) {
+              rankingStatus.hidden = false;
+              rankingStatus.textContent = "랭킹 데이터가 없습니다.";
+              rankingTableWrapper.hidden = true;
+              rankingTableBody.innerHTML = "";
+              return;
+            }
+
+            rankingTableBody.innerHTML = "";
+            validRows.forEach((row) => {
+              const tr = document.createElement("tr");
+              RANKING_COLUMNS.forEach((column) => {
+                const td = document.createElement("td");
+                const value = column.index < row.length ? row[column.index] : undefined;
+                td.textContent = formatRankingValue(value);
+                tr.appendChild(td);
+              });
+              rankingTableBody.appendChild(tr);
+            });
+
+            rankingStatus.hidden = true;
+            rankingTableWrapper.hidden = false;
+          })
+          .catch((error) => {
+            console.error("Failed to fetch ranking", error);
+            if (
+              !rankingStatus ||
+              !rankingTableWrapper ||
+              !overlay.contains(rankingStatus)
+            ) {
+              return;
+            }
+            rankingStatus.hidden = false;
+            rankingStatus.textContent = "랭킹을 불러오지 못했습니다.";
+            rankingTableWrapper.hidden = true;
+          });
 
         if (btnRankingRestart) {
           btnRankingRestart.addEventListener("mouseenter", () => {
