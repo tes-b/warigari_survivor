@@ -116,6 +116,15 @@
       max-width: calc(760px * var(--ui-scale));
     }
 
+    .player-rank-info {
+      margin: 0;
+      font-size: calc(16px * var(--ui-scale));
+      color: #ffd86b;
+      font-weight: 600;
+      text-align: center;
+      min-height: calc(22px * var(--ui-scale));
+    }
+
     .ranking-table-container {
       border: 1px solid #1c2452;
       border-radius: calc(12px * var(--ui-scale));
@@ -2007,6 +2016,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
       let hp = playerHP;
       let exp = 0; // 현재 경험치
       let level = 1; // 현재 레벨
+      let lastGameStats = null; // 게임 종료 시 기록된 최종 스탯
 
       const HOLD_DURATION = 800;
       let levelupActive = false;
@@ -2630,14 +2640,19 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
         setTimeout(() => {
           running = false;
           updatePauseButton();
-          showGameOverScreen({
+          const minutes = Math.floor(elapsed / 60);
+          const secondsLabel = (elapsed % 60).toFixed(2).padStart(5, "0");
+          const finalStats = {
             wave: getWaveLabel(),
-            time: `${Math.floor(elapsed / 60)}분 ${(elapsed % 60).toFixed(2).padStart(5, "0")}초`,
+            time: `${minutes}분 ${secondsLabel}초`,
+            timeSeconds: elapsed,
             score,
             weapon: baseAttack,
             level,
             upgrades: getAcquiredUpgradesSnapshot(),
-          });
+          };
+          lastGameStats = finalStats;
+          showGameOverScreen(finalStats);
         }, 1000);
       }
 
@@ -3890,9 +3905,13 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
       }
 
       function showRankingScreen() {
+        const playerRankMessage = lastGameStats
+          ? "내 기록 순위를 계산 중..."
+          : "플레이 기록이 없습니다.";
         overlay.innerHTML = `
         <div class="panel ranking-panel">
           <h1>랭킹</h1>
+          <p class="player-rank-info" id="playerRankInfo">${playerRankMessage}</p>
           <div class="ranking-table-container">
             <table class="ranking-table">
               <thead>
@@ -3938,7 +3957,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
         levelupActive = true;
         updatePauseButton();
 
-        loadRankingData();
+        loadRankingData(lastGameStats);
 
         if (btnRankingRestart) {
           btnRankingRestart.addEventListener("mouseenter", () => {
@@ -3961,7 +3980,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
         }
       }
 
-      async function loadRankingData() {
+      async function loadRankingData(playerStats = null) {
         const tableBody = document.getElementById("rankingTableBody");
         if (!tableBody) return;
 
@@ -3985,6 +4004,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
                 <td class="ranking-table-placeholder" colspan="9">등록된 랭킹 데이터가 없습니다.</td>
               </tr>
             `;
+            updatePlayerRankInfo(playerStats, []);
             return;
           }
 
@@ -4002,6 +4022,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
             appendRankingCell(row, formatRankingDate(entry.regdate));
             tableBody.appendChild(row);
           });
+          updatePlayerRankInfo(playerStats, data);
         } catch (error) {
           console.error(error);
           tableBody.innerHTML = `
@@ -4009,7 +4030,238 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
               <td class="ranking-table-placeholder" colspan="9">랭킹을 불러오지 못했습니다.</td>
             </tr>
           `;
+          updatePlayerRankInfo(playerStats, null);
         }
+      }
+
+      function setPlayerRankInfoMessage(message) {
+        const infoEl = document.getElementById("playerRankInfo");
+        if (!infoEl) return;
+        infoEl.textContent = message;
+      }
+
+      function updatePlayerRankInfo(playerStats, rankingData) {
+        if (!Array.isArray(rankingData)) {
+          setPlayerRankInfoMessage(
+            playerStats
+              ? "랭킹 데이터를 불러올 수 없어 순위를 확인할 수 없습니다."
+              : "랭킹 데이터를 불러올 수 없습니다.",
+          );
+          return;
+        }
+
+        if (!playerStats) {
+          setPlayerRankInfoMessage("플레이 기록이 없습니다.");
+          return;
+        }
+
+        if (rankingData.length === 0) {
+          setPlayerRankInfoMessage("랭킹 데이터가 없어 순위를 확인할 수 없습니다.");
+          return;
+        }
+
+        const result = calculatePlayerRank(playerStats, rankingData);
+        if (!result) {
+          setPlayerRankInfoMessage("내 기록 순위를 계산할 수 없습니다.");
+          return;
+        }
+
+        setPlayerRankInfoMessage(
+          result.isWithinTop100
+            ? `내 기록 순위: ${result.rank}위`
+            : "내 기록 순위: 100위 밖",
+        );
+      }
+
+      function calculatePlayerRank(playerStats, rankingData) {
+        const playerEntry = normalizePlayerStatsForRank(playerStats);
+        if (!playerEntry) {
+          return null;
+        }
+
+        const entries = [];
+        rankingData.forEach((entry) => {
+          const normalized = normalizeRankingEntryForSort(entry);
+          if (normalized) {
+            entries.push(normalized);
+          }
+        });
+
+        const sortable = entries.slice();
+        sortable.push(playerEntry);
+        sortable.sort(compareRankingMetrics);
+
+        const playerIndex = sortable.findIndex((entry) => entry.isPlayer);
+        if (playerIndex === -1) {
+          return null;
+        }
+
+        const rank = playerIndex + 1;
+        return {
+          rank,
+          isWithinTop100: rank <= 100,
+        };
+      }
+
+      function normalizePlayerStatsForRank(stats) {
+        if (!stats) return null;
+        const wave = parseRankingWave(stats.wave);
+        const score = parseRankingScore(stats.score);
+        const level = parseRankingLevel(stats.level);
+        let time = Number(stats.timeSeconds);
+        if (!Number.isFinite(time)) {
+          time = parseRankingTime(stats.time);
+        }
+        if (!Number.isFinite(time)) {
+          time = Number.POSITIVE_INFINITY;
+        }
+
+        return {
+          wave,
+          score,
+          level,
+          time,
+          isPlayer: true,
+        };
+      }
+
+      function normalizeRankingEntryForSort(entry) {
+        if (!entry || typeof entry !== "object") {
+          return null;
+        }
+        return {
+          wave: parseRankingWave(entry.wave),
+          score: parseRankingScore(entry.score),
+          level: parseRankingLevel(entry.level),
+          time: parseRankingTime(entry.time),
+        };
+      }
+
+      function compareRankingMetrics(a, b) {
+        if (a.wave !== b.wave) {
+          return b.wave - a.wave;
+        }
+        if (a.score !== b.score) {
+          return b.score - a.score;
+        }
+        if (a.level !== b.level) {
+          return a.level - b.level;
+        }
+        if (a.time !== b.time) {
+          return a.time - b.time;
+        }
+        return 0;
+      }
+
+      function extractFirstNumber(value) {
+        if (value === null || value === undefined) {
+          return null;
+        }
+        if (typeof value === "number") {
+          return Number.isFinite(value) ? value : null;
+        }
+        const str = String(value).trim();
+        if (!str) {
+          return null;
+        }
+        const sanitized = str.replace(/,/g, "");
+        const direct = Number(sanitized);
+        if (Number.isFinite(direct)) {
+          return direct;
+        }
+        const match = sanitized.match(/-?\d+(?:\.\d+)?/);
+        if (match) {
+          const num = Number(match[0]);
+          if (Number.isFinite(num)) {
+            return num;
+          }
+        }
+        return null;
+      }
+
+      function parseRankingWave(value) {
+        const num = extractFirstNumber(value);
+        return Number.isFinite(num) ? num : Number.NEGATIVE_INFINITY;
+      }
+
+      function parseRankingScore(value) {
+        const num = extractFirstNumber(value);
+        return Number.isFinite(num) ? num : Number.NEGATIVE_INFINITY;
+      }
+
+      function parseRankingLevel(value) {
+        const num = extractFirstNumber(value);
+        return Number.isFinite(num) ? num : Number.POSITIVE_INFINITY;
+      }
+
+      function parseRankingTime(value) {
+        if (value === null || value === undefined) {
+          return Number.POSITIVE_INFINITY;
+        }
+        if (typeof value === "number") {
+          if (!Number.isFinite(value)) {
+            return Number.POSITIVE_INFINITY;
+          }
+          if (value > 100000) {
+            return value / 1000;
+          }
+          return value;
+        }
+        const str = String(value).trim();
+        if (!str) {
+          return Number.POSITIVE_INFINITY;
+        }
+
+        const minuteSecondMatch = str.match(/(\d+)\s*분\s*(\d+(?:\.\d+)?)\s*초/);
+        if (minuteSecondMatch) {
+          return Number(minuteSecondMatch[1]) * 60 + Number(minuteSecondMatch[2]);
+        }
+
+        const minuteOnlyMatch = str.match(/(\d+(?:\.\d+)?)\s*분/);
+        if (minuteOnlyMatch) {
+          return Number(minuteOnlyMatch[1]) * 60;
+        }
+
+        const secondOnlyMatch = str.match(/(\d+(?:\.\d+)?)\s*초/);
+        if (secondOnlyMatch) {
+          return Number(secondOnlyMatch[1]);
+        }
+
+        if (str.includes(":")) {
+          const colonParts = str
+            .split(":")
+            .map((part) => part.trim())
+            .filter((part) => part.length > 0);
+          if (colonParts.length > 1) {
+            let multiplier = 1;
+            let totalSeconds = 0;
+            for (let i = colonParts.length - 1; i >= 0; i--) {
+              const numericPart = Number(colonParts[i].replace(/[^0-9.]/g, ""));
+              if (!Number.isFinite(numericPart)) {
+                totalSeconds = Number.NaN;
+                break;
+              }
+              totalSeconds += numericPart * multiplier;
+              multiplier *= 60;
+            }
+            if (Number.isFinite(totalSeconds)) {
+              return totalSeconds;
+            }
+          }
+        }
+
+        const sanitized = str.replace(/[^0-9.]/g, "");
+        if (sanitized) {
+          const numeric = Number(sanitized);
+          if (Number.isFinite(numeric)) {
+            if (numeric > 100000) {
+              return numeric / 1000;
+            }
+            return numeric;
+          }
+        }
+
+        return Number.POSITIVE_INFINITY;
       }
 
       function appendRankingCell(row, value, className) {
