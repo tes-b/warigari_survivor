@@ -4503,19 +4503,19 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
           }
         });
 
-        const sortable = entries.slice();
-        sortable.push(playerEntry);
-        sortable.sort(compareRankingMetrics);
-
-        const playerIndex = sortable.findIndex((entry) => entry.isPlayer);
-        if (playerIndex === -1) {
-          return null;
+        let insertIndex = entries.length;
+        for (let i = 0; i < entries.length; i++) {
+          const comparison = compareRankingMetrics(playerEntry, entries[i]);
+          if (comparison < 0) {
+            insertIndex = i;
+            break;
+          }
         }
 
-        const rank = playerIndex + 1;
+        const rank = insertIndex + 1;
         return {
           rank,
-          isWithinTop100: rank <= 100,
+          isWithinTop100: insertIndex < 100,
         };
       }
 
