@@ -807,6 +807,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
     (() => {
       const GAME_VERSION = "V25.09.24.01";
       const RANKING_API_URL = "https://script.google.com/macros/s/AKfycbzUjrfjVekxS7TV4hxSFoljwbZ-hKyXnG93J2roTyidNrsBRHOb-lboPMsk1BYzv88b/exec";
+      const RANKING_SUBMISSION_CONFIRM_DELAY_MS = 1200;
       const versionLabelEl = document.getElementById("versionLabel");
       if (versionLabelEl) {
         versionLabelEl.textContent = GAME_VERSION;
@@ -4047,13 +4048,15 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
 
       async function loadRankingData(playerStats = null) {
         const tableBody = document.getElementById("rankingTableBody");
-        if (!tableBody) return;
+        if (!tableBody) return null;
 
         tableBody.innerHTML = `
           <tr>
             <td class="ranking-table-placeholder" colspan="9">랭킹 데이터를 불러오는 중...</td>
           </tr>
         `;
+
+        let rankingData = null;
 
         try {
           const response = await fetch(RANKING_API_URL, { cache: "no-store" });
@@ -4070,7 +4073,8 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
               </tr>
             `;
             updatePlayerRankInfo(playerStats, []);
-            return;
+            rankingData = [];
+            return rankingData;
           }
 
           tableBody.innerHTML = "";
@@ -4087,6 +4091,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
             appendRankingCell(row, formatRankingDate(entry.regdate));
             tableBody.appendChild(row);
           });
+          rankingData = data;
           updatePlayerRankInfo(playerStats, data);
         } catch (error) {
           console.error(error);
@@ -4096,8 +4101,10 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
             </tr>
           `;
           updatePlayerRankInfo(playerStats, null);
+        }
+
+        return rankingData;
       }
-    }
 
       function sanitizePlayerNameValue(value) {
         if (typeof value !== "string") {
@@ -4205,6 +4212,179 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
         };
       }
 
+      function delay(ms) {
+        return new Promise((resolve) => {
+          if (!Number.isFinite(ms) || ms <= 0) {
+            resolve();
+            return;
+          }
+          setTimeout(resolve, ms);
+        });
+      }
+
+      async function sendRankingPayloadJson(payload) {
+        const body = JSON.stringify(payload);
+        try {
+          const response = await fetch(RANKING_API_URL, {
+            method: "POST",
+            mode: "no-cors",
+            headers: {
+              "Content-Type": "text/plain;charset=UTF-8",
+            },
+            body,
+            cache: "no-store",
+            keepalive: true,
+          });
+          return { success: true, response };
+        } catch (error) {
+          console.warn("랭킹 JSON 전송 실패", error);
+          return { success: false, error };
+        }
+      }
+
+      function buildRankingFormEncodedPayload(payload) {
+        if (!payload || typeof payload !== "object") {
+          return null;
+        }
+
+        const params = new URLSearchParams();
+        params.append("name", payload.name || "");
+        params.append("wave", String(Number(payload.wave) || 0));
+        params.append("weapon", payload.weapon || "");
+        params.append("score", String(Number(payload.score) || 0));
+
+        const numericTime = Number(payload.time);
+        const truncated = Number.isFinite(numericTime)
+          ? Math.trunc(Math.max(numericTime, 0) * 1000) / 1000
+          : 0;
+        params.append("time", truncated.toFixed(3));
+
+        params.append("level", String(Number(payload.level) || 0));
+        params.append("upgrades", payload.upgrades || "");
+        params.append("version", payload.version || "");
+
+        return params.toString();
+      }
+
+      async function sendRankingPayloadForm(payload) {
+        const formBody = buildRankingFormEncodedPayload(payload);
+        if (typeof formBody !== "string") {
+          return { success: false, error: new Error("잘못된 랭킹 데이터 형식입니다.") };
+        }
+
+        try {
+          const response = await fetch(RANKING_API_URL, {
+            method: "POST",
+            mode: "no-cors",
+            headers: {
+              "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8",
+            },
+            body: formBody,
+            cache: "no-store",
+            keepalive: true,
+          });
+          return { success: true, response };
+        } catch (error) {
+          console.warn("랭킹 폼 전송 실패", error);
+          return { success: false, error };
+        }
+      }
+
+      async function confirmRankingSubmission(payload, waitMs = 0) {
+        if (waitMs > 0) {
+          await delay(waitMs);
+        }
+        const rankingData = await loadRankingData(lastGameStats);
+        const matched = doesRankingDataContainRecord(rankingData, payload);
+        return { matched, rankingData };
+      }
+
+      function doesRankingDataContainRecord(rankingData, payload) {
+        if (!Array.isArray(rankingData) || !payload) {
+          return false;
+        }
+
+        const targetName = sanitizePlayerNameValue(payload.name);
+        const targetWave = Number(payload.wave) || 0;
+        const targetScore = Number(payload.score) || 0;
+        const targetLevel = Number(payload.level) || 0;
+        const targetTime = Number(payload.time) || 0;
+        const targetWeapon = (payload.weapon || "").toString().trim().toLowerCase();
+
+        return rankingData.some((entry) => {
+          if (!entry || typeof entry !== "object") {
+            return false;
+          }
+
+          const entryName = sanitizePlayerNameValue(entry.name);
+          if (entryName !== targetName) {
+            return false;
+          }
+
+          const entryWave = parseRankingWave(entry.wave);
+          if (!Number.isFinite(entryWave) || entryWave !== targetWave) {
+            return false;
+          }
+
+          const entryScore = parseRankingScore(entry.score);
+          if (!Number.isFinite(entryScore) || entryScore !== targetScore) {
+            return false;
+          }
+
+          const entryLevel = parseRankingLevel(entry.level);
+          if (!Number.isFinite(entryLevel) || entryLevel !== targetLevel) {
+            return false;
+          }
+
+          const entryTime = parseRankingTime(entry.time);
+          if (!Number.isFinite(entryTime) || Math.abs(entryTime - targetTime) > 0.001) {
+            return false;
+          }
+
+          if (targetWeapon) {
+            const entryWeapon = (entry.weapon || "").toString().trim().toLowerCase();
+            if (entryWeapon && entryWeapon !== targetWeapon) {
+              return false;
+            }
+          }
+
+          return true;
+        });
+      }
+
+      async function submitRankingPayloadWithFallback(payload) {
+        const jsonResult = await sendRankingPayloadJson(payload);
+        if (!jsonResult.success) {
+          console.warn("랭킹 JSON 전송에 실패하여 폼 방식으로 재시도합니다.", jsonResult.error);
+        }
+
+        if (jsonResult.success) {
+          const jsonConfirmation = await confirmRankingSubmission(
+            payload,
+            RANKING_SUBMISSION_CONFIRM_DELAY_MS,
+          );
+          if (jsonConfirmation.matched) {
+            return { confirmed: true, method: "json", rankingData: jsonConfirmation.rankingData };
+          }
+        }
+
+        const formResult = await sendRankingPayloadForm(payload);
+        if (!formResult.success) {
+          throw formResult.error || new Error("랭킹 데이터 전송에 실패했습니다.");
+        }
+
+        const formConfirmation = await confirmRankingSubmission(
+          payload,
+          RANKING_SUBMISSION_CONFIRM_DELAY_MS,
+        );
+
+        return {
+          confirmed: formConfirmation.matched,
+          method: "form",
+          rankingData: formConfirmation.rankingData,
+        };
+      }
+
       async function submitPlayerScore() {
         if (isSubmittingRank) {
           return;
@@ -4239,20 +4419,36 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
         setPlayerRankInfoMessage("랭킹에 새기는 중입니다...");
 
         try {
-          const response = await fetch(RANKING_API_URL, {
-            method: "POST",
-            mode: "no-cors",
-            body: JSON.stringify(payload),
-          });
+          const submissionResult = await submitRankingPayloadWithFallback(payload);
 
-          if (response && response.type !== "opaque" && !response.ok) {
-            throw new Error(`Failed to submit: ${response.status}`);
+          if (!submissionResult.confirmed) {
+            if (submissionResult.rankingData === null) {
+              setPlayerRankInfoMessage("랭킹 새기기 요청을 보냈습니다. 잠시 후 순위를 확인해주세요.");
+            } else {
+              throw new Error("랭킹 새기기 결과를 확인하지 못했습니다.");
+            }
+            return;
           }
 
           hasSubmittedCurrentRecord = true;
-          setPlayerRankInfoMessage("랭킹에 새기기 요청을 보냈습니다. 잠시 후 순위를 확인해주세요.");
-          setPlayerNameSubmitVisible(false);
-          await loadRankingData(lastGameStats);
+
+          if (Array.isArray(submissionResult.rankingData)) {
+            updatePlayerRankInfo(lastGameStats, submissionResult.rankingData);
+          } else {
+            setPlayerNameSubmitVisible(false);
+          }
+
+          const infoEl = document.getElementById("playerRankInfo");
+          if (infoEl) {
+            const baseMessage = infoEl.textContent ? infoEl.textContent.trim() : "";
+            if (baseMessage) {
+              setPlayerRankInfoMessage(`${baseMessage} (등록 완료)`);
+            } else {
+              setPlayerRankInfoMessage("랭킹 등록이 완료되었습니다.");
+            }
+          } else {
+            setPlayerRankInfoMessage("랭킹 등록이 완료되었습니다.");
+          }
         } catch (error) {
           console.error(error);
           setPlayerRankInfoMessage("랭킹 새기기에 실패했습니다. 잠시 후 다시 시도해주세요.");
