@@ -4081,7 +4081,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
             appendRankingCell(row, formatRankingValue(entry.wave));
             appendRankingWeaponCell(row, entry.weapon);
             appendRankingCell(row, formatRankingNumber(entry.score));
-            appendRankingCell(row, formatRankingValue(entry.time));
+            appendRankingCell(row, formatRankingTimeDisplay(entry.time));
             appendRankingCell(row, formatRankingValue(entry.level));
             appendRankingUpgradesCell(row, entry.upgrades);
             appendRankingCell(row, formatRankingDate(entry.regdate));
@@ -4190,13 +4190,15 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
           : "";
 
         const timeValue = Number(lastGameStats.timeSeconds);
+        let timeSeconds = Number.isFinite(timeValue) ? Math.max(timeValue, 0) : 0;
+        timeSeconds = Math.trunc(timeSeconds * 1000) / 1000;
 
         return {
           name,
           wave: Number(lastGameStats.wave) || 0,
           weapon: lastGameStats.weapon || "",
           score: Number(lastGameStats.score) || 0,
-          time: Number.isFinite(timeValue) ? timeValue : 0,
+          time: timeSeconds,
           level: Number(lastGameStats.level) || 1,
           upgrades: upgradesValue,
           version: GAME_VERSION,
@@ -4873,6 +4875,21 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
         if (value === null || value === undefined) return "-";
         const str = String(value).trim();
         return str.length > 0 ? str : "-";
+      }
+
+      function formatRankingTimeDisplay(value) {
+        const seconds = parseRankingTime(value);
+        if (!Number.isFinite(seconds) || seconds === Number.POSITIVE_INFINITY) {
+          return formatRankingValue(value);
+        }
+
+        const totalMilliseconds = Math.trunc(Math.max(seconds, 0) * 1000);
+        const minutes = Math.floor(totalMilliseconds / 60000);
+        const remainingMs = totalMilliseconds - minutes * 60000;
+        const secondsPart = Math.floor(remainingMs / 1000);
+        const millisecondsPart = remainingMs - secondsPart * 1000;
+
+        return `${String(minutes).padStart(2, "0")}:${String(secondsPart).padStart(2, "0")}.${String(millisecondsPart).padStart(3, "0")}`;
       }
 
       function formatRankingNumber(value) {
