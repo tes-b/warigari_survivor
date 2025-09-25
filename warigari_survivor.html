@@ -1088,11 +1088,46 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
 
       // 적 티어별 설정 (5단계로 확장, 체력 증가/속도 감소)
       let enemyTiers = [
-        { name: "Weak", speed: 25, color: "#4ade80", hp: 110, exp: 1 },
-        { name: "Basic", speed: 23, color: "#60a5fa", hp: 250, exp: 2 },
-        { name: "Medium", speed: 40, color: "#a78bfa", hp: 500, exp: 4 },
-        { name: "Strong", speed: 46, color: "#f59e0b", hp: 900, exp: 8 },
-        { name: "Elite", speed: 54, color: "#ef4444", hp: 1400, exp: 16 },
+        {
+          name: "Weak",
+          speed: 25,
+          color: "#4ade80",
+          hp: 110,
+          exp: 1,
+          attack: 70,
+        },
+        {
+          name: "Basic",
+          speed: 23,
+          color: "#60a5fa",
+          hp: 250,
+          exp: 2,
+          attack: 100,
+        },
+        {
+          name: "Medium",
+          speed: 40,
+          color: "#a78bfa",
+          hp: 500,
+          exp: 4,
+          attack: 130,
+        },
+        {
+          name: "Strong",
+          speed: 46,
+          color: "#f59e0b",
+          hp: 900,
+          exp: 8,
+          attack: 170,
+        },
+        {
+          name: "Elite",
+          speed: 54,
+          color: "#ef4444",
+          hp: 1400,
+          exp: 16,
+          attack: 220,
+        },
       ];
 
       // 적 종류
@@ -2857,6 +2892,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
         const hpBase =
           tier.hp * scale * type.hpMul * (1 + (Math.random() * 0.2 - 0.1));
         const speedMul = type.speedMul * (1 + (Math.random() * 0.2 - 0.1));
+        const tierAttack = tier.attack || enemyContactDamage;
         enemies.push({
           id: nextEnemyId++,
           x: spawnX,
@@ -2868,7 +2904,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
           vx: 0,
           vy: 0,
           color: tier.color,
-          damage: enemyContactDamage * scale * type.damageMul,
+          damage: tierAttack * scale * type.damageMul,
           reward: enemyReward,
           hp: hpBase,
           hpMax: hpBase,
