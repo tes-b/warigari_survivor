@@ -676,7 +676,7 @@
         ⏸
       </button>
 
-      <div class="hud" id="hud">
+      <div class="hud" id="hud" style="display:none">
         <div class="stat" id="hp">HP: 1000/1000</div>
         <div class="stat" id="score">KOs: 0</div>
         <div class="stat" id="time">Time: 0.0s</div>
@@ -2434,6 +2434,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
       const overlay = document.getElementById("overlay");
       const pauseButton = document.getElementById("pauseButton");
       const muteButton = document.getElementById("muteButton");
+      const hudContainer = document.getElementById("hud");
 
       const tipElem = document.getElementById("tip");
       const tips = [
@@ -2649,6 +2650,9 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
         audio.resume();
         baseAttack = attack;
         audio.setAttackMelody(attack);
+        if (hudContainer) {
+          hudContainer.style.display = "flex";
+        }
         reset();
         overlay.style.display = "none";
         running = true;
@@ -3773,6 +3777,9 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
       function showWeaponSelectScreen() {
         const weaponOverlay = document.getElementById("weaponOverlay");
         const weaponPanel = document.getElementById("weaponPanel");
+        if (hudContainer) {
+          hudContainer.style.display = "none";
+        }
         weaponPanel.innerHTML = `
           <h2>바깥은 혼자 돌아다니기엔 위험하단다,<br>이걸 가져가렴.</h2>
           <p><span class="kbd">스페이스바</span> <b>짧게 누르기</b> : 무기 변경 / <b>길게 누르기</b> : 선택 하기</p>
@@ -3821,6 +3828,9 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
       }
 
       function showStartScreen() {
+        if (hudContainer) {
+          hudContainer.style.display = "none";
+        }
         updatePauseButton();
         overlay.innerHTML = `
         <div class="panel">
