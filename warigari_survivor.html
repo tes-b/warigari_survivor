@@ -2064,6 +2064,8 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
       let exp = 0; // 현재 경험치
       let level = 1; // 현재 레벨
       let lastGameStats = null; // 게임 종료 시 기록된 최종 스탯
+      let hasSubmittedCurrentRecord = false;
+      let isSubmittingRank = false;
 
       const HOLD_DURATION = 800;
       let levelupActive = false;
@@ -4109,6 +4111,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
         if (!container) {
           return;
         }
+        hasSubmittedCurrentRecord = false;
         setPlayerNameSubmitVisible(false);
         const input = document.getElementById("playerNameInput");
         if (!input) {
@@ -4121,6 +4124,18 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
             input.value = sanitized;
           }
         });
+        input.addEventListener("keydown", (event) => {
+          if (event.key === "Enter") {
+            event.preventDefault();
+            submitPlayerScore();
+          }
+        });
+        const button = document.getElementById("btnEngraveScore");
+        if (button) {
+          button.disabled = false;
+          button.textContent = "새기기";
+          button.onclick = submitPlayerScore;
+        }
       }
 
       function setPlayerNameSubmitVisible(isVisible) {
@@ -4133,6 +4148,9 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
         if (input && !isVisible) {
           input.value = "";
         }
+        if (!isVisible) {
+          isSubmittingRank = false;
+        }
       }
 
       function focusPlayerNameInput() {
@@ -4143,6 +4161,115 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
         input.focus();
         if (typeof input.setSelectionRange === "function") {
           input.setSelectionRange(input.value.length, input.value.length);
+        }
+      }
+
+      function getSanitizedPlayerName() {
+        const input = document.getElementById("playerNameInput");
+        if (!input) {
+          return "";
+        }
+        const sanitized = sanitizePlayerNameValue(input.value);
+        if (input.value !== sanitized) {
+          input.value = sanitized;
+        }
+        return sanitized;
+      }
+
+      function buildRankingSubmissionPayload(name) {
+        if (!lastGameStats) {
+          return null;
+        }
+
+        const upgradesArray = Array.isArray(lastGameStats.upgrades)
+          ? lastGameStats.upgrades.map(({ id, count }) => ({ id, count }))
+          : [];
+
+        const upgradesValue = upgradesArray.length > 0
+          ? JSON.stringify(upgradesArray)
+          : "";
+
+        const timeValue = Number(lastGameStats.timeSeconds);
+
+        return {
+          name,
+          wave: Number(lastGameStats.wave) || 0,
+          weapon: lastGameStats.weapon || "",
+          score: Number(lastGameStats.score) || 0,
+          time: Number.isFinite(timeValue) ? timeValue : 0,
+          level: Number(lastGameStats.level) || 1,
+          upgrades: upgradesValue,
+          version: GAME_VERSION,
+        };
+      }
+
+      async function submitPlayerScore() {
+        if (isSubmittingRank) {
+          return;
+        }
+
+        const name = getSanitizedPlayerName();
+        if (!name) {
+          setPlayerRankInfoMessage("이름을 입력해주세요. (영문/숫자 3글자)");
+          focusPlayerNameInput();
+          return;
+        }
+        if (name.length < 3) {
+          setPlayerRankInfoMessage("이름은 3글자로 입력해주세요.");
+          focusPlayerNameInput();
+          return;
+        }
+
+        const payload = buildRankingSubmissionPayload(name);
+        if (!payload) {
+          setPlayerRankInfoMessage("기록이 없어 랭킹에 새길 수 없습니다.");
+          return;
+        }
+
+        const button = document.getElementById("btnEngraveScore");
+        const originalLabel = button ? button.textContent : "";
+        if (button) {
+          button.disabled = true;
+          button.textContent = "새기는 중...";
+        }
+
+        isSubmittingRank = true;
+        setPlayerRankInfoMessage("랭킹에 새기는 중입니다...");
+
+        try {
+          const response = await fetch(RANKING_API_URL, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload),
+          });
+
+          if (!response.ok) {
+            throw new Error(`Failed to submit: ${response.status}`);
+          }
+
+          const result = await response.json();
+          if (!result || result.status !== "success") {
+            throw new Error("Unexpected response");
+          }
+
+          hasSubmittedCurrentRecord = true;
+          const rankNumber = Number(result.finalRank);
+          if (result.isRanked && Number.isFinite(rankNumber)) {
+            setPlayerRankInfoMessage(`랭킹에 새겼습니다! 현재 ${rankNumber}위입니다.`);
+          } else {
+            setPlayerRankInfoMessage("랭킹에 새겼습니다! 100위 밖입니다.");
+          }
+          setPlayerNameSubmitVisible(false);
+          await loadRankingData(lastGameStats);
+        } catch (error) {
+          console.error(error);
+          setPlayerRankInfoMessage("랭킹 새기기에 실패했습니다. 잠시 후 다시 시도해주세요.");
+        } finally {
+          isSubmittingRank = false;
+          if (button) {
+            button.disabled = false;
+            button.textContent = originalLabel || "새기기";
+          }
         }
       }
 
@@ -4185,7 +4312,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
             : "내 기록 순위: 100위 밖",
         );
 
-        if (result.isWithinTop100) {
+        if (result.isWithinTop100 && !hasSubmittedCurrentRecord) {
           setPlayerNameSubmitVisible(true);
           focusPlayerNameInput();
         }
