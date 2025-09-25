@@ -2078,6 +2078,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
       let holdGaugeFill = null;
       let selectionButtons = [];
       let spaceLocked = false;
+      let leftCtrlActive = false;
 
       function updatePauseButton() {
         if (!pauseButton) {
@@ -2249,6 +2250,10 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
         if (running) toggleDirection();
       });
       window.addEventListener("keydown", (e) => {
+        if (e.code === "ControlLeft") {
+          leftCtrlActive = true;
+          return;
+        }
         if (e.code === "Space") {
           e.preventDefault();
           if (levelupActive) {
@@ -2268,12 +2273,14 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
             }
           }
         } else if (e.code === "Backspace") {
-          e.preventDefault();
-          officeMode = !officeMode;
-          if (!officeMode && officeOverlay.style.display !== "none") {
-            hideOfficeOverlay();
+          if (leftCtrlActive && e.ctrlKey) {
+            e.preventDefault();
+            officeMode = !officeMode;
+            if (!officeMode && officeOverlay.style.display !== "none") {
+              hideOfficeOverlay();
+            }
+            updateHUD();
           }
-          updateHUD();
         } else if (e.code === "Escape") {
           if (officeMode) {
             e.preventDefault();
@@ -2290,33 +2297,47 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
             }
           }
         } else if (e.code === "Digit1") {
-          e.preventDefault();
-          cheatInvincible = !cheatInvincible;
-          updateHUD();
-        } else if (e.code === "Digit2") {
-          e.preventDefault();
-          if (running) skipWave();
-        } else if (e.code === "Digit3") {
-          e.preventDefault();
-          if (running) {
-            exp = expToNextLevel;
-            checkLevelUp();
+          if (leftCtrlActive && e.ctrlKey) {
+            e.preventDefault();
+            cheatInvincible = !cheatInvincible;
             updateHUD();
           }
+        } else if (e.code === "Digit2") {
+          if (leftCtrlActive && e.ctrlKey) {
+            e.preventDefault();
+            if (running) skipWave();
+          }
+        } else if (e.code === "Digit3") {
+          if (leftCtrlActive && e.ctrlKey) {
+            e.preventDefault();
+            if (running) {
+              exp = expToNextLevel;
+              checkLevelUp();
+              updateHUD();
+            }
+          }
         } else if (e.code === "Digit4") {
-          e.preventDefault();
-          if (running && !levelupActive) {
-            queueBossOrb();
+          if (leftCtrlActive && e.ctrlKey) {
+            e.preventDefault();
+            if (running && !levelupActive) {
+              queueBossOrb();
+            }
           }
         } else if (e.code === "Digit0") {
-          e.preventDefault();
-          if (running && hp > 0 && !player.deathAnim.active) {
-            hp = 0;
-            gameOver();
+          if (leftCtrlActive && e.ctrlKey) {
+            e.preventDefault();
+            if (running && hp > 0 && !player.deathAnim.active) {
+              hp = 0;
+              gameOver();
+            }
           }
         }
       });
       window.addEventListener("keyup", (e) => {
+        if (e.code === "ControlLeft") {
+          leftCtrlActive = false;
+          return;
+        }
         if (e.code === "Space") {
           if (levelupActive) {
             e.preventDefault();
@@ -2349,6 +2370,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
       }
 
       function handleBlur() {
+        leftCtrlActive = false;
         if (officeMode) {
           showOfficeOverlay();
         } else {
