@@ -818,7 +818,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
 
   <script>
     (() => {
-      const GAME_VERSION = "V25.09.24.01";
+      const GAME_VERSION = "V25.09.25.00";
       const RANKING_API_URL = "https://script.google.com/macros/s/AKfycbzCOEbNIYcubKK-lUQw398AI5dlQi01ed-GZoxiQUloK-RbpUCW1pY5-03G9UmWbCV_/exec";
       const versionLabelEl = document.getElementById("versionLabel");
       if (versionLabelEl) {
@@ -3882,8 +3882,8 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
           <h3>WARI-GARI SURVIVOR</h3>
           <p><span class="kbd">좌클릭</span> 또는 <span class="kbd">스페이스바</span>로 <b>방향 전환</b></p>
           <p><span class="kbd">스페이스바</span> <b>길게 누르기</b> : 게임 시작</p>
-          <div class="row"><button id="btnStart" type="button">게임 시작</button></div>
-          <div class="row"><button id="btnViewRankingStart" type="button">🏛️<br></button></div>
+          <div class="row"><button id="btnStart" type="button">⚔️ 전투시작</button></div>
+          <div class="row"><button id="btnViewRankingStart" type="button">🏛️ 전당방문<br></button></div>
           <div class="hold-gauge"><div class="fill" id="startHoldGaugeFill"></div></div>
         </div>`;
         overlay.style.display = "flex";
@@ -3997,9 +3997,9 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
         const hasSubmittedRecord = hasSubmittedCurrentRecord === true;
         const registerButtonHTML = hasSubmittedRecord
           ? ""
-          : `<button id="btnRegisterRanking">전당🏛️등록<br></button>`;
+          : `<button id="btnRegisterRanking">✒️ 전당등록<br></button>`;
         const viewButtonHTML = hasSubmittedRecord
-          ? `<button id="btnViewRankingResults">🏛️<br></button>`
+          ? `<button id="btnViewRankingResults">🏛️ 전당방문<br></button>`
           : "";
         overlay.innerHTML = `
         <div class="panel">
@@ -4011,7 +4011,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
           <p>TIME: <b>${stats.time}</b></p>
           ${upgradeSectionHTML}
           <div class="row" id="gameoverActions">
-            <button id="btnRestart">다시 하기<br></button>
+            <button id="btnRestart">⚔️ 다시하기<br></button>
             ${registerButtonHTML}
             ${viewButtonHTML}
           </div>
@@ -4433,7 +4433,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
             finalRank: isRanked ? rankNumber : null,
           };
           if (isRanked) {
-            setPlayerRankInfoMessage(`${rankNumber}위로 전당에 올랐습니다!`);
+            setPlayerRankInfoMessage(`${rankNumber}번으로 전당에 올랐습니다!`);
           } else {
             setPlayerRankInfoMessage("아쉽게 전당에 오르지 못했습니다.");
           }
@@ -4463,9 +4463,9 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
         if (hasSubmittedCurrentRecord && lastSubmittedRankResult) {
           const { isRanked, finalRank } = lastSubmittedRankResult;
           if (isRanked && Number.isFinite(finalRank)) {
-            setPlayerRankInfoMessage(`내 기록 : ${finalRank}위`);
+            setPlayerRankInfoMessage(`${finalRank}번으로 전당에 올랐습니다.`);
           } else {
-            setPlayerRankInfoMessage("내 기록 : 100위 밖");
+            setPlayerRankInfoMessage("아쉽게 전당에 오르지 못했습니다.");
           }
           return;
         }
@@ -4497,8 +4497,8 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
 
         setPlayerRankInfoMessage(
           result.isWithinTop100
-            ? `${result.rank}위로 전당에 올랐습니다.`
-            : "전당에 오르지 못했습니다.",
+            ? `${result.rank}번으로 전당에 이름을 새길 수 있습니다.`
+            : "전당에 오르기에는 충분하지 않습니다...",
         );
 
         if (result.isWithinTop100 && !hasSubmittedCurrentRecord) {
