@@ -125,6 +125,53 @@
       min-height: calc(22px * var(--ui-scale));
     }
 
+    .player-name-submit {
+      display: none;
+      align-items: center;
+      justify-content: center;
+      gap: calc(8px * var(--ui-scale));
+      margin-top: calc(4px * var(--ui-scale));
+    }
+
+    .player-name-submit input {
+      width: calc(96px * var(--ui-scale));
+      padding: calc(6px * var(--ui-scale)) calc(8px * var(--ui-scale));
+      border-radius: calc(8px * var(--ui-scale));
+      border: 1px solid #4452a3;
+      background: rgba(10, 14, 36, 0.8);
+      color: #fff;
+      font-size: calc(16px * var(--ui-scale));
+      text-transform: uppercase;
+      letter-spacing: calc(2px * var(--ui-scale));
+      text-align: center;
+    }
+
+    .player-name-submit input:focus {
+      outline: none;
+      border-color: #6b7dff;
+      box-shadow: 0 0 0 calc(2px * var(--ui-scale)) rgba(107, 125, 255, 0.25);
+    }
+
+    .player-name-submit button {
+      padding: calc(8px * var(--ui-scale)) calc(14px * var(--ui-scale));
+      border-radius: calc(8px * var(--ui-scale));
+      border: 1px solid #4452a3;
+      background: linear-gradient(180deg, #1c2550, #151c3a);
+      color: #fff;
+      font-size: calc(14px * var(--ui-scale));
+      font-weight: 600;
+      cursor: pointer;
+      transition: transform 0.15s ease, box-shadow 0.15s ease;
+    }
+
+    .player-name-submit button:hover,
+    .player-name-submit button:focus {
+      outline: none;
+      border-color: #6b7dff;
+      box-shadow: 0 4px 12px rgba(20, 30, 80, 0.35);
+      transform: translateY(calc(-1px * var(--ui-scale)));
+    }
+
     .ranking-table-container {
       border: 1px solid #1c2452;
       border-radius: calc(12px * var(--ui-scale));
@@ -3934,6 +3981,21 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
             </table>
           </div>
           <p class="player-rank-info" id="playerRankInfo">${playerRankMessage}</p>
+          <div class="player-name-submit" id="playerNameSubmit">
+            <input
+              id="playerNameInput"
+              type="text"
+              inputmode="text"
+              maxlength="3"
+              placeholder="ABC"
+              aria-label="이름 입력"
+              pattern="[A-Za-z0-9]*"
+              autocomplete="off"
+              autocorrect="off"
+              spellcheck="false"
+            />
+            <button id="btnEngraveScore" type="button">새기기</button>
+          </div>
           <div class="row" id="rankingActions">
             <button id="btnRankingRestart">다시 하기<br>(SPACE)</button>
           </div>
@@ -3942,6 +4004,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
           </div>
         </div>`;
         overlay.style.display = "flex";
+        initializePlayerNameInput();
 
         const btnRankingRestart = document.getElementById("btnRankingRestart");
 
@@ -4031,6 +4094,55 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
             </tr>
           `;
           updatePlayerRankInfo(playerStats, null);
+      }
+    }
+
+      function sanitizePlayerNameValue(value) {
+        if (typeof value !== "string") {
+          return "";
+        }
+        return value.replace(/[^a-z0-9]/gi, "").toUpperCase().slice(0, 3);
+      }
+
+      function initializePlayerNameInput() {
+        const container = document.getElementById("playerNameSubmit");
+        if (!container) {
+          return;
+        }
+        setPlayerNameSubmitVisible(false);
+        const input = document.getElementById("playerNameInput");
+        if (!input) {
+          return;
+        }
+        input.value = "";
+        input.addEventListener("input", () => {
+          const sanitized = sanitizePlayerNameValue(input.value);
+          if (input.value !== sanitized) {
+            input.value = sanitized;
+          }
+        });
+      }
+
+      function setPlayerNameSubmitVisible(isVisible) {
+        const container = document.getElementById("playerNameSubmit");
+        if (!container) {
+          return;
+        }
+        container.style.display = isVisible ? "flex" : "none";
+        const input = document.getElementById("playerNameInput");
+        if (input && !isVisible) {
+          input.value = "";
+        }
+      }
+
+      function focusPlayerNameInput() {
+        const input = document.getElementById("playerNameInput");
+        if (!input) {
+          return;
+        }
+        input.focus();
+        if (typeof input.setSelectionRange === "function") {
+          input.setSelectionRange(input.value.length, input.value.length);
         }
       }
 
@@ -4041,6 +4153,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
       }
 
       function updatePlayerRankInfo(playerStats, rankingData) {
+        setPlayerNameSubmitVisible(false);
         if (!Array.isArray(rankingData)) {
           setPlayerRankInfoMessage(
             playerStats
@@ -4071,6 +4184,11 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
             ? `내 기록 순위: ${result.rank}위`
             : "내 기록 순위: 100위 밖",
         );
+
+        if (result.isWithinTop100) {
+          setPlayerNameSubmitVisible(true);
+          focusPlayerNameInput();
+        }
       }
 
       function calculatePlayerRank(playerStats, rankingData) {
