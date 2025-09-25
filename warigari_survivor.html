@@ -321,8 +321,7 @@
 
     .overlay button {
       font-size: calc(14px * var(--overlay-scale));
-      padding: calc(12px * var(--overlay-scale))
-        calc(18px * var(--overlay-scale));
+      padding: calc(12px * var(--overlay-scale)) calc(18px * var(--overlay-scale));
       border-radius: calc(12px * var(--overlay-scale));
       min-width: calc(120px * var(--overlay-scale));
     }
@@ -3883,8 +3882,8 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
           <h3>WARI-GARI SURVIVOR</h3>
           <p><span class="kbd">좌클릭</span> 또는 <span class="kbd">스페이스바</span>로 <b>방향 전환</b></p>
           <p><span class="kbd">스페이스바</span> <b>길게 누르기</b> : 게임 시작</p>
-          <div class="row"><button id="btnStart" type="button">게임 시작<br>(SPACE)</button></div>
-          <div class="row"><button id="btnViewRankingStart" type="button">전당 보기<br></button></div>
+          <div class="row"><button id="btnStart" type="button">게임 시작</button></div>
+          <div class="row"><button id="btnViewRankingStart" type="button">🏛️<br></button></div>
           <div class="hold-gauge"><div class="fill" id="startHoldGaugeFill"></div></div>
         </div>`;
         overlay.style.display = "flex";
@@ -3998,9 +3997,9 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
         const hasSubmittedRecord = hasSubmittedCurrentRecord === true;
         const registerButtonHTML = hasSubmittedRecord
           ? ""
-          : `<button id="btnRegisterRanking">전당 등록<br></button>`;
+          : `<button id="btnRegisterRanking">전당🏛️등록<br></button>`;
         const viewButtonHTML = hasSubmittedRecord
-          ? `<button id="btnViewRankingResults">전당 보기<br></button>`
+          ? `<button id="btnViewRankingResults">🏛️<br></button>`
           : "";
         overlay.innerHTML = `
         <div class="panel">
@@ -4105,12 +4104,12 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
         const playerRankMessage = isViewMode
           ? "이 페이지는 영광의 기록이자, 시간 낭비의 증거입니다."
           : lastGameStats
-              ? "내 기록 순위를 계산 중..."
-              : "플레이 기록이 없습니다.";
-        const actionButtonHTML = `<button id="btnRankingClose">닫기<br>(SPACE)</button>`;
+            ? "전당 등록 심사 중..."
+            : "플레이 기록이 없습니다.";
+        const actionButtonHTML = `<button id="btnRankingClose">닫기</button>`;
         overlay.innerHTML = `
         <div class="panel ranking-panel">
-          <h1>와리가리의 전당</h1>
+          <h1>🏛️와리가리의 전당🏛️</h1>
           <div class="ranking-table-container">
             <table class="ranking-table">
               <thead>
@@ -4128,16 +4127,15 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
               </thead>
               <tbody id="rankingTableBody">
                 <tr>
-                  <td class="ranking-table-placeholder" colspan="9">전당 데이터를 불러오는 중...</td>
+                  <td class="ranking-table-placeholder" colspan="9">전당 문을 두드리는 중...</td>
                 </tr>
               </tbody>
             </table>
           </div>
           <p class="player-rank-info" id="playerRankInfo">${playerRankMessage}</p>
-          ${
-            isViewMode
-              ? ""
-              : `<div class=\"player-name-submit\" id=\"playerNameSubmit\">
+          ${isViewMode
+            ? ""
+            : `<div class=\"player-name-submit\" id=\"playerNameSubmit\">
             <input
               id=\"playerNameInput\"
               type=\"text\"
@@ -4215,7 +4213,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
 
         tableBody.innerHTML = `
           <tr>
-            <td class="ranking-table-placeholder" colspan="9">전당 데이터를 불러오는 중...</td>
+            <td class="ranking-table-placeholder" colspan="9">전당 문을 두드리는 중...</td>
           </tr>
         `;
 
@@ -4230,7 +4228,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
           if (!Array.isArray(data) || data.length === 0) {
             tableBody.innerHTML = `
               <tr>
-                <td class="ranking-table-placeholder" colspan="9">등록된 전당 데이터가 없습니다.</td>
+                <td class="ranking-table-placeholder" colspan="9">전당에 새겨진 이름이 없습니다.</td>
               </tr>
             `;
             if (!skipPlayerRank) {
@@ -4260,11 +4258,11 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
           console.error(error);
           tableBody.innerHTML = `
             <tr>
-              <td class="ranking-table-placeholder" colspan="9">전당 기록을 불러오지 못했습니다.</td>
+              <td class="ranking-table-placeholder" colspan="9">전당이 열리지 않습니다.</td>
             </tr>
           `;
           if (skipPlayerRank) {
-            setPlayerRankInfoMessage("전당 데이터를 불러오지 못했습니다.");
+            setPlayerRankInfoMessage("전당이 열리지 않습니다.");
           } else {
             updatePlayerRankInfo(playerStats, null);
           }
@@ -4435,15 +4433,15 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
             finalRank: isRanked ? rankNumber : null,
           };
           if (isRanked) {
-            setPlayerRankInfoMessage(`전당에 새겼습니다! 현재 ${rankNumber}위입니다.`);
+            setPlayerRankInfoMessage(`${rankNumber}위로 전당에 올랐습니다!`);
           } else {
-            setPlayerRankInfoMessage("전당에 새겼습니다! 100위 밖입니다.");
+            setPlayerRankInfoMessage("아쉽게 전당에 오르지 못했습니다.");
           }
           setPlayerNameSubmitVisible(false);
           await loadRankingData(lastGameStats);
         } catch (error) {
           console.error(error);
-          setPlayerRankInfoMessage("전당 새기기에 실패했습니다. 잠시 후 다시 시도해주세요.");
+          setPlayerRankInfoMessage("전당의 문이 열리지 않습니다. 잠시 후 다시 시도해주세요.");
         } finally {
           isSubmittingRank = false;
           if (button) {
@@ -4475,32 +4473,32 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
         if (!Array.isArray(rankingData)) {
           setPlayerRankInfoMessage(
             playerStats
-              ? "전당 데이터를 불러올 수 없어 순위를 확인할 수 없습니다."
-              : "전당 데이터를 불러올 수 없습니다.",
+              ? "전당 문이 잠겨있어 확인할 수 없습니다."
+              : "전당 문이 잠겨있어 확인할 수 없습니다.",
           );
           return;
         }
 
         if (!playerStats) {
-          setPlayerRankInfoMessage("플레이 기록이 없습니다.");
+          setPlayerRankInfoMessage("기록이 없습니다.");
           return;
         }
 
         if (rankingData.length === 0) {
-          setPlayerRankInfoMessage("전당 데이터가 없어 순위를 확인할 수 없습니다.");
+          setPlayerRankInfoMessage("전당 문이 잠겨있어 확인할 수 없습니다.");
           return;
         }
 
         const result = calculatePlayerRank(playerStats, rankingData);
         if (!result) {
-          setPlayerRankInfoMessage("내 기록 순위를 계산할 수 없습니다.");
+          setPlayerRankInfoMessage("심사가 불가능합니다.");
           return;
         }
 
         setPlayerRankInfoMessage(
           result.isWithinTop100
-            ? `내 기록 : ${result.rank}위`
-            : "내 기록 : 100위 밖",
+            ? `${result.rank}위로 전당에 올랐습니다.`
+            : "전당에 오르지 못했습니다.",
         );
 
         if (result.isWithinTop100 && !hasSubmittedCurrentRecord) {
