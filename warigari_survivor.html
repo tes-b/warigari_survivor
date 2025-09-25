@@ -4002,7 +4002,6 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
           <div class="row" id="gameoverActions">
             <button id="btnRestart">다시 하기<br></button>
             <button id="btnRegisterRanking">전당 등록<br></button>
-            <button id="btnViewRankingGameover">전당 보기<br></button>
           </div>
           <div class="hold-gauge">
             <div class="fill" id="gameoverHoldGaugeFill"></div>
@@ -4012,14 +4011,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
 
         const btnRestart = document.getElementById("btnRestart");
         const btnRegisterRanking = document.getElementById("btnRegisterRanking");
-        const btnViewRankingGameover = document.getElementById(
-          "btnViewRankingGameover",
-        );
-        const actionButtons = [
-          btnRestart,
-          btnRegisterRanking,
-          btnViewRankingGameover,
-        ].filter(Boolean);
+        const actionButtons = [btnRestart, btnRegisterRanking].filter(Boolean);
 
         selectionButtons = actionButtons;
         focusedOptionIndex = 0;
@@ -4061,18 +4053,6 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
           };
         }
 
-        if (btnViewRankingGameover) {
-          const reopenGameOver = () => {
-            showGameOverScreen(stats);
-          };
-          btnViewRankingGameover.onclick = () => {
-            endHold(false);
-            audio.resume();
-            audio.play("uiSelect");
-            levelupActive = false;
-            showRankingScreen({ mode: "view", onClose: reopenGameOver });
-          };
-        }
       }
 
       function showRankingScreen(options = {}) {
