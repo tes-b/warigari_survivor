@@ -234,7 +234,7 @@
     .ranking-table .col-upgrades {
       font-size: calc(12px * var(--ui-scale));
       white-space: normal;
-      width: calc(220px * var(--ui-scale));
+      width: calc(250px * var(--ui-scale));
       padding: calc(6px * var(--ui-scale)) calc(8px * var(--ui-scale));
     }
 
@@ -255,9 +255,9 @@
       align-items: center;
       justify-content: center;
       gap: 0;
-      padding: calc(4px * var(--ui-scale)) calc(6px * var(--ui-scale));
+      padding: calc(4px * var(--ui-scale)) calc(4px * var(--ui-scale));
       line-height: 1;
-      min-width: calc(22px * var(--ui-scale));
+      min-width: calc(20px * var(--ui-scale));
     }
 
     .ranking-table .col-upgrades .ranking-upgrade-icon {
@@ -4616,7 +4616,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
           if (count > 1) {
             const countEl = document.createElement("span");
             countEl.className = "ranking-upgrade-count";
-            countEl.textContent = `×${count}`;
+            countEl.textContent = `${count}`;
             upgradeEl.appendChild(countEl);
           }
 
