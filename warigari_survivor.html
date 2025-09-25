@@ -116,6 +116,62 @@
       max-width: calc(760px * var(--ui-scale));
     }
 
+    .player-rank-info {
+      margin: 0;
+      font-size: calc(16px * var(--ui-scale));
+      color: #ffd86b;
+      font-weight: 600;
+      text-align: center;
+      min-height: calc(22px * var(--ui-scale));
+    }
+
+    .player-name-submit {
+      display: none;
+      align-items: center;
+      justify-content: center;
+      gap: calc(8px * var(--ui-scale));
+      margin-top: calc(4px * var(--ui-scale));
+    }
+
+    .player-name-submit input {
+      width: calc(96px * var(--ui-scale));
+      padding: calc(6px * var(--ui-scale)) calc(8px * var(--ui-scale));
+      border-radius: calc(8px * var(--ui-scale));
+      border: 1px solid #4452a3;
+      background: rgba(10, 14, 36, 0.8);
+      color: #fff;
+      font-size: calc(16px * var(--ui-scale));
+      text-transform: uppercase;
+      letter-spacing: calc(2px * var(--ui-scale));
+      text-align: center;
+    }
+
+    .player-name-submit input:focus {
+      outline: none;
+      border-color: #6b7dff;
+      box-shadow: 0 0 0 calc(2px * var(--ui-scale)) rgba(107, 125, 255, 0.25);
+    }
+
+    .player-name-submit button {
+      padding: calc(8px * var(--ui-scale)) calc(14px * var(--ui-scale));
+      border-radius: calc(8px * var(--ui-scale));
+      border: 1px solid #4452a3;
+      background: linear-gradient(180deg, #1c2550, #151c3a);
+      color: #fff;
+      font-size: calc(14px * var(--ui-scale));
+      font-weight: 600;
+      cursor: pointer;
+      transition: transform 0.15s ease, box-shadow 0.15s ease;
+    }
+
+    .player-name-submit button:hover,
+    .player-name-submit button:focus {
+      outline: none;
+      border-color: #6b7dff;
+      box-shadow: 0 4px 12px rgba(20, 30, 80, 0.35);
+      transform: translateY(calc(-1px * var(--ui-scale)));
+    }
+
     .ranking-table-container {
       border: 1px solid #1c2452;
       border-radius: calc(12px * var(--ui-scale));
@@ -750,7 +806,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
   <script>
     (() => {
       const GAME_VERSION = "V25.09.24.01";
-      const RANKING_API_URL = "https://script.google.com/macros/s/AKfycbzUjrfjVekxS7TV4hxSFoljwbZ-hKyXnG93J2roTyidNrsBRHOb-lboPMsk1BYzv88b/exec";
+      const RANKING_API_URL = "https://script.google.com/macros/s/AKfycbzCOEbNIYcubKK-lUQw398AI5dlQi01ed-GZoxiQUloK-RbpUCW1pY5-03G9UmWbCV_/exec";
       const versionLabelEl = document.getElementById("versionLabel");
       if (versionLabelEl) {
         versionLabelEl.textContent = GAME_VERSION;
@@ -2007,6 +2063,9 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
       let hp = playerHP;
       let exp = 0; // 현재 경험치
       let level = 1; // 현재 레벨
+      let lastGameStats = null; // 게임 종료 시 기록된 최종 스탯
+      let hasSubmittedCurrentRecord = false;
+      let isSubmittingRank = false;
 
       const HOLD_DURATION = 800;
       let levelupActive = false;
@@ -2630,14 +2689,19 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
         setTimeout(() => {
           running = false;
           updatePauseButton();
-          showGameOverScreen({
+          const minutes = Math.floor(elapsed / 60);
+          const secondsLabel = (elapsed % 60).toFixed(2).padStart(5, "0");
+          const finalStats = {
             wave: getWaveLabel(),
-            time: `${Math.floor(elapsed / 60)}분 ${(elapsed % 60).toFixed(2).padStart(5, "0")}초`,
+            time: `${minutes}분 ${secondsLabel}초`,
+            timeSeconds: elapsed,
             score,
             weapon: baseAttack,
             level,
             upgrades: getAcquiredUpgradesSnapshot(),
-          });
+          };
+          lastGameStats = finalStats;
+          showGameOverScreen(finalStats);
         }, 1000);
       }
 
@@ -3890,6 +3954,9 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
       }
 
       function showRankingScreen() {
+        const playerRankMessage = lastGameStats
+          ? "내 기록 순위를 계산 중..."
+          : "플레이 기록이 없습니다.";
         overlay.innerHTML = `
         <div class="panel ranking-panel">
           <h1>랭킹</h1>
@@ -3915,6 +3982,22 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
               </tbody>
             </table>
           </div>
+          <p class="player-rank-info" id="playerRankInfo">${playerRankMessage}</p>
+          <div class="player-name-submit" id="playerNameSubmit">
+            <input
+              id="playerNameInput"
+              type="text"
+              inputmode="text"
+              maxlength="3"
+              placeholder="ABC"
+              aria-label="이름 입력"
+              pattern="[A-Za-z0-9]*"
+              autocomplete="off"
+              autocorrect="off"
+              spellcheck="false"
+            />
+            <button id="btnEngraveScore" type="button">새기기</button>
+          </div>
           <div class="row" id="rankingActions">
             <button id="btnRankingRestart">다시 하기<br>(SPACE)</button>
           </div>
@@ -3923,6 +4006,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
           </div>
         </div>`;
         overlay.style.display = "flex";
+        initializePlayerNameInput();
 
         const btnRankingRestart = document.getElementById("btnRankingRestart");
 
@@ -3938,7 +4022,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
         levelupActive = true;
         updatePauseButton();
 
-        loadRankingData();
+        loadRankingData(lastGameStats);
 
         if (btnRankingRestart) {
           btnRankingRestart.addEventListener("mouseenter", () => {
@@ -3961,7 +4045,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
         }
       }
 
-      async function loadRankingData() {
+      async function loadRankingData(playerStats = null) {
         const tableBody = document.getElementById("rankingTableBody");
         if (!tableBody) return;
 
@@ -3985,6 +4069,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
                 <td class="ranking-table-placeholder" colspan="9">등록된 랭킹 데이터가 없습니다.</td>
               </tr>
             `;
+            updatePlayerRankInfo(playerStats, []);
             return;
           }
 
@@ -3996,12 +4081,13 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
             appendRankingCell(row, formatRankingValue(entry.wave));
             appendRankingWeaponCell(row, entry.weapon);
             appendRankingCell(row, formatRankingNumber(entry.score));
-            appendRankingCell(row, formatRankingValue(entry.time));
+            appendRankingCell(row, formatRankingTimeDisplay(entry.time));
             appendRankingCell(row, formatRankingValue(entry.level));
             appendRankingUpgradesCell(row, entry.upgrades);
             appendRankingCell(row, formatRankingDate(entry.regdate));
             tableBody.appendChild(row);
           });
+          updatePlayerRankInfo(playerStats, data);
         } catch (error) {
           console.error(error);
           tableBody.innerHTML = `
@@ -4009,7 +4095,420 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
               <td class="ranking-table-placeholder" colspan="9">랭킹을 불러오지 못했습니다.</td>
             </tr>
           `;
+          updatePlayerRankInfo(playerStats, null);
+      }
+    }
+
+      function sanitizePlayerNameValue(value) {
+        if (typeof value !== "string") {
+          return "";
         }
+        return value.replace(/[^a-z0-9]/gi, "").toUpperCase().slice(0, 3);
+      }
+
+      function initializePlayerNameInput() {
+        const container = document.getElementById("playerNameSubmit");
+        if (!container) {
+          return;
+        }
+        hasSubmittedCurrentRecord = false;
+        setPlayerNameSubmitVisible(false);
+        const input = document.getElementById("playerNameInput");
+        if (!input) {
+          return;
+        }
+        input.value = "";
+        input.addEventListener("input", () => {
+          const sanitized = sanitizePlayerNameValue(input.value);
+          if (input.value !== sanitized) {
+            input.value = sanitized;
+          }
+        });
+        input.addEventListener("keydown", (event) => {
+          if (event.key === "Enter") {
+            event.preventDefault();
+            submitPlayerScore();
+          }
+        });
+        const button = document.getElementById("btnEngraveScore");
+        if (button) {
+          button.disabled = false;
+          button.textContent = "새기기";
+          button.onclick = submitPlayerScore;
+        }
+      }
+
+      function setPlayerNameSubmitVisible(isVisible) {
+        const container = document.getElementById("playerNameSubmit");
+        if (!container) {
+          return;
+        }
+        container.style.display = isVisible ? "flex" : "none";
+        const input = document.getElementById("playerNameInput");
+        if (input && !isVisible) {
+          input.value = "";
+        }
+        if (!isVisible) {
+          isSubmittingRank = false;
+        }
+      }
+
+      function focusPlayerNameInput() {
+        const input = document.getElementById("playerNameInput");
+        if (!input) {
+          return;
+        }
+        input.focus();
+        if (typeof input.setSelectionRange === "function") {
+          input.setSelectionRange(input.value.length, input.value.length);
+        }
+      }
+
+      function getSanitizedPlayerName() {
+        const input = document.getElementById("playerNameInput");
+        if (!input) {
+          return "";
+        }
+        const sanitized = sanitizePlayerNameValue(input.value);
+        if (input.value !== sanitized) {
+          input.value = sanitized;
+        }
+        return sanitized;
+      }
+
+      function buildRankingSubmissionPayload(name) {
+        if (!lastGameStats) {
+          return null;
+        }
+
+        const upgradesArray = Array.isArray(lastGameStats.upgrades)
+          ? lastGameStats.upgrades.map(({ id, count }) => ({ id, count }))
+          : [];
+
+        const upgradesValue = upgradesArray.length > 0
+          ? JSON.stringify(upgradesArray)
+          : "";
+
+        const timeValue = Number(lastGameStats.timeSeconds);
+        let timeSeconds = Number.isFinite(timeValue) ? Math.max(timeValue, 0) : 0;
+        timeSeconds = Math.trunc(timeSeconds * 1000) / 1000;
+
+        return {
+          name,
+          wave: Number(lastGameStats.wave) || 0,
+          weapon: lastGameStats.weapon || "",
+          score: Number(lastGameStats.score) || 0,
+          time: timeSeconds,
+          level: Number(lastGameStats.level) || 1,
+          upgrades: upgradesValue,
+          version: GAME_VERSION,
+        };
+      }
+
+      async function submitPlayerScore() {
+        if (isSubmittingRank) {
+          return;
+        }
+
+        const name = getSanitizedPlayerName();
+        if (!name) {
+          setPlayerRankInfoMessage("이름을 입력해주세요. (영문/숫자 3글자)");
+          focusPlayerNameInput();
+          return;
+        }
+        if (name.length < 3) {
+          setPlayerRankInfoMessage("이름은 3글자로 입력해주세요.");
+          focusPlayerNameInput();
+          return;
+        }
+
+        const payload = buildRankingSubmissionPayload(name);
+        if (!payload) {
+          setPlayerRankInfoMessage("기록이 없어 랭킹에 새길 수 없습니다.");
+          return;
+        }
+
+        const button = document.getElementById("btnEngraveScore");
+        const originalLabel = button ? button.textContent : "";
+        if (button) {
+          button.disabled = true;
+          button.textContent = "새기는 중...";
+        }
+
+        isSubmittingRank = true;
+        setPlayerRankInfoMessage("랭킹에 새기는 중입니다...");
+
+        try {
+          const response = await fetch(RANKING_API_URL, {
+            method: "POST",
+            headers: { "Content-Type": "text/plain;charset=utf-8" },
+            body: JSON.stringify(payload),
+          });
+
+          if (!response.ok) {
+            throw new Error(`Failed to submit: ${response.status}`);
+          }
+
+          const result = await response.json();
+          if (!result || result.status !== "success") {
+            throw new Error("Unexpected response");
+          }
+
+          hasSubmittedCurrentRecord = true;
+          const rankNumber = Number(result.finalRank);
+          if (result.isRanked && Number.isFinite(rankNumber)) {
+            setPlayerRankInfoMessage(`랭킹에 새겼습니다! 현재 ${rankNumber}위입니다.`);
+          } else {
+            setPlayerRankInfoMessage("랭킹에 새겼습니다! 100위 밖입니다.");
+          }
+          setPlayerNameSubmitVisible(false);
+          await loadRankingData(lastGameStats);
+        } catch (error) {
+          console.error(error);
+          setPlayerRankInfoMessage("랭킹 새기기에 실패했습니다. 잠시 후 다시 시도해주세요.");
+        } finally {
+          isSubmittingRank = false;
+          if (button) {
+            button.disabled = false;
+            button.textContent = originalLabel || "새기기";
+          }
+        }
+      }
+
+      function setPlayerRankInfoMessage(message) {
+        const infoEl = document.getElementById("playerRankInfo");
+        if (!infoEl) return;
+        infoEl.textContent = message;
+      }
+
+      function updatePlayerRankInfo(playerStats, rankingData) {
+        setPlayerNameSubmitVisible(false);
+        if (!Array.isArray(rankingData)) {
+          setPlayerRankInfoMessage(
+            playerStats
+              ? "랭킹 데이터를 불러올 수 없어 순위를 확인할 수 없습니다."
+              : "랭킹 데이터를 불러올 수 없습니다.",
+          );
+          return;
+        }
+
+        if (!playerStats) {
+          setPlayerRankInfoMessage("플레이 기록이 없습니다.");
+          return;
+        }
+
+        if (rankingData.length === 0) {
+          setPlayerRankInfoMessage("랭킹 데이터가 없어 순위를 확인할 수 없습니다.");
+          return;
+        }
+
+        const result = calculatePlayerRank(playerStats, rankingData);
+        if (!result) {
+          setPlayerRankInfoMessage("내 기록 순위를 계산할 수 없습니다.");
+          return;
+        }
+
+        setPlayerRankInfoMessage(
+          result.isWithinTop100
+            ? `내 기록 순위: ${result.rank}위`
+            : "내 기록 순위: 100위 밖",
+        );
+
+        if (result.isWithinTop100 && !hasSubmittedCurrentRecord) {
+          setPlayerNameSubmitVisible(true);
+          focusPlayerNameInput();
+        }
+      }
+
+      function calculatePlayerRank(playerStats, rankingData) {
+        const playerEntry = normalizePlayerStatsForRank(playerStats);
+        if (!playerEntry) {
+          return null;
+        }
+
+        const entries = [];
+        rankingData.forEach((entry) => {
+          const normalized = normalizeRankingEntryForSort(entry);
+          if (normalized) {
+            entries.push(normalized);
+          }
+        });
+
+        const sortable = entries.slice();
+        sortable.push(playerEntry);
+        sortable.sort(compareRankingMetrics);
+
+        const playerIndex = sortable.findIndex((entry) => entry.isPlayer);
+        if (playerIndex === -1) {
+          return null;
+        }
+
+        const rank = playerIndex + 1;
+        return {
+          rank,
+          isWithinTop100: rank <= 100,
+        };
+      }
+
+      function normalizePlayerStatsForRank(stats) {
+        if (!stats) return null;
+        const wave = parseRankingWave(stats.wave);
+        const score = parseRankingScore(stats.score);
+        const level = parseRankingLevel(stats.level);
+        let time = Number(stats.timeSeconds);
+        if (!Number.isFinite(time)) {
+          time = parseRankingTime(stats.time);
+        }
+        if (!Number.isFinite(time)) {
+          time = Number.POSITIVE_INFINITY;
+        }
+
+        return {
+          wave,
+          score,
+          level,
+          time,
+          isPlayer: true,
+        };
+      }
+
+      function normalizeRankingEntryForSort(entry) {
+        if (!entry || typeof entry !== "object") {
+          return null;
+        }
+        return {
+          wave: parseRankingWave(entry.wave),
+          score: parseRankingScore(entry.score),
+          level: parseRankingLevel(entry.level),
+          time: parseRankingTime(entry.time),
+        };
+      }
+
+      function compareRankingMetrics(a, b) {
+        if (a.wave !== b.wave) {
+          return b.wave - a.wave;
+        }
+        if (a.score !== b.score) {
+          return b.score - a.score;
+        }
+        if (a.level !== b.level) {
+          return a.level - b.level;
+        }
+        if (a.time !== b.time) {
+          return a.time - b.time;
+        }
+        return 0;
+      }
+
+      function extractFirstNumber(value) {
+        if (value === null || value === undefined) {
+          return null;
+        }
+        if (typeof value === "number") {
+          return Number.isFinite(value) ? value : null;
+        }
+        const str = String(value).trim();
+        if (!str) {
+          return null;
+        }
+        const sanitized = str.replace(/,/g, "");
+        const direct = Number(sanitized);
+        if (Number.isFinite(direct)) {
+          return direct;
+        }
+        const match = sanitized.match(/-?\d+(?:\.\d+)?/);
+        if (match) {
+          const num = Number(match[0]);
+          if (Number.isFinite(num)) {
+            return num;
+          }
+        }
+        return null;
+      }
+
+      function parseRankingWave(value) {
+        const num = extractFirstNumber(value);
+        return Number.isFinite(num) ? num : Number.NEGATIVE_INFINITY;
+      }
+
+      function parseRankingScore(value) {
+        const num = extractFirstNumber(value);
+        return Number.isFinite(num) ? num : Number.NEGATIVE_INFINITY;
+      }
+
+      function parseRankingLevel(value) {
+        const num = extractFirstNumber(value);
+        return Number.isFinite(num) ? num : Number.POSITIVE_INFINITY;
+      }
+
+      function parseRankingTime(value) {
+        if (value === null || value === undefined) {
+          return Number.POSITIVE_INFINITY;
+        }
+        if (typeof value === "number") {
+          if (!Number.isFinite(value)) {
+            return Number.POSITIVE_INFINITY;
+          }
+          if (value > 100000) {
+            return value / 1000;
+          }
+          return value;
+        }
+        const str = String(value).trim();
+        if (!str) {
+          return Number.POSITIVE_INFINITY;
+        }
+
+        const minuteSecondMatch = str.match(/(\d+)\s*분\s*(\d+(?:\.\d+)?)\s*초/);
+        if (minuteSecondMatch) {
+          return Number(minuteSecondMatch[1]) * 60 + Number(minuteSecondMatch[2]);
+        }
+
+        const minuteOnlyMatch = str.match(/(\d+(?:\.\d+)?)\s*분/);
+        if (minuteOnlyMatch) {
+          return Number(minuteOnlyMatch[1]) * 60;
+        }
+
+        const secondOnlyMatch = str.match(/(\d+(?:\.\d+)?)\s*초/);
+        if (secondOnlyMatch) {
+          return Number(secondOnlyMatch[1]);
+        }
+
+        if (str.includes(":")) {
+          const colonParts = str
+            .split(":")
+            .map((part) => part.trim())
+            .filter((part) => part.length > 0);
+          if (colonParts.length > 1) {
+            let multiplier = 1;
+            let totalSeconds = 0;
+            for (let i = colonParts.length - 1; i >= 0; i--) {
+              const numericPart = Number(colonParts[i].replace(/[^0-9.]/g, ""));
+              if (!Number.isFinite(numericPart)) {
+                totalSeconds = Number.NaN;
+                break;
+              }
+              totalSeconds += numericPart * multiplier;
+              multiplier *= 60;
+            }
+            if (Number.isFinite(totalSeconds)) {
+              return totalSeconds;
+            }
+          }
+        }
+
+        const sanitized = str.replace(/[^0-9.]/g, "");
+        if (sanitized) {
+          const numeric = Number(sanitized);
+          if (Number.isFinite(numeric)) {
+            if (numeric > 100000) {
+              return numeric / 1000;
+            }
+            return numeric;
+          }
+        }
+
+        return Number.POSITIVE_INFINITY;
       }
 
       function appendRankingCell(row, value, className) {
@@ -4376,6 +4875,21 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
         if (value === null || value === undefined) return "-";
         const str = String(value).trim();
         return str.length > 0 ? str : "-";
+      }
+
+      function formatRankingTimeDisplay(value) {
+        const seconds = parseRankingTime(value);
+        if (!Number.isFinite(seconds) || seconds === Number.POSITIVE_INFINITY) {
+          return formatRankingValue(value);
+        }
+
+        const totalMilliseconds = Math.trunc(Math.max(seconds, 0) * 1000);
+        const minutes = Math.floor(totalMilliseconds / 60000);
+        const remainingMs = totalMilliseconds - minutes * 60000;
+        const secondsPart = Math.floor(remainingMs / 1000);
+        const millisecondsPart = remainingMs - secondsPart * 1000;
+
+        return `${String(minutes).padStart(2, "0")}:${String(secondsPart).padStart(2, "0")}.${String(millisecondsPart).padStart(3, "0")}`;
       }
 
       function formatRankingNumber(value) {
