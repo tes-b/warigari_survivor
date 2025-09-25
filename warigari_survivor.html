@@ -4241,26 +4241,16 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
         try {
           const response = await fetch(RANKING_API_URL, {
             method: "POST",
-            headers: { "Content-Type": "text/plain;charset=utf-8" },
+            mode: "no-cors",
             body: JSON.stringify(payload),
           });
 
-          if (!response.ok) {
+          if (response && response.type !== "opaque" && !response.ok) {
             throw new Error(`Failed to submit: ${response.status}`);
           }
 
-          const result = await response.json();
-          if (!result || result.status !== "success") {
-            throw new Error("Unexpected response");
-          }
-
           hasSubmittedCurrentRecord = true;
-          const rankNumber = Number(result.finalRank);
-          if (result.isRanked && Number.isFinite(rankNumber)) {
-            setPlayerRankInfoMessage(`랭킹에 새겼습니다! 현재 ${rankNumber}위입니다.`);
-          } else {
-            setPlayerRankInfoMessage("랭킹에 새겼습니다! 100위 밖입니다.");
-          }
+          setPlayerRankInfoMessage("랭킹에 새기기 요청을 보냈습니다. 잠시 후 순위를 확인해주세요.");
           setPlayerNameSubmitVisible(false);
           await loadRankingData(lastGameStats);
         } catch (error) {
