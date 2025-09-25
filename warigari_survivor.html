@@ -4239,7 +4239,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
         try {
           const response = await fetch(RANKING_API_URL, {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
+            headers: { "Content-Type": "text/plain;charset=utf-8" },
             body: JSON.stringify(payload),
           });
 
