@@ -319,6 +319,14 @@
       border: 1px solid #7ea0ff55;
     }
 
+    .overlay button {
+      font-size: calc(14px * var(--overlay-scale));
+      padding: calc(12px * var(--overlay-scale))
+        calc(18px * var(--overlay-scale));
+      border-radius: calc(12px * var(--overlay-scale));
+      min-width: calc(120px * var(--overlay-scale));
+    }
+
     button:hover {
       transform: translateY(calc(-1px * var(--ui-scale)));
       filter: brightness(1.05);
