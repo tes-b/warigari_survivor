@@ -3994,11 +3994,11 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
         );
         const hasSubmittedRecord = hasSubmittedCurrentRecord === true;
         const registerButtonHTML = hasSubmittedRecord
-          ? `<button id="btnRegisterRanking" data-mode="view">전당 보기<br></button>`
+          ? ""
           : `<button id="btnRegisterRanking">전당 등록<br></button>`;
         const viewButtonHTML = hasSubmittedRecord
-          ? ""
-          : `<button id="btnViewRankingResults">전당 보기<br></button>`;
+          ? `<button id="btnViewRankingResults">전당 보기<br></button>`
+          : "";
         overlay.innerHTML = `
         <div class="panel">
           <h1>🕊️ 전쟁이 끝났습니다 🕊️</h1>
