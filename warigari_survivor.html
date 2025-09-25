@@ -2524,6 +2524,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
         "TIP: 이 게임의 개발자는 랩틸리언 입니다.",
         "TIP: 드럼스틱의 끝부분을 'Tip'이라 부릅니다.",
         "TIP: 아 팁 안 떠올라...",
+        "TIP: 전당에 이름을 올려 당신의 넘치는 시간을 자랑하세요.",
 
         "속보: 열심히 일하던 A 씨 거북목이 된 채 발견.",
         "속보: ‘오늘은 진짜 일찍 자야지’라던 플레이어, 새벽 3시 눈뜬 채 발견.",
@@ -4102,14 +4103,14 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
         const { mode = "register", onClose = null } = options || {};
         const isViewMode = mode === "view";
         const playerRankMessage = isViewMode
-          ? "전당 기록을 확인해보세요."
+          ? "이 페이지는 영광의 기록이자, 시간 낭비의 증거입니다."
           : lastGameStats
               ? "내 기록 순위를 계산 중..."
               : "플레이 기록이 없습니다.";
         const actionButtonHTML = `<button id="btnRankingClose">닫기<br>(SPACE)</button>`;
         overlay.innerHTML = `
         <div class="panel ranking-panel">
-          <h1>영웅의 전당</h1>
+          <h1>와리가리의 전당</h1>
           <div class="ranking-table-container">
             <table class="ranking-table">
               <thead>
@@ -4464,9 +4465,9 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
         if (hasSubmittedCurrentRecord && lastSubmittedRankResult) {
           const { isRanked, finalRank } = lastSubmittedRankResult;
           if (isRanked && Number.isFinite(finalRank)) {
-            setPlayerRankInfoMessage(`내 기록 순위: ${finalRank}위`);
+            setPlayerRankInfoMessage(`내 기록 : ${finalRank}위`);
           } else {
-            setPlayerRankInfoMessage("내 기록 순위: 100위 밖");
+            setPlayerRankInfoMessage("내 기록 : 100위 밖");
           }
           return;
         }
@@ -4498,8 +4499,8 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
 
         setPlayerRankInfoMessage(
           result.isWithinTop100
-            ? `내 기록 순위: ${result.rank}위`
-            : "내 기록 순위: 100위 밖",
+            ? `내 기록 : ${result.rank}위`
+            : "내 기록 : 100위 밖",
         );
 
         if (result.isWithinTop100 && !hasSubmittedCurrentRecord) {
