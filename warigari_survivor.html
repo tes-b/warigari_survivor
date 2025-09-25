@@ -3959,7 +3959,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
           : "플레이 기록이 없습니다.";
         overlay.innerHTML = `
         <div class="panel ranking-panel">
-          <h1>랭킹</h1>
+          <h1>명예의 전장</h1>
           <div class="ranking-table-container">
             <table class="ranking-table">
               <thead>
@@ -3977,7 +3977,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
               </thead>
               <tbody id="rankingTableBody">
                 <tr>
-                  <td class="ranking-table-placeholder" colspan="9">랭킹 데이터를 불러오는 중...</td>
+                  <td class="ranking-table-placeholder" colspan="9">전당 데이터를 불러오는 중...</td>
                 </tr>
               </tbody>
             </table>
@@ -4051,7 +4051,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
 
         tableBody.innerHTML = `
           <tr>
-            <td class="ranking-table-placeholder" colspan="9">랭킹 데이터를 불러오는 중...</td>
+            <td class="ranking-table-placeholder" colspan="9">전당 데이터를 불러오는 중...</td>
           </tr>
         `;
 
@@ -4066,7 +4066,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
           if (!Array.isArray(data) || data.length === 0) {
             tableBody.innerHTML = `
               <tr>
-                <td class="ranking-table-placeholder" colspan="9">등록된 랭킹 데이터가 없습니다.</td>
+                <td class="ranking-table-placeholder" colspan="9">등록된 전당 데이터가 없습니다.</td>
               </tr>
             `;
             updatePlayerRankInfo(playerStats, []);
@@ -4092,7 +4092,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
           console.error(error);
           tableBody.innerHTML = `
             <tr>
-              <td class="ranking-table-placeholder" colspan="9">랭킹을 불러오지 못했습니다.</td>
+              <td class="ranking-table-placeholder" colspan="9">전당 기록을 불러오지 못했습니다.</td>
             </tr>
           `;
           updatePlayerRankInfo(playerStats, null);
@@ -4224,7 +4224,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
 
         const payload = buildRankingSubmissionPayload(name);
         if (!payload) {
-          setPlayerRankInfoMessage("기록이 없어 랭킹에 새길 수 없습니다.");
+          setPlayerRankInfoMessage("기록이 없어 전당에 새길 수 없습니다.");
           return;
         }
 
@@ -4236,7 +4236,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
         }
 
         isSubmittingRank = true;
-        setPlayerRankInfoMessage("랭킹에 새기는 중입니다...");
+        setPlayerRankInfoMessage("전당에 새기는 중입니다...");
 
         try {
           const response = await fetch(RANKING_API_URL, {
@@ -4257,15 +4257,15 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
           hasSubmittedCurrentRecord = true;
           const rankNumber = Number(result.finalRank);
           if (result.isRanked && Number.isFinite(rankNumber)) {
-            setPlayerRankInfoMessage(`랭킹에 새겼습니다! 현재 ${rankNumber}위입니다.`);
+            setPlayerRankInfoMessage(`전당에 새겼습니다! 현재 ${rankNumber}위입니다.`);
           } else {
-            setPlayerRankInfoMessage("랭킹에 새겼습니다! 100위 밖입니다.");
+            setPlayerRankInfoMessage("전당에 새겼습니다! 100위 밖입니다.");
           }
           setPlayerNameSubmitVisible(false);
           await loadRankingData(lastGameStats);
         } catch (error) {
           console.error(error);
-          setPlayerRankInfoMessage("랭킹 새기기에 실패했습니다. 잠시 후 다시 시도해주세요.");
+          setPlayerRankInfoMessage("전당 새기기에 실패했습니다. 잠시 후 다시 시도해주세요.");
         } finally {
           isSubmittingRank = false;
           if (button) {
@@ -4286,8 +4286,8 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
         if (!Array.isArray(rankingData)) {
           setPlayerRankInfoMessage(
             playerStats
-              ? "랭킹 데이터를 불러올 수 없어 순위를 확인할 수 없습니다."
-              : "랭킹 데이터를 불러올 수 없습니다.",
+              ? "전당 데이터를 불러올 수 없어 순위를 확인할 수 없습니다."
+              : "전당 데이터를 불러올 수 없습니다.",
           );
           return;
         }
@@ -4298,7 +4298,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
         }
 
         if (rankingData.length === 0) {
-          setPlayerRankInfoMessage("랭킹 데이터가 없어 순위를 확인할 수 없습니다.");
+          setPlayerRankInfoMessage("전당 데이터가 없어 순위를 확인할 수 없습니다.");
           return;
         }
 
