@@ -3879,14 +3879,16 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
           <p><span class="kbd">좌클릭</span> 또는 <span class="kbd">스페이스바</span>로 <b>방향 전환</b></p>
           <p><span class="kbd">스페이스바</span> <b>길게 누르기</b> : 게임 시작</p>
           <div class="row"><button id="btnStart" type="button">게임 시작<br>(SPACE)</button></div>
+          <div class="row"><button id="btnViewRankingStart" type="button">전당 보기<br></button></div>
           <div class="hold-gauge"><div class="fill" id="startHoldGaugeFill"></div></div>
         </div>`;
         overlay.style.display = "flex";
 
         const btnStart = document.getElementById("btnStart");
+        const btnViewRankingStart = document.getElementById("btnViewRankingStart");
         const startGauge = document.getElementById("startHoldGaugeFill");
 
-        selectionButtons = btnStart ? [btnStart] : [];
+        selectionButtons = [btnStart, btnViewRankingStart].filter(Boolean);
         focusedOptionIndex = 0;
         holdGaugeFill = startGauge;
         if (holdGaugeFill) {
@@ -3915,6 +3917,28 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
               highlightFocusedOption();
             }
             audio.play("uiFocus");
+          });
+        }
+
+        if (btnViewRankingStart) {
+          const targetIndex = selectionButtons.indexOf(btnViewRankingStart);
+          btnViewRankingStart.onclick = () => {
+            endHold(false);
+            audio.play("uiSelect");
+            levelupActive = false;
+            showRankingScreen({
+              mode: "view",
+              onClose: () => {
+                showStartScreen();
+              },
+            });
+          };
+          btnViewRankingStart.addEventListener("mouseenter", () => {
+            if (focusedOptionIndex !== targetIndex) {
+              focusedOptionIndex = targetIndex;
+              highlightFocusedOption();
+              audio.play("uiFocus");
+            }
           });
         }
       }
@@ -3977,7 +4001,8 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
           ${upgradeSectionHTML}
           <div class="row" id="gameoverActions">
             <button id="btnRestart">다시 하기<br></button>
-            <button id="btnShowRanking">전당 등록<br></button>
+            <button id="btnRegisterRanking">전당 등록<br></button>
+            <button id="btnViewRankingGameover">전당 보기<br></button>
           </div>
           <div class="hold-gauge">
             <div class="fill" id="gameoverHoldGaugeFill"></div>
@@ -3986,8 +4011,15 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
         overlay.style.display = "flex";
 
         const btnRestart = document.getElementById("btnRestart");
-        const btnShowRanking = document.getElementById("btnShowRanking");
-        const actionButtons = [btnRestart, btnShowRanking].filter(Boolean);
+        const btnRegisterRanking = document.getElementById("btnRegisterRanking");
+        const btnViewRankingGameover = document.getElementById(
+          "btnViewRankingGameover",
+        );
+        const actionButtons = [
+          btnRestart,
+          btnRegisterRanking,
+          btnViewRankingGameover,
+        ].filter(Boolean);
 
         selectionButtons = actionButtons;
         focusedOptionIndex = 0;
@@ -4019,8 +4051,8 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
           };
         }
 
-        if (btnShowRanking) {
-          btnShowRanking.onclick = () => {
+        if (btnRegisterRanking) {
+          btnRegisterRanking.onclick = () => {
             endHold(false);
             audio.resume();
             audio.play("uiSelect");
@@ -4028,12 +4060,30 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
             showRankingScreen();
           };
         }
+
+        if (btnViewRankingGameover) {
+          const reopenGameOver = () => {
+            showGameOverScreen(stats);
+          };
+          btnViewRankingGameover.onclick = () => {
+            endHold(false);
+            audio.resume();
+            audio.play("uiSelect");
+            levelupActive = false;
+            showRankingScreen({ mode: "view", onClose: reopenGameOver });
+          };
+        }
       }
 
-      function showRankingScreen() {
+      function showRankingScreen(options = {}) {
+        const { mode = "register", onClose = null } = options || {};
+        const isViewMode = mode === "view";
         const playerRankMessage = lastGameStats
           ? "내 기록 순위를 계산 중..."
           : "플레이 기록이 없습니다.";
+        const actionButtonHTML = isViewMode
+          ? `<button id="btnRankingClose">닫기<br>(SPACE)</button>`
+          : `<button id="btnRankingRestart">다시 하기<br>(SPACE)</button>`;
         overlay.innerHTML = `
         <div class="panel ranking-panel">
           <h1>영웅의 전당</h1>
@@ -4060,34 +4110,48 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
             </table>
           </div>
           <p class="player-rank-info" id="playerRankInfo">${playerRankMessage}</p>
-          <div class="player-name-submit" id="playerNameSubmit">
+          ${
+            isViewMode
+              ? ""
+              : `<div class=\"player-name-submit\" id=\"playerNameSubmit\">
             <input
-              id="playerNameInput"
-              type="text"
-              inputmode="text"
-              maxlength="3"
-              placeholder="ABC"
-              aria-label="이름 입력"
-              pattern="[A-Za-z0-9]*"
-              autocomplete="off"
-              autocorrect="off"
-              spellcheck="false"
+              id=\"playerNameInput\"
+              type=\"text\"
+              inputmode=\"text\"
+              maxlength=\"3\"
+              placeholder=\"ABC\"
+              aria-label=\"이름 입력\"
+              pattern=\"[A-Za-z0-9]*\"
+              autocomplete=\"off\"
+              autocorrect=\"off\"
+              spellcheck=\"false\"
             />
-            <button id="btnEngraveScore" type="button">새기기</button>
-          </div>
+            <button id=\"btnEngraveScore\" type=\"button\">새기기</button>
+          </div>`
+          }
           <div class="row" id="rankingActions">
-            <button id="btnRankingRestart">다시 하기<br>(SPACE)</button>
+            ${actionButtonHTML}
           </div>
           <div class="hold-gauge">
             <div class="fill" id="rankingHoldGaugeFill"></div>
           </div>
         </div>`;
         overlay.style.display = "flex";
-        initializePlayerNameInput();
+
+        if (!isViewMode) {
+          initializePlayerNameInput();
+        }
 
         const btnRankingRestart = document.getElementById("btnRankingRestart");
+        const btnRankingClose = document.getElementById("btnRankingClose");
 
-        selectionButtons = btnRankingRestart ? [btnRankingRestart] : [];
+        if (btnRankingRestart) {
+          selectionButtons = [btnRankingRestart];
+        } else if (btnRankingClose) {
+          selectionButtons = [btnRankingClose];
+        } else {
+          selectionButtons = [];
+        }
         focusedOptionIndex = 0;
         holdGaugeFill = document.getElementById("rankingHoldGaugeFill");
         if (selectionButtons.length > 0) {
@@ -4099,7 +4163,9 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
         levelupActive = true;
         updatePauseButton();
 
-        loadRankingData(lastGameStats);
+        const playerStatsForRanking =
+          options.playerStats !== undefined ? options.playerStats : lastGameStats;
+        loadRankingData(playerStatsForRanking);
 
         if (btnRankingRestart) {
           btnRankingRestart.addEventListener("mouseenter", () => {
@@ -4118,6 +4184,29 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
             levelupActive = false;
             updatePauseButton();
             showWeaponSelectScreen();
+          };
+        }
+
+        if (btnRankingClose) {
+          btnRankingClose.addEventListener("mouseenter", () => {
+            if (focusedOptionIndex !== 0) {
+              focusedOptionIndex = 0;
+              highlightFocusedOption();
+              audio.play("uiFocus");
+            }
+          });
+
+          btnRankingClose.onclick = () => {
+            endHold(false);
+            audio.resume();
+            audio.play("uiSelect");
+            levelupActive = false;
+            updatePauseButton();
+            if (typeof onClose === "function") {
+              onClose();
+            } else {
+              overlay.style.display = "none";
+            }
           };
         }
       }
