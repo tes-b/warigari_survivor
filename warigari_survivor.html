@@ -2079,6 +2079,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
       let level = 1; // 현재 레벨
       let lastGameStats = null; // 게임 종료 시 기록된 최종 스탯
       let hasSubmittedCurrentRecord = false;
+      let lastSubmittedRankResult = null;
       let isSubmittingRank = false;
 
       const HOLD_DURATION = 800;
@@ -2735,6 +2736,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
           running = false;
           updatePauseButton();
           hasSubmittedCurrentRecord = false;
+          lastSubmittedRankResult = null;
           isSubmittingRank = false;
           const minutes = Math.floor(elapsed / 60);
           const secondsLabel = (elapsed % 60).toFixed(2).padStart(5, "0");
@@ -4281,6 +4283,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
           return;
         }
         hasSubmittedCurrentRecord = false;
+        lastSubmittedRankResult = null;
         setPlayerNameSubmitVisible(false);
         const input = document.getElementById("playerNameInput");
         if (!input) {
@@ -4425,7 +4428,12 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
 
           hasSubmittedCurrentRecord = true;
           const rankNumber = Number(result.finalRank);
-          if (result.isRanked && Number.isFinite(rankNumber)) {
+          const isRanked = result.isRanked === true && Number.isFinite(rankNumber);
+          lastSubmittedRankResult = {
+            isRanked,
+            finalRank: isRanked ? rankNumber : null,
+          };
+          if (isRanked) {
             setPlayerRankInfoMessage(`전당에 새겼습니다! 현재 ${rankNumber}위입니다.`);
           } else {
             setPlayerRankInfoMessage("전당에 새겼습니다! 100위 밖입니다.");
@@ -4452,6 +4460,17 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
 
       function updatePlayerRankInfo(playerStats, rankingData) {
         setPlayerNameSubmitVisible(false);
+
+        if (hasSubmittedCurrentRecord && lastSubmittedRankResult) {
+          const { isRanked, finalRank } = lastSubmittedRankResult;
+          if (isRanked && Number.isFinite(finalRank)) {
+            setPlayerRankInfoMessage(`내 기록 순위: ${finalRank}위`);
+          } else {
+            setPlayerRankInfoMessage("내 기록 순위: 100위 밖");
+          }
+          return;
+        }
+
         if (!Array.isArray(rankingData)) {
           setPlayerRankInfoMessage(
             playerStats
@@ -4503,19 +4522,19 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
           }
         });
 
-        const sortable = entries.slice();
-        sortable.push(playerEntry);
-        sortable.sort(compareRankingMetrics);
-
-        const playerIndex = sortable.findIndex((entry) => entry.isPlayer);
-        if (playerIndex === -1) {
-          return null;
+        let insertIndex = entries.length;
+        for (let i = 0; i < entries.length; i++) {
+          const comparison = compareRankingMetrics(playerEntry, entries[i]);
+          if (comparison < 0) {
+            insertIndex = i;
+            break;
+          }
         }
 
-        const rank = playerIndex + 1;
+        const rank = insertIndex + 1;
         return {
           rank,
-          isWithinTop100: rank <= 100,
+          isWithinTop100: insertIndex < 100,
         };
       }
 
