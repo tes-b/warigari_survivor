@@ -2734,6 +2734,8 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
         setTimeout(() => {
           running = false;
           updatePauseButton();
+          hasSubmittedCurrentRecord = false;
+          isSubmittingRank = false;
           const minutes = Math.floor(elapsed / 60);
           const secondsLabel = (elapsed % 60).toFixed(2).padStart(5, "0");
           const finalStats = {
@@ -3990,6 +3992,13 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
         const upgradeSectionHTML = buildGameOverUpgradeSection(
           stats.upgrades || []
         );
+        const hasSubmittedRecord = hasSubmittedCurrentRecord === true;
+        const registerButtonHTML = hasSubmittedRecord
+          ? `<button id="btnRegisterRanking" data-mode="view">전당 보기<br></button>`
+          : `<button id="btnRegisterRanking">전당 등록<br></button>`;
+        const viewButtonHTML = hasSubmittedRecord
+          ? ""
+          : `<button id="btnViewRankingResults">전당 보기<br></button>`;
         overlay.innerHTML = `
         <div class="panel">
           <h1>🕊️ 전쟁이 끝났습니다 🕊️</h1>
@@ -4001,7 +4010,8 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
           ${upgradeSectionHTML}
           <div class="row" id="gameoverActions">
             <button id="btnRestart">다시 하기<br></button>
-            <button id="btnRegisterRanking">전당 등록<br></button>
+            ${registerButtonHTML}
+            ${viewButtonHTML}
           </div>
           <div class="hold-gauge">
             <div class="fill" id="gameoverHoldGaugeFill"></div>
@@ -4011,7 +4021,14 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
 
         const btnRestart = document.getElementById("btnRestart");
         const btnRegisterRanking = document.getElementById("btnRegisterRanking");
-        const actionButtons = [btnRestart, btnRegisterRanking].filter(Boolean);
+        const btnViewRankingResults = document.getElementById(
+          "btnViewRankingResults"
+        );
+        const actionButtons = [
+          btnRestart,
+          btnRegisterRanking,
+          btnViewRankingResults,
+        ].filter(Boolean);
 
         selectionButtons = actionButtons;
         focusedOptionIndex = 0;
@@ -4049,7 +4066,31 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
             audio.resume();
             audio.play("uiSelect");
             levelupActive = false;
-            showRankingScreen();
+            const mode =
+              btnRegisterRanking.dataset.mode === "view" ? "view" : "register";
+            showRankingScreen({
+              mode,
+              playerStats: stats,
+              onClose: () => {
+                showGameOverScreen(stats);
+              },
+            });
+          };
+        }
+
+        if (btnViewRankingResults) {
+          btnViewRankingResults.onclick = () => {
+            endHold(false);
+            audio.resume();
+            audio.play("uiSelect");
+            levelupActive = false;
+            showRankingScreen({
+              mode: "view",
+              playerStats: stats,
+              onClose: () => {
+                showGameOverScreen(stats);
+              },
+            });
           };
         }
 
@@ -4061,9 +4102,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
         const playerRankMessage = lastGameStats
           ? "내 기록 순위를 계산 중..."
           : "플레이 기록이 없습니다.";
-        const actionButtonHTML = isViewMode
-          ? `<button id="btnRankingClose">닫기<br>(SPACE)</button>`
-          : `<button id="btnRankingRestart">다시 하기<br>(SPACE)</button>`;
+        const actionButtonHTML = `<button id="btnRankingClose">닫기<br>(SPACE)</button>`;
         overlay.innerHTML = `
         <div class="panel ranking-panel">
           <h1>영웅의 전당</h1>
@@ -4122,16 +4161,9 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
           initializePlayerNameInput();
         }
 
-        const btnRankingRestart = document.getElementById("btnRankingRestart");
         const btnRankingClose = document.getElementById("btnRankingClose");
 
-        if (btnRankingRestart) {
-          selectionButtons = [btnRankingRestart];
-        } else if (btnRankingClose) {
-          selectionButtons = [btnRankingClose];
-        } else {
-          selectionButtons = [];
-        }
+        selectionButtons = btnRankingClose ? [btnRankingClose] : [];
         focusedOptionIndex = 0;
         holdGaugeFill = document.getElementById("rankingHoldGaugeFill");
         if (selectionButtons.length > 0) {
@@ -4146,26 +4178,6 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
         const playerStatsForRanking =
           options.playerStats !== undefined ? options.playerStats : lastGameStats;
         loadRankingData(playerStatsForRanking);
-
-        if (btnRankingRestart) {
-          btnRankingRestart.addEventListener("mouseenter", () => {
-            if (focusedOptionIndex !== 0) {
-              focusedOptionIndex = 0;
-              highlightFocusedOption();
-              audio.play("uiFocus");
-            }
-          });
-
-          btnRankingRestart.onclick = () => {
-            endHold(false);
-            audio.resume();
-            audio.play("uiSelect");
-            overlay.style.display = "none";
-            levelupActive = false;
-            updatePauseButton();
-            showWeaponSelectScreen();
-          };
-        }
 
         if (btnRankingClose) {
           btnRankingClose.addEventListener("mouseenter", () => {
