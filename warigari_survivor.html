@@ -8,6 +8,7 @@
   <style>
     :root {
       --ui-scale: 1;
+      --overlay-scale: 1;
     }
 
     html,
@@ -63,6 +64,7 @@
     }
 
     .overlay {
+      --ui-scale: var(--overlay-scale, 1);
       position: absolute;
       inset: 0;
       display: flex;
@@ -73,7 +75,7 @@
           rgba(6, 8, 20, 0.88));
       z-index: 10;
       text-align: center;
-      padding: 24px;
+      padding: calc(24px * var(--ui-scale));
     }
 
     .office-overlay {
@@ -114,6 +116,8 @@
       flex-direction: column;
       gap: calc(12px * var(--ui-scale));
       max-width: calc(760px * var(--ui-scale));
+      max-height: 100%;
+      box-sizing: border-box;
     }
 
     .player-rank-info {
@@ -176,8 +180,10 @@
       border: 1px solid #1c2452;
       border-radius: calc(12px * var(--ui-scale));
       overflow: auto;
-      max-height: calc(360px * var(--ui-scale));
+      max-height: calc(300px * var(--ui-scale));
       background: rgba(8, 12, 32, 0.65);
+      flex: 1 1 auto;
+      min-height: 0;
     }
 
     .ranking-table {
@@ -311,6 +317,14 @@
         transform 0.06s ease,
         filter 0.1s ease;
       border: 1px solid #7ea0ff55;
+    }
+
+    .overlay button {
+      font-size: calc(14px * var(--overlay-scale));
+      padding: calc(12px * var(--overlay-scale))
+        calc(18px * var(--overlay-scale));
+      border-radius: calc(12px * var(--overlay-scale));
+      min-width: calc(120px * var(--overlay-scale));
     }
 
     button:hover {
@@ -2138,6 +2152,11 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
         wrap.style.height = targetH + "px";
         const scale = Math.min(targetW / 960, 1);
         document.documentElement.style.setProperty("--ui-scale", scale);
+        const overlayScale = Math.min(scale, h / 720);
+        document.documentElement.style.setProperty(
+          "--overlay-scale",
+          overlayScale,
+        );
       }
       window.addEventListener("resize", fitCanvas);
       fitCanvas();
