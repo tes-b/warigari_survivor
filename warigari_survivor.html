@@ -4099,9 +4099,11 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
       function showRankingScreen(options = {}) {
         const { mode = "register", onClose = null } = options || {};
         const isViewMode = mode === "view";
-        const playerRankMessage = lastGameStats
-          ? "내 기록 순위를 계산 중..."
-          : "플레이 기록이 없습니다.";
+        const playerRankMessage = isViewMode
+          ? "전당 기록을 확인해보세요."
+          : lastGameStats
+              ? "내 기록 순위를 계산 중..."
+              : "플레이 기록이 없습니다.";
         const actionButtonHTML = `<button id="btnRankingClose">닫기<br>(SPACE)</button>`;
         overlay.innerHTML = `
         <div class="panel ranking-panel">
@@ -4177,7 +4179,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
 
         const playerStatsForRanking =
           options.playerStats !== undefined ? options.playerStats : lastGameStats;
-        loadRankingData(playerStatsForRanking);
+        loadRankingData(playerStatsForRanking, { skipPlayerRank: isViewMode });
 
         if (btnRankingClose) {
           btnRankingClose.addEventListener("mouseenter", () => {
@@ -4203,7 +4205,8 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
         }
       }
 
-      async function loadRankingData(playerStats = null) {
+      async function loadRankingData(playerStats = null, options = {}) {
+        const { skipPlayerRank = false } = options || {};
         const tableBody = document.getElementById("rankingTableBody");
         if (!tableBody) return;
 
@@ -4227,7 +4230,9 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
                 <td class="ranking-table-placeholder" colspan="9">등록된 전당 데이터가 없습니다.</td>
               </tr>
             `;
-            updatePlayerRankInfo(playerStats, []);
+            if (!skipPlayerRank) {
+              updatePlayerRankInfo(playerStats, []);
+            }
             return;
           }
 
@@ -4245,7 +4250,9 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
             appendRankingCell(row, formatRankingDate(entry.regdate));
             tableBody.appendChild(row);
           });
-          updatePlayerRankInfo(playerStats, data);
+          if (!skipPlayerRank) {
+            updatePlayerRankInfo(playerStats, data);
+          }
         } catch (error) {
           console.error(error);
           tableBody.innerHTML = `
@@ -4253,9 +4260,13 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
               <td class="ranking-table-placeholder" colspan="9">전당 기록을 불러오지 못했습니다.</td>
             </tr>
           `;
-          updatePlayerRankInfo(playerStats, null);
+          if (skipPlayerRank) {
+            setPlayerRankInfoMessage("전당 데이터를 불러오지 못했습니다.");
+          } else {
+            updatePlayerRankInfo(playerStats, null);
+          }
+        }
       }
-    }
 
       function sanitizePlayerNameValue(value) {
         if (typeof value !== "string") {
