@@ -3872,25 +3872,51 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
         if (hudContainer) {
           hudContainer.style.display = "none";
         }
-        updatePauseButton();
         overlay.innerHTML = `
         <div class="panel">
           <h1>와리가리 서바이버</h1>
           <h3>WARI-GARI SURVIVOR</h3>
           <p><span class="kbd">좌클릭</span> 또는 <span class="kbd">스페이스바</span>로 <b>방향 전환</b></p>
-          <div class="row"><button id="btnStart">게임 시작<br>(SPACE)</button></div>
+          <p><span class="kbd">스페이스바</span> <b>길게 누르기</b> : 게임 시작</p>
+          <div class="row"><button id="btnStart" type="button">게임 시작<br>(SPACE)</button></div>
+          <div class="hold-gauge"><div class="fill" id="startHoldGaugeFill"></div></div>
         </div>`;
         overlay.style.display = "flex";
+
         const btnStart = document.getElementById("btnStart");
-        btnStart.onclick = () => {
-          audio.resume();
-          audio.play("uiSelect");
-          overlay.style.display = "none";
-          showWeaponSelectScreen();
-        };
-        btnStart.addEventListener("mouseenter", () => {
-          audio.play("uiFocus");
-        });
+        const startGauge = document.getElementById("startHoldGaugeFill");
+
+        selectionButtons = btnStart ? [btnStart] : [];
+        focusedOptionIndex = 0;
+        holdGaugeFill = startGauge;
+        if (holdGaugeFill) {
+          holdGaugeFill.style.width = "0%";
+        }
+        if (selectionButtons.length > 0) {
+          highlightFocusedOption();
+        }
+
+        levelupActive = true;
+        updatePauseButton();
+
+        if (btnStart) {
+          btnStart.onclick = () => {
+            endHold(false);
+            audio.resume();
+            audio.play("uiSelect");
+            overlay.style.display = "none";
+            levelupActive = false;
+            updatePauseButton();
+            showWeaponSelectScreen();
+          };
+          btnStart.addEventListener("mouseenter", () => {
+            if (focusedOptionIndex !== 0) {
+              focusedOptionIndex = 0;
+              highlightFocusedOption();
+            }
+            audio.play("uiFocus");
+          });
+        }
       }
 
       function getWeaponDisplay(weaponId) {
