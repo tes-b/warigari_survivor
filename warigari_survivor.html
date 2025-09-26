@@ -27,6 +27,10 @@
       font-size: calc(16px * var(--ui-scale));
     }
 
+    body.levelup-active {
+      overflow: hidden;
+    }
+
     #wrap {
       display: flex;
       height: 100%;
@@ -55,6 +59,7 @@
     #canvasWrap {
       flex: none;
       position: relative;
+      overflow: hidden;
     }
 
     canvas {
@@ -501,6 +506,7 @@
       z-index: 15;
       text-align: center;
       padding: calc(24px * var(--ui-scale));
+      overflow: hidden;
     }
 
     .levelup-panel {
@@ -3816,6 +3822,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
               levelUpImpulse();
             }
             levelupOverlay.style.display = "none";
+            document.body.classList.remove("levelup-active");
             levelupPanel.classList.remove("show", "ready");
             if (levelupPanelAnimationTimeout) {
               clearTimeout(levelupPanelAnimationTimeout);
@@ -3868,6 +3875,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
           `${LEVELUP_PANEL_SLIDE_DURATION}ms`,
         );
         levelupOverlay.style.display = "flex";
+        document.body.classList.add("levelup-active");
         void levelupPanel.offsetWidth;
         requestAnimationFrame(() => {
           levelupPanel.classList.add("show");
