@@ -716,7 +716,7 @@
         🔊
       </button>
       <button type="button" class="control-button pause-button" id="pauseButton" aria-label="일시정지" title="일시정지">
-        ⏸
+        ⏸️
       </button>
 
       <div class="hud" id="hud" style="display:none">
@@ -2171,7 +2171,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
         if (!running) {
           pauseButton.style.display = "none";
           pauseButton.disabled = true;
-          pauseButton.textContent = "⏸";
+          pauseButton.textContent = "⏸️";
           pauseButton.setAttribute("aria-label", "일시정지");
           pauseButton.title = "일시정지";
           updateMuteButton();
@@ -2182,7 +2182,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
         const shouldDisable = levelupActive || (paused && !overlayVisible);
         const showResume = paused && !shouldDisable;
         const label = showResume ? "계속하기" : "일시정지";
-        pauseButton.textContent = showResume ? "▶" : "⏸";
+        pauseButton.textContent = showResume ? "▶️" : "⏸️";
         pauseButton.setAttribute("aria-label", label);
         pauseButton.title = label;
         pauseButton.disabled = shouldDisable;
@@ -2818,8 +2818,8 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
       <div class="panel">
         <h1>일시정지</h1>
         <div class="row">
-          <button id="btnResume">계속하기<br>(ESC)</button>
-          <button id="btnRestart">다시하기</button>
+          <button id="btnResume">▶️ 계속하기</button>
+          <button id="btnRestart">↩️ 다시하기</button>
         </div>
         <div class="hold-gauge"><div class="fill" id="pauseHoldGaugeFill"></div></div>
       </div>`;
@@ -4210,7 +4210,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
           <p>TIME: <b>${stats.time}</b></p>
           ${upgradeSectionHTML}
           <div class="row" id="gameoverActions">
-            <button id="btnRestart">⚔️ 다시하기<br></button>
+            <button id="btnRestart">↩️ 다시하기<br></button>
             ${registerButtonHTML}
             ${viewButtonHTML}
           </div>
