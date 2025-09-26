@@ -513,23 +513,25 @@
       box-shadow:
         0 15px 40px rgba(0, 0, 0, 0.5),
         inset 0 0 80px rgba(74, 99, 212, 0.15);
-      animation: levelupPulse 0.6s ease-out;
     }
 
     #levelupOverlay .levelup-panel {
       max-width: calc(860px * var(--ui-scale));
+      transform: translateY(100vh);
+      opacity: 0;
+      transition:
+        transform var(--levelup-slide-duration, 0.7s) ease-out,
+        opacity var(--levelup-slide-duration, 0.7s) ease-out;
+      pointer-events: none;
     }
 
-    @keyframes levelupPulse {
-      0% {
-        transform: scale(0.8);
-        opacity: 0;
-      }
+    #levelupOverlay .levelup-panel.show {
+      transform: translateY(0);
+      opacity: 1;
+    }
 
-      100% {
-        transform: scale(1);
-        opacity: 1;
-      }
+    #levelupOverlay .levelup-panel.ready {
+      pointer-events: auto;
     }
 
     .upgrade-grid {
@@ -2117,7 +2119,10 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
       let isSubmittingRank = false;
 
       const HOLD_DURATION = 800;
+      const LEVELUP_PANEL_SLIDE_DURATION = 700;
       let levelupActive = false;
+      let levelupInputLocked = false;
+      let levelupPanelAnimationTimeout = null;
       let pendingLevelUps = 0; // 큐에 대기 중인 레벨업 수
       let pendingBossOrbs = 0; // 보상 대기 중인 보스 구슬 수
       let focusedOptionIndex = 0;
@@ -3706,6 +3711,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
       }
 
       function startHold() {
+        if (levelupInputLocked) return;
         spaceHoldStart = performance.now();
         audio.startHoldTone();
         updateHoldGauge();
@@ -3790,6 +3796,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
             <div class="upgrade-desc">${option.desc}</div>
         `;
           btn.onclick = () => {
+            if (levelupInputLocked) return;
             endHold(false);
             audio.play("uiSelect");
             const limitValue = Number.isFinite(option.limit)
@@ -3809,6 +3816,12 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
               levelUpImpulse();
             }
             levelupOverlay.style.display = "none";
+            levelupPanel.classList.remove("show", "ready");
+            if (levelupPanelAnimationTimeout) {
+              clearTimeout(levelupPanelAnimationTimeout);
+              levelupPanelAnimationTimeout = null;
+            }
+            levelupInputLocked = false;
             levelupActive = false;
             updatePauseButton();
 
@@ -3844,7 +3857,25 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
           upgradeGrid.style.gridTemplateColumns = "";
           levelupPanel.style.maxWidth = "";
         }
+        if (levelupPanelAnimationTimeout) {
+          clearTimeout(levelupPanelAnimationTimeout);
+          levelupPanelAnimationTimeout = null;
+        }
+        levelupInputLocked = true;
+        levelupPanel.classList.remove("show", "ready");
+        levelupPanel.style.setProperty(
+          "--levelup-slide-duration",
+          `${LEVELUP_PANEL_SLIDE_DURATION}ms`,
+        );
         levelupOverlay.style.display = "flex";
+        void levelupPanel.offsetWidth;
+        requestAnimationFrame(() => {
+          levelupPanel.classList.add("show");
+        });
+        levelupPanelAnimationTimeout = setTimeout(() => {
+          levelupPanel.classList.add("ready");
+          levelupInputLocked = false;
+        }, LEVELUP_PANEL_SLIDE_DURATION);
         audio.play("upgradeOpen");
         selectionButtons = document.querySelectorAll("#upgradeGrid .upgrade-btn");
         focusedOptionIndex = 0;
