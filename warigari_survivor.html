@@ -3473,6 +3473,11 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
         const skipId = primaryId ?? null;
         for (let i = enemies.length - 1; i >= 0; i--) {
           const e = enemies[i];
+          if (e.isBoss) {
+            // 폭발은 주변 일반 몬스터만 영향을 줘야 하는데
+            // 보스도 함께 처리되어 사라지는 문제가 있어 제외한다.
+            continue;
+          }
           if (!e.entered) continue;
           const ex = e.x + e.w / 2;
           const ey = e.y + e.h / 2;
