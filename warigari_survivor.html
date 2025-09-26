@@ -2854,12 +2854,17 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
             const restartIndex = selectionButtons.indexOf(btnRestart);
             btnRestart.onclick = () => {
               endHold(false);
+              audio.resume();
               audio.play("uiSelect");
               selectionButtons = [];
               focusedOptionIndex = 0;
               holdGaugeFill = null;
+              hideOverlay();
+              paused = false;
+              running = false;
               levelupActive = false;
-              startGame(baseAttack);
+              updatePauseButton();
+              showWeaponSelectScreen();
             };
             btnRestart.addEventListener("mouseenter", () => {
               if (restartIndex !== -1 && focusedOptionIndex !== restartIndex) {
