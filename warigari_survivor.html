@@ -2817,12 +2817,72 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
           overlay.innerHTML = `
       <div class="panel">
         <h1>일시정지</h1>
-        <div class="row"><button id="btnResume">계속하기<br>(ESC)</button></div>
+        <div class="row">
+          <button id="btnResume">계속하기<br>(ESC)</button>
+          <button id="btnRestart">다시하기</button>
+        </div>
+        <div class="hold-gauge"><div class="fill" id="pauseHoldGaugeFill"></div></div>
       </div>`;
           overlay.style.display = "flex";
-          document.getElementById("btnResume").onclick = togglePause;
+          const btnResume = document.getElementById("btnResume");
+          const btnRestart = document.getElementById("btnRestart");
+          const pauseGauge = document.getElementById("pauseHoldGaugeFill");
+          selectionButtons = [btnResume, btnRestart].filter(Boolean);
+          focusedOptionIndex = 0;
+          holdGaugeFill = pauseGauge;
+          if (holdGaugeFill) {
+            holdGaugeFill.style.width = "0%";
+          }
+          if (selectionButtons.length > 0) {
+            highlightFocusedOption();
+          }
+          if (btnResume) {
+            btnResume.onclick = () => {
+              endHold(false);
+              audio.play("uiSelect");
+              togglePause();
+            };
+            btnResume.addEventListener("mouseenter", () => {
+              if (focusedOptionIndex !== 0) {
+                focusedOptionIndex = 0;
+                highlightFocusedOption();
+              }
+              audio.play("uiFocus");
+            });
+          }
+          if (btnRestart) {
+            const restartIndex = selectionButtons.indexOf(btnRestart);
+            btnRestart.onclick = () => {
+              endHold(false);
+              audio.resume();
+              audio.play("uiSelect");
+              selectionButtons = [];
+              focusedOptionIndex = 0;
+              holdGaugeFill = null;
+              hideOverlay();
+              paused = false;
+              running = false;
+              levelupActive = false;
+              updatePauseButton();
+              showWeaponSelectScreen();
+            };
+            btnRestart.addEventListener("mouseenter", () => {
+              if (restartIndex !== -1 && focusedOptionIndex !== restartIndex) {
+                focusedOptionIndex = restartIndex;
+                highlightFocusedOption();
+              }
+              audio.play("uiFocus");
+            });
+          }
+          levelupActive = true;
           updatePauseButton();
         } else {
+          if (spaceHoldStart !== null) {
+            endHold(false);
+          }
+          levelupActive = false;
+          selectionButtons = [];
+          holdGaugeFill = null;
           hideOverlay();
           paused = false;
           updatePauseButton();
