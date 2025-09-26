@@ -27,6 +27,10 @@
       font-size: calc(16px * var(--ui-scale));
     }
 
+    body.levelup-active {
+      overflow: hidden;
+    }
+
     #wrap {
       display: flex;
       height: 100%;
@@ -55,6 +59,7 @@
     #canvasWrap {
       flex: none;
       position: relative;
+      overflow: hidden;
     }
 
     canvas {
@@ -76,6 +81,28 @@
       z-index: 10;
       text-align: center;
       padding: calc(24px * var(--ui-scale));
+    }
+
+    .overlay.slide-overlay {
+      overflow: hidden;
+    }
+
+    .overlay.slide-overlay .panel {
+      transform: translateY(100vh);
+      opacity: 0;
+      transition:
+        transform var(--overlay-slide-duration, 0.7s) ease-out,
+        opacity var(--overlay-slide-duration, 0.7s) ease-out;
+      pointer-events: none;
+    }
+
+    .overlay.slide-overlay.show .panel {
+      transform: translateY(0);
+      opacity: 1;
+    }
+
+    .overlay.slide-overlay.ready .panel {
+      pointer-events: auto;
     }
 
     .office-overlay {
@@ -501,6 +528,7 @@
       z-index: 15;
       text-align: center;
       padding: calc(24px * var(--ui-scale));
+      overflow: hidden;
     }
 
     .levelup-panel {
@@ -513,23 +541,25 @@
       box-shadow:
         0 15px 40px rgba(0, 0, 0, 0.5),
         inset 0 0 80px rgba(74, 99, 212, 0.15);
-      animation: levelupPulse 0.6s ease-out;
     }
 
     #levelupOverlay .levelup-panel {
       max-width: calc(860px * var(--ui-scale));
+      transform: translateY(100vh);
+      opacity: 0;
+      transition:
+        transform var(--levelup-slide-duration, 0.7s) ease-out,
+        opacity var(--levelup-slide-duration, 0.7s) ease-out;
+      pointer-events: none;
     }
 
-    @keyframes levelupPulse {
-      0% {
-        transform: scale(0.8);
-        opacity: 0;
-      }
+    #levelupOverlay .levelup-panel.show {
+      transform: translateY(0);
+      opacity: 1;
+    }
 
-      100% {
-        transform: scale(1);
-        opacity: 1;
-      }
+    #levelupOverlay .levelup-panel.ready {
+      pointer-events: auto;
     }
 
     .upgrade-grid {
@@ -2117,7 +2147,11 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
       let isSubmittingRank = false;
 
       const HOLD_DURATION = 800;
+      const LEVELUP_PANEL_SLIDE_DURATION = 700;
       let levelupActive = false;
+      let levelupInputLocked = false;
+      let levelupPanelAnimationTimeout = null;
+      let overlayPanelAnimationTimeout = null;
       let pendingLevelUps = 0; // 큐에 대기 중인 레벨업 수
       let pendingBossOrbs = 0; // 보상 대기 중인 보스 구슬 수
       let focusedOptionIndex = 0;
@@ -2320,7 +2354,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
             if (!running) {
               audio.resume();
               audio.play("uiSelect");
-              overlay.style.display = "none";
+              hideOverlay();
               showWeaponSelectScreen();
             } else if (!paused) {
               toggleDirection();
@@ -2508,6 +2542,43 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
 
       // --- 게임 제어 ---
       const overlay = document.getElementById("overlay");
+
+      function resetOverlaySlideState() {
+        if (overlayPanelAnimationTimeout) {
+          clearTimeout(overlayPanelAnimationTimeout);
+          overlayPanelAnimationTimeout = null;
+        }
+        overlay.classList.remove("slide-overlay", "show", "ready");
+        overlay.style.removeProperty("--overlay-slide-duration");
+        levelupInputLocked = false;
+      }
+
+      function hideOverlay() {
+        resetOverlaySlideState();
+        overlay.style.display = "none";
+        document.body.classList.remove("levelup-active");
+      }
+
+      function playOverlaySlideIn(duration) {
+        if (overlayPanelAnimationTimeout) {
+          clearTimeout(overlayPanelAnimationTimeout);
+          overlayPanelAnimationTimeout = null;
+        }
+        levelupInputLocked = true;
+        overlay.classList.remove("show", "ready");
+        overlay.classList.add("slide-overlay");
+        overlay.style.setProperty("--overlay-slide-duration", `${duration}ms`);
+        void overlay.offsetWidth;
+        requestAnimationFrame(() => {
+          overlay.classList.add("show");
+        });
+        overlayPanelAnimationTimeout = setTimeout(() => {
+          overlay.classList.add("ready");
+          overlayPanelAnimationTimeout = null;
+          levelupInputLocked = false;
+        }, duration);
+      }
+
       const pauseButton = document.getElementById("pauseButton");
       const muteButton = document.getElementById("muteButton");
       const hudContainer = document.getElementById("hud");
@@ -2731,7 +2802,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
           hudContainer.style.display = "flex";
         }
         reset();
-        overlay.style.display = "none";
+        hideOverlay();
         running = true;
         updatePauseButton();
         lastTime = performance.now();
@@ -2742,6 +2813,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
         if (!running) return;
         if (!paused) {
           paused = true;
+          resetOverlaySlideState();
           overlay.innerHTML = `
       <div class="panel">
         <h1>일시정지</h1>
@@ -2751,7 +2823,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
           document.getElementById("btnResume").onclick = togglePause;
           updatePauseButton();
         } else {
-          overlay.style.display = "none";
+          hideOverlay();
           paused = false;
           updatePauseButton();
           requestAnimationFrame(loop);
@@ -3706,6 +3778,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
       }
 
       function startHold() {
+        if (levelupInputLocked) return;
         spaceHoldStart = performance.now();
         audio.startHoldTone();
         updateHoldGauge();
@@ -3790,6 +3863,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
             <div class="upgrade-desc">${option.desc}</div>
         `;
           btn.onclick = () => {
+            if (levelupInputLocked) return;
             endHold(false);
             audio.play("uiSelect");
             const limitValue = Number.isFinite(option.limit)
@@ -3809,6 +3883,13 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
               levelUpImpulse();
             }
             levelupOverlay.style.display = "none";
+            document.body.classList.remove("levelup-active");
+            levelupPanel.classList.remove("show", "ready");
+            if (levelupPanelAnimationTimeout) {
+              clearTimeout(levelupPanelAnimationTimeout);
+              levelupPanelAnimationTimeout = null;
+            }
+            levelupInputLocked = false;
             levelupActive = false;
             updatePauseButton();
 
@@ -3844,7 +3925,26 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
           upgradeGrid.style.gridTemplateColumns = "";
           levelupPanel.style.maxWidth = "";
         }
+        if (levelupPanelAnimationTimeout) {
+          clearTimeout(levelupPanelAnimationTimeout);
+          levelupPanelAnimationTimeout = null;
+        }
+        levelupInputLocked = true;
+        levelupPanel.classList.remove("show", "ready");
+        levelupPanel.style.setProperty(
+          "--levelup-slide-duration",
+          `${LEVELUP_PANEL_SLIDE_DURATION}ms`,
+        );
         levelupOverlay.style.display = "flex";
+        document.body.classList.add("levelup-active");
+        void levelupPanel.offsetWidth;
+        requestAnimationFrame(() => {
+          levelupPanel.classList.add("show");
+        });
+        levelupPanelAnimationTimeout = setTimeout(() => {
+          levelupPanel.classList.add("ready");
+          levelupInputLocked = false;
+        }, LEVELUP_PANEL_SLIDE_DURATION);
         audio.play("upgradeOpen");
         selectionButtons = document.querySelectorAll("#upgradeGrid .upgrade-btn");
         focusedOptionIndex = 0;
@@ -3912,6 +4012,8 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
         if (hudContainer) {
           hudContainer.style.display = "none";
         }
+        document.body.classList.remove("levelup-active");
+        resetOverlaySlideState();
         overlay.innerHTML = `
         <div class="panel">
           <h1>와리가리 서바이버</h1>
@@ -3946,7 +4048,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
             endHold(false);
             audio.resume();
             audio.play("uiSelect");
-            overlay.style.display = "none";
+            hideOverlay();
             levelupActive = false;
             updatePauseButton();
             showWeaponSelectScreen();
@@ -4037,6 +4139,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
         const viewButtonHTML = hasSubmittedRecord
           ? `<button id="btnViewRankingResults">🏛️ 전당방문<br></button>`
           : "";
+        resetOverlaySlideState();
         overlay.innerHTML = `
         <div class="panel">
           <h1>🕊️ 전쟁이 끝났습니다 🕊️</h1>
@@ -4056,6 +4159,8 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
           </div>
         </div>`;
         overlay.style.display = "flex";
+        document.body.classList.add("levelup-active");
+        playOverlaySlideIn(LEVELUP_PANEL_SLIDE_DURATION);
 
         const btnRestart = document.getElementById("btnRestart");
         const btnRegisterRanking = document.getElementById("btnRegisterRanking");
@@ -4091,7 +4196,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
             endHold(false);
             audio.resume();
             audio.play("uiSelect");
-            overlay.style.display = "none";
+            hideOverlay();
             levelupActive = false;
             updatePauseButton();
             showWeaponSelectScreen();
@@ -4103,6 +4208,8 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
             endHold(false);
             audio.resume();
             audio.play("uiSelect");
+            document.body.classList.remove("levelup-active");
+            resetOverlaySlideState();
             levelupActive = false;
             const mode =
               btnRegisterRanking.dataset.mode === "view" ? "view" : "register";
@@ -4121,6 +4228,8 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
             endHold(false);
             audio.resume();
             audio.play("uiSelect");
+            document.body.classList.remove("levelup-active");
+            resetOverlaySlideState();
             levelupActive = false;
             showRankingScreen({
               mode: "view",
@@ -4143,6 +4252,8 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
             ? "전당 등록 심사 중..."
             : "플레이 기록이 없습니다.";
         const actionButtonHTML = `<button id="btnRankingClose">닫기</button>`;
+        document.body.classList.remove("levelup-active");
+        resetOverlaySlideState();
         overlay.innerHTML = `
         <div class="panel ranking-panel">
           <h1>🏛️와리가리의 전당🏛️</h1>
@@ -4236,7 +4347,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
             if (typeof onClose === "function") {
               onClose();
             } else {
-              overlay.style.display = "none";
+              hideOverlay();
             }
           };
         }
