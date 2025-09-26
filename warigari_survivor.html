@@ -2147,7 +2147,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
       let isSubmittingRank = false;
 
       const HOLD_DURATION = 800;
-      const LEVELUP_PANEL_SLIDE_DURATION = 700;
+      const PANEL_SLIDE_DURATION = 700;
       let levelupActive = false;
       let levelupInputLocked = false;
       let levelupPanelAnimationTimeout = null;
@@ -3933,7 +3933,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
         levelupPanel.classList.remove("show", "ready");
         levelupPanel.style.setProperty(
           "--levelup-slide-duration",
-          `${LEVELUP_PANEL_SLIDE_DURATION}ms`,
+          `${PANEL_SLIDE_DURATION}ms`,
         );
         levelupOverlay.style.display = "flex";
         document.body.classList.add("levelup-active");
@@ -3944,7 +3944,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
         levelupPanelAnimationTimeout = setTimeout(() => {
           levelupPanel.classList.add("ready");
           levelupInputLocked = false;
-        }, LEVELUP_PANEL_SLIDE_DURATION);
+        }, PANEL_SLIDE_DURATION);
         audio.play("upgradeOpen");
         selectionButtons = document.querySelectorAll("#upgradeGrid .upgrade-btn");
         focusedOptionIndex = 0;
@@ -4160,7 +4160,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
         </div>`;
         overlay.style.display = "flex";
         document.body.classList.add("levelup-active");
-        playOverlaySlideIn(LEVELUP_PANEL_SLIDE_DURATION);
+        playOverlaySlideIn(PANEL_SLIDE_DURATION);
 
         const btnRestart = document.getElementById("btnRestart");
         const btnRegisterRanking = document.getElementById("btnRegisterRanking");
