@@ -3677,10 +3677,19 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
                 score += e.reward;
                 continue;
               }
-              if (!e.knockbackImmune) {
+              const hasSwordKnockbackUpgrade =
+                baseAttack === "sword" && (acquiredUpgrades["knockback"] || 0) > 0;
+              const isDefenseType = e.type && e.type.id === "tank";
+              const knockbackMultiplier = !e.knockbackImmune
+                ? 1
+                : hasSwordKnockbackUpgrade && isDefenseType
+                ? 0.5
+                : 0;
+              if (knockbackMultiplier > 0) {
                 const nx = player.dir;
                 e.knockbackVx =
-                  (e.knockbackVx || 0) + nx * swordKnockback * enemyKnockbackFriction;
+                  (e.knockbackVx || 0) +
+                  nx * swordKnockback * enemyKnockbackFriction * knockbackMultiplier;
                 e.vy = -enemyKnockbackLift;
               }
             }
