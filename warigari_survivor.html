@@ -5990,7 +5990,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
                 e.hp -= dmg;
                 audio.play("attackHit");
 
-                if (lifeSteal > 0 && !y.returning) {
+                if (lifeSteal > 0) {
                   const heal = Math.min(dmg * lifeSteal, playerHP - hp);
                   if (heal > 0) {
                     hp += heal;
@@ -6011,19 +6011,17 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
                   e.vy = -enemyKnockbackLift;
                 }
 
-                if (!y.returning) {
-                  applyPoisonEffect(e);
-                }
+                applyPoisonEffect(e);
 
                 y.hitSet.add(e.id);
 
                 let extra = 0;
-                if (explosionEnabled && !y.returning) {
+                if (explosionEnabled) {
                   const distP = Math.hypot(ex - px, ey - py);
                   extra = triggerExplosion(ex, ey, distP, e.id);
                 }
                 spawnFloatText(ex, e.y - 12, -(dmg + extra), "#ff6b6b");
-                if (explosionEnabled && !y.returning && !enemies.includes(e)) {
+                if (explosionEnabled && !enemies.includes(e)) {
                   e._killed = true;
                   break;
                 }
