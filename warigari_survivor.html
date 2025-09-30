@@ -5479,6 +5479,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
             returning: false,
             travel: 0,
             distance: 0,
+            angle: 0,
             hitSet: new Set(),
           });
           audio.play("attack");
@@ -5568,6 +5569,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
           const targetX = player.x + player.w / 2 - y.w / 2;
           y.y = targetY;
           if (typeof y.distance !== "number") y.distance = 0;
+          if (typeof y.angle !== "number") y.angle = 0;
           const prevDir =
             Math.sign(y.vx) ||
             (y.returning
@@ -5578,6 +5580,8 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
           const step = y.vx * dt;
           y.x += step;
           y.distance += Math.abs(step);
+          const spinDir = Math.sign(y.vx) || prevDir || 1;
+          y.angle += spinDir * Math.PI * 2 * dt;
           if (!y.returning) {
             // 플레이어가 방향을 바꾸면 즉시 되돌아오도록
             if (player.dir !== Math.sign(y.vx)) {
@@ -6666,10 +6670,25 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
 
         // 요요
         for (const y of yoyos) {
+          const cx = y.x + y.w / 2;
+          const cy = y.y + y.h / 2;
           ctx.fillStyle = "#facc15";
           ctx.beginPath();
-          ctx.arc(y.x + y.w / 2, y.y + y.h / 2, y.w / 2, 0, Math.PI * 2);
+          ctx.arc(cx, cy, y.w / 2, 0, Math.PI * 2);
           ctx.fill();
+
+          ctx.save();
+          ctx.translate(cx, cy);
+          ctx.rotate(y.angle || 0);
+          const innerRadius = y.w * 0.35;
+          ctx.beginPath();
+          ctx.moveTo(0, -innerRadius);
+          ctx.lineTo(innerRadius * 0.9, innerRadius);
+          ctx.lineTo(-innerRadius * 0.9, innerRadius);
+          ctx.closePath();
+          ctx.fillStyle = "#f97316";
+          ctx.fill();
+          ctx.restore();
         }
 
         // 탄
