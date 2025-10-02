@@ -5750,7 +5750,7 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
             continue;
           }
 
-          if ((e.hp ?? 0) <= 0 || e._killed) {
+          if ((e.hp ?? 0) <= 0 || (!e.isBoss && e._killed)) {
             if (!e._killed) {
               if (e.entered) {
                 dropExpOrbs(e);
@@ -5945,6 +5945,13 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
                 }
                 spawnFloatText(ex, e.y - 12, -(dmg + extra), "#ff6b6b");
                 if (explosionEnabled && !enemies.includes(e)) {
+                  if (e.isBoss) {
+                    console.warn(
+                      "Boss unexpectedly removed from enemies during bullet explosion",
+                      e,
+                    );
+                    break;
+                  }
                   e._killed = true;
                   break;
                 }
@@ -6022,6 +6029,13 @@ Press CTRL+C to abort or wait for forced reboot in 30 seconds.
                 }
                 spawnFloatText(ex, e.y - 12, -(dmg + extra), "#ff6b6b");
                 if (explosionEnabled && !enemies.includes(e)) {
+                  if (e.isBoss) {
+                    console.warn(
+                      "Boss unexpectedly removed from enemies during yoyo explosion",
+                      e,
+                    );
+                    break;
+                  }
                   e._killed = true;
                   break;
                 }
